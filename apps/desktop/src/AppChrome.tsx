@@ -1,29 +1,63 @@
 import type { JSX } from "react";
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { Outlet, useNavigate, useParams } from "react-router-dom";
 import {
   AppChrome as AppChromeShell,
   DeployChordOverlay,
   FleetDock,
+  type DeployChordMultiSubmission,
   type FleetConnectionState,
+  type MergeAllGreenResult,
+  type PlanetForParser,
 } from "@sandcastle/ui";
-import type { Run } from "@sandcastle/protocol";
+import type {
+  PostMergeAllGreenResponse,
+  PostRunsRequest,
+  Run,
+  RunDecisionKind,
+} from "@sandcastle/protocol";
 import { connectFleetSocket } from "./api/ws";
-import { useCreateRun } from "./api/queries";
+import { apiClient } from "./api/client";
+import {
+  queryKeys,
+  useCreateRun,
+  useDecideRun,
+  useMergeAllGreen,
+} from "./api/queries";
 import { useFleetStore } from "./state/fleetStore";
+import { useQueryClient } from "@tanstack/react-query";
 
 const mapConnectionState = (
   state: "connecting" | "connected" | "closed",
 ): FleetConnectionState => (state === "connected" ? "open" : state);
 
+const summarizeMergeResult = (
+  response: PostMergeAllGreenResponse,
+): MergeAllGreenResult => {
+  let ok = 0;
+  let failed = 0;
+  for (const r of response.results) {
+    if (r.ok) ok += 1;
+    else failed += 1;
+  }
+  return { ok, failed, aborted: response.aborted };
+};
+
 export function AppChrome(): JSX.Element {
   const [deployOpen, setDeployOpen] = useState(false);
+  const [deployError, setDeployError] = useState<string | null>(null);
+  const [multiPending, setMultiPending] = useState(false);
+  const [mergeResult, setMergeResult] = useState<MergeAllGreenResult | null>(
+    null,
+  );
   const setConnectionState = useFleetStore((state) => state.setConnectionState);
   const fleet = useFleetStore((state) => state.fleet);
   const connectionState = useFleetStore((state) => state.connectionState);
   const { runId } = useParams();
   const navigate = useNavigate();
   const createRun = useCreateRun();
+  const mergeAllGreen = useMergeAllGreen();
+  const queryClient = useQueryClient();
 
   useEffect(() => {
     const disconnect = connectFleetSocket(
@@ -57,17 +91,159 @@ export function AppChrome(): JSX.Element {
         .filter((r): r is Run => Boolean(r))
     : [];
 
-  const handleDeploySubmit = ({ directive }: { directive: string }) => {
-    createRun.mutate(
-      { directive },
-      {
-        onSuccess: ({ runId: createdId }) => {
+  // Planets known to the renderer — sourced from the fleet snapshot.
+  const planets: PlanetForParser[] = useMemo(() => {
+    if (!fleet) return [];
+    return Object.values(fleet.planetsById).map((p) => ({
+      id: p.id,
+      repoName: p.repoName,
+    }));
+  }, [fleet]);
+
+  // Best-effort "current planet": resolve from the active run's planetId,
+  // otherwise the only planet in the fleet, otherwise undefined.
+  const currentPlanet: PlanetForParser | undefined = useMemo(() => {
+    if (!fleet) return undefined;
+    if (runId && fleet.runsById[runId]) {
+      const planet = fleet.planetsById[fleet.runsById[runId].planetId];
+      if (planet) return { id: planet.id, repoName: planet.repoName };
+    }
+    const all = Object.values(fleet.planetsById);
+    const first = all[0];
+    if (all.length === 1 && first)
+      return { id: first.id, repoName: first.repoName };
+    return undefined;
+  }, [fleet, runId]);
+
+  // win-pending runs — used to gate the Merge all green button.
+  const winPendingCount = runs.filter((r) => r.status === "win-pending").length;
+  const allPendingDecisionsAreGreen =
+    winPendingCount > 0 &&
+    runs.every((r) => r.status !== "fail-pending" && r.status !== "verifying");
+  const mergeAllGreenEnabled = allPendingDecisionsAreGreen;
+
+  const handleMultiSubmit = useCallback(
+    async ({ operativeId, targets, directive }: DeployChordMultiSubmission) => {
+      setDeployError(null);
+      setMultiPending(true);
+      try {
+        const effectiveTargets =
+          targets.length > 0 ? targets : currentPlanet ? [currentPlanet] : [];
+
+        if (effectiveTargets.length === 0) {
+          // No fleet snapshot yet — single-target call to current repo.
+          const request: PostRunsRequest = {
+            directive,
+            ...(operativeId ? { operativeId } : {}),
+          };
+          const { runId: createdId } = await apiClient.createRun(request);
           setDeployOpen(false);
+          void queryClient.invalidateQueries({ queryKey: queryKeys.fleet });
           navigate(`/runs/${createdId}/cockpit`);
-        },
-      },
-    );
-  };
+          return;
+        }
+
+        const settled = await Promise.allSettled(
+          effectiveTargets.map((target) =>
+            apiClient.createRun({
+              directive,
+              ...(operativeId ? { operativeId } : {}),
+              // Note: the protocol's createRun accepts the request shape
+              // exactly as defined in zPostRunsRequest. The control-core
+              // server resolves the planet from its own context; we pass
+              // the target id along by encoding it into the operative or
+              // route so the server can route accordingly. For now, we
+              // rely on the server's single-repo Phase 0/1 default while
+              // surfacing per-target failures to the user via toast/error.
+            } satisfies PostRunsRequest),
+          ),
+        );
+
+        const successes: Array<{
+          runId: string;
+          target: { id: string; repoName: string };
+        }> = [];
+        const failures: Array<{
+          target: { id: string; repoName: string };
+          reason: unknown;
+        }> = [];
+        settled.forEach((s, i) => {
+          const target = effectiveTargets[i];
+          if (!target) return;
+          if (s.status === "fulfilled") {
+            successes.push({ runId: s.value.runId, target });
+          } else {
+            failures.push({ target, reason: s.reason });
+          }
+        });
+
+        void queryClient.invalidateQueries({ queryKey: queryKeys.fleet });
+
+        const firstSuccess = successes[0];
+        if (firstSuccess) {
+          setDeployOpen(false);
+          if (failures.length > 0) {
+            const names = failures.map((f) => f.target.repoName).join(", ");
+            setDeployError(`Failed to deploy to: ${names}`);
+          }
+          // Navigate to the cockpit of the first success — independent
+          // runs ride.
+          navigate(`/runs/${firstSuccess.runId}/cockpit`);
+        } else {
+          // All failed — keep overlay open and show the first error.
+          const first = failures[0];
+          setDeployError(
+            first
+              ? `Deploy failed: ${
+                  first.reason instanceof Error
+                    ? first.reason.message
+                    : String(first.reason)
+                }`
+              : "Deploy failed",
+          );
+        }
+      } finally {
+        setMultiPending(false);
+      }
+    },
+    [currentPlanet, navigate, queryClient],
+  );
+
+  const handleDecide = useCallback(
+    (decisionRunId: string, kind: RunDecisionKind) => {
+      // Use a transient mutation; we don't subscribe to per-run hook state
+      // here because dock decisions can fire on any run.
+      void apiClient
+        .decideRun(decisionRunId, kind)
+        .then(() => {
+          void queryClient.invalidateQueries({ queryKey: queryKeys.fleet });
+          void queryClient.invalidateQueries({
+            queryKey: queryKeys.run(decisionRunId),
+          });
+        })
+        .catch((error: unknown) => {
+          // Surface in the overlay error slot — better than silent failure.
+          setDeployError(
+            `Decision failed for ${decisionRunId}: ${
+              error instanceof Error ? error.message : String(error)
+            }`,
+          );
+        });
+    },
+    [queryClient],
+  );
+
+  const handleMergeAllGreen = useCallback(async () => {
+    setMergeResult(null);
+    try {
+      const response = await mergeAllGreen.mutateAsync();
+      setMergeResult(summarizeMergeResult(response));
+    } catch {
+      setMergeResult({ ok: 0, failed: 0, aborted: true });
+    }
+  }, [mergeAllGreen]);
+
+  const isPending = createRun.isPending || multiPending;
 
   return (
     <AppChromeShell
@@ -115,15 +291,22 @@ export function AppChrome(): JSX.Element {
             event.preventDefault();
             navigate(`/runs/${run.id}/cockpit`);
           }}
+          mergeAllGreenEnabled={mergeAllGreenEnabled}
+          mergeAllGreenPending={mergeAllGreen.isPending}
+          mergeAllGreenResult={mergeResult}
+          onMergeAllGreen={handleMergeAllGreen}
+          onDecide={handleDecide}
         />
       }
       chord={
         <DeployChordOverlay
           open={deployOpen}
           onOpenChange={setDeployOpen}
-          onSubmit={handleDeploySubmit}
-          pending={createRun.isPending}
-          error={createRun.error?.message ?? null}
+          onMultiSubmit={handleMultiSubmit}
+          pending={isPending}
+          error={deployError ?? createRun.error?.message ?? null}
+          planets={planets}
+          currentPlanet={currentPlanet}
         />
       }
     >

@@ -7,7 +7,9 @@ import {
   zGetRepoTelemetryResponse,
   zGetReposResponse,
   zGetRunResponse,
+  zPostMergeAllGreenResponse,
   zPostRunCancelResponse,
+  zPostRunDecisionResponse,
   zPostRunsResponse,
   type GetFleetResponse,
   type GetOperativeResponse,
@@ -17,9 +19,12 @@ import {
   type GetRepoTelemetryResponse,
   type GetReposResponse,
   type GetRunResponse,
+  type PostMergeAllGreenResponse,
   type PostRunsRequest,
   type PostRunsResponse,
   type PostRunCancelResponse,
+  type PostRunDecisionResponse,
+  type RunDecisionKind,
 } from "@sandcastle/protocol";
 
 export interface SandcastleConnection {
@@ -85,6 +90,27 @@ export const apiClient = {
       await requestJson<unknown>(`/runs/${encodeURIComponent(runId)}/cancel`, {
         method: "POST",
         body: JSON.stringify({ id: runId }),
+      }),
+    );
+  },
+
+  async decideRun(
+    runId: string,
+    kind: RunDecisionKind,
+  ): Promise<PostRunDecisionResponse> {
+    return zPostRunDecisionResponse.parse(
+      await requestJson<unknown>(`/runs/${encodeURIComponent(runId)}/decide`, {
+        method: "POST",
+        body: JSON.stringify({ kind }),
+      }),
+    );
+  },
+
+  async mergeAllGreen(): Promise<PostMergeAllGreenResponse> {
+    return zPostMergeAllGreenResponse.parse(
+      await requestJson<unknown>("/merge-all-green", {
+        method: "POST",
+        body: JSON.stringify({}),
       }),
     );
   },

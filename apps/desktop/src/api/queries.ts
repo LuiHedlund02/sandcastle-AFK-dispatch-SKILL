@@ -1,5 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import type { PostRunsRequest } from "@sandcastle/protocol";
+import type { PostRunsRequest, RunDecisionKind } from "@sandcastle/protocol";
 import { apiClient } from "./client";
 
 export const queryKeys = {
@@ -54,6 +54,27 @@ export const useCancelRun = (runId: string) => {
     mutationFn: () => apiClient.cancelRun(runId),
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: queryKeys.run(runId) });
+      void queryClient.invalidateQueries({ queryKey: queryKeys.fleet });
+    },
+  });
+};
+
+export const useDecideRun = (runId: string) => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (kind: RunDecisionKind) => apiClient.decideRun(runId, kind),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: queryKeys.run(runId) });
+      void queryClient.invalidateQueries({ queryKey: queryKeys.fleet });
+    },
+  });
+};
+
+export const useMergeAllGreen = () => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: () => apiClient.mergeAllGreen(),
+    onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: queryKeys.fleet });
     },
   });
