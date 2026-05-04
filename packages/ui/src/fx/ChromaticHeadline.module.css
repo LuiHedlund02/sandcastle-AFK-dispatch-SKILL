@@ -2,33 +2,32 @@
   position: relative;
   display: inline-block;
   font-family: var(--sc-display);
-  font-weight: 700;
-  letter-spacing: 0.04em;
+  font-weight: 500;
+  letter-spacing: 0.005em;
   text-transform: uppercase;
   color: var(--sc-frost);
+  /* matches docs/mockups/cockpit.html .run-banner h1 base shadow */
   text-shadow:
-    -1px 0 var(--sc-magenta),
-    1px 0 var(--sc-cyan),
-    0 0 18px rgba(86, 212, 224, 0.3);
+    -1.5px 0 rgba(255, 46, 136, 0.55),
+    1.5px 0 rgba(86, 212, 224, 0.55);
 }
 
 .glitch {
-  animation: chroma 5s ease-in-out infinite;
+  animation: chroma-drift 6s ease-in-out infinite;
 }
 
-@keyframes chroma {
+/* matches @keyframes chroma-drift in docs/mockups/cockpit.html */
+@keyframes chroma-drift {
   0%,
   100% {
     text-shadow:
-      -1px 0 var(--sc-magenta),
-      1px 0 var(--sc-cyan),
-      0 0 18px rgba(86, 212, 224, 0.3);
+      -1.5px 0 rgba(255, 46, 136, 0.55),
+      1.5px 0 rgba(86, 212, 224, 0.55);
   }
   50% {
     text-shadow:
-      -2px 0 var(--sc-magenta),
-      2px 0 var(--sc-cyan),
-      0 0 28px rgba(255, 46, 136, 0.35);
+      -2.5px 0 rgba(255, 46, 136, 0.6),
+      2.5px 0 rgba(86, 212, 224, 0.6);
   }
 }
 

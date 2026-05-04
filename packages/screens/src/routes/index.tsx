@@ -4,7 +4,7 @@ import { Play } from "lucide-react";
 import type { Run } from "@sandcastle/protocol";
 import { useFleet, useRepo } from "../api/queries";
 import { useFleetStore } from "../state/fleetStore";
-import { StatusPill } from "@sandcastle/ui";
+import { ChromaticHeadline, StatusPill } from "@sandcastle/ui";
 
 export function IndexRoute(): JSX.Element {
   const { data: repo } = useRepo();
@@ -21,7 +21,9 @@ export function IndexRoute(): JSX.Element {
     <section className="landing-grid">
       <div className="panel hero-panel">
         <div className="eyebrow">phase 0 · cockpit</div>
-        <h1>Sandcastle control cockpit</h1>
+        <ChromaticHeadline as="h1" glitch>
+          Sandcastle control cockpit
+        </ChromaticHeadline>
         <p>
           Local Electron supervisor connected to control-core. Deploy one real
           run, stream tool/text events, and abort from the cockpit.

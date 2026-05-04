@@ -1,0 +1,30 @@
+/*
+ * KanjiWatermark — fixed katakana side-rail.
+ * Values copied from docs/mockups/cockpit.html .app::after (line 128-144)
+ * and confirmed against fleet.html and index.html (.watermark).
+ */
+.root {
+  position: fixed;
+  top: 50%;
+  right: -10px;
+  transform: rotate(-90deg) translateX(50%);
+  transform-origin: right center;
+  font-family: var(--sc-mono);
+  font-size: 9.5px;
+  letter-spacing: 0.7em;
+  color: var(--sc-magenta);
+  opacity: 0.18;
+  pointer-events: none;
+  /* below CrtRasterOverlay (z 9999) but above page background */
+  z-index: 1;
+  white-space: nowrap;
+  text-shadow: 0 0 6px rgba(255, 46, 136, 0.5);
+}
+
+@media (prefers-contrast: more) {
+  .root {
+    /* tone down further when high-contrast is requested so it doesn't
+       distract from content. */
+    display: none;
+  }
+}

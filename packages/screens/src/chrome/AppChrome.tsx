@@ -3,8 +3,10 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { Outlet, useNavigate, useParams } from "react-router-dom";
 import {
   AppChrome as AppChromeShell,
+  CrtRasterOverlay,
   DeployChordOverlay,
   FleetDock,
+  KanjiWatermark,
   XpDeltaBadge,
   type DeployChordMultiSubmission,
   type FleetConnectionState,
@@ -283,83 +285,92 @@ export function AppChrome(): JSX.Element {
   const isPending = createRun.isPending || multiPending;
 
   return (
-    <AppChromeShell
-      contextLabel={
-        <>
-          <span style={{ fontFamily: "var(--sc-display)", fontWeight: 700 }}>
-            Sandcastle
-          </span>
+    <>
+      {/* Persistent cyberpunk overlays — fixed-viewport, pointer-events: none.
+          Live above all routes so /fleet, /roster, /quest-forge, /cockpit
+          and ceremony screens all inherit the CRT scanline + kanji rail. */}
+      <CrtRasterOverlay />
+      <KanjiWatermark />
+      <AppChromeShell
+        contextLabel={
+          <>
+            <span style={{ fontFamily: "var(--sc-display)", fontWeight: 700 }}>
+              Sandcastle
+            </span>
+            <span
+              style={{
+                border: "1px solid var(--sc-rule-2)",
+                background: "var(--sc-hull-1)",
+                color: "var(--sc-mist)",
+                padding: "3px 8px",
+                fontSize: 11,
+              }}
+            >
+              Cockpit MVP
+            </span>
+          </>
+        }
+        right={
           <span
-            style={{
-              border: "1px solid var(--sc-rule-2)",
-              background: "var(--sc-hull-1)",
-              color: "var(--sc-mist)",
-              padding: "3px 8px",
-              fontSize: 11,
-            }}
+            style={{ display: "inline-flex", alignItems: "center", gap: 8 }}
           >
-            Cockpit MVP
+            {xpToast != null ? (
+              <XpDeltaBadge xpDelta={xpToast} size="sm" />
+            ) : null}
+            <span
+              style={{
+                border: "1px solid var(--sc-rule-2)",
+                background: "var(--sc-hull-1)",
+                color: "var(--sc-mist)",
+                padding: "3px 8px",
+                fontSize: 11,
+                fontFamily: "var(--sc-mono)",
+              }}
+            >
+              {(() => {
+                try {
+                  const url = new URL(connection.baseUrl);
+                  return url.host || connection.baseUrl;
+                } catch {
+                  return connection.baseUrl || "...";
+                }
+              })()}
+            </span>
           </span>
-        </>
-      }
-      right={
-        <span style={{ display: "inline-flex", alignItems: "center", gap: 8 }}>
-          {xpToast != null ? (
-            <XpDeltaBadge xpDelta={xpToast} size="sm" />
-          ) : null}
-          <span
-            style={{
-              border: "1px solid var(--sc-rule-2)",
-              background: "var(--sc-hull-1)",
-              color: "var(--sc-mist)",
-              padding: "3px 8px",
-              fontSize: 11,
-              fontFamily: "var(--sc-mono)",
+        }
+        dock={
+          <FleetDock
+            runs={runs}
+            capacity={fleet?.capacity ?? { used: 0, max: 1 }}
+            currentRunId={runId}
+            connectionState={mapConnectionState(connectionState)}
+            onDeploy={() => setDeployOpen(true)}
+            hrefForRun={(run) => `/runs/${run.id}/cockpit`}
+            onSelectRun={(run, event) => {
+              event.preventDefault();
+              navigate(`/runs/${run.id}/cockpit`);
             }}
-          >
-            {(() => {
-              try {
-                const url = new URL(connection.baseUrl);
-                return url.host || connection.baseUrl;
-              } catch {
-                return connection.baseUrl || "...";
-              }
-            })()}
-          </span>
-        </span>
-      }
-      dock={
-        <FleetDock
-          runs={runs}
-          capacity={fleet?.capacity ?? { used: 0, max: 1 }}
-          currentRunId={runId}
-          connectionState={mapConnectionState(connectionState)}
-          onDeploy={() => setDeployOpen(true)}
-          hrefForRun={(run) => `/runs/${run.id}/cockpit`}
-          onSelectRun={(run, event) => {
-            event.preventDefault();
-            navigate(`/runs/${run.id}/cockpit`);
-          }}
-          mergeAllGreenEnabled={mergeAllGreenEnabled}
-          mergeAllGreenPending={mergeAllGreen.isPending}
-          mergeAllGreenResult={mergeResult}
-          onMergeAllGreen={handleMergeAllGreen}
-          onDecide={handleDecide}
-        />
-      }
-      chord={
-        <DeployChordOverlay
-          open={deployOpen}
-          onOpenChange={setDeployOpen}
-          onMultiSubmit={handleMultiSubmit}
-          pending={isPending}
-          error={deployError ?? createRun.error?.message ?? null}
-          planets={planets}
-          currentPlanet={currentPlanet}
-        />
-      }
-    >
-      <Outlet />
-    </AppChromeShell>
+            mergeAllGreenEnabled={mergeAllGreenEnabled}
+            mergeAllGreenPending={mergeAllGreen.isPending}
+            mergeAllGreenResult={mergeResult}
+            onMergeAllGreen={handleMergeAllGreen}
+            onDecide={handleDecide}
+          />
+        }
+        chord={
+          <DeployChordOverlay
+            open={deployOpen}
+            onOpenChange={setDeployOpen}
+            onMultiSubmit={handleMultiSubmit}
+            pending={isPending}
+            error={deployError ?? createRun.error?.message ?? null}
+            planets={planets}
+            currentPlanet={currentPlanet}
+          />
+        }
+      >
+        <Outlet />
+      </AppChromeShell>
+    </>
   );
 }

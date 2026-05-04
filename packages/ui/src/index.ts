@@ -5,6 +5,8 @@ export { FilmGrainOverlay } from "./fx/FilmGrainOverlay.js";
 export type { FilmGrainOverlayProps } from "./fx/FilmGrainOverlay.js";
 export { ChromaticHeadline } from "./fx/ChromaticHeadline.js";
 export type { ChromaticHeadlineProps } from "./fx/ChromaticHeadline.js";
+export { KanjiWatermark } from "./fx/KanjiWatermark.js";
+export type { KanjiWatermarkProps } from "./fx/KanjiWatermark.js";
 
 // layout
 export { OctaPanel } from "./layout/OctaPanel.js";
@@ -103,9 +105,16 @@ export type {
 
 // ceremony
 export { VictoryStage } from "./ceremony/VictoryStage.js";
-export type { VictoryStageProps } from "./ceremony/VictoryStage.js";
+export type {
+  VictoryStageProps,
+  VictoryLoot,
+  VictoryLevelDelta,
+} from "./ceremony/VictoryStage.js";
 export { DefeatStage } from "./ceremony/DefeatStage.js";
-export type { DefeatStageProps } from "./ceremony/DefeatStage.js";
+export type {
+  DefeatStageProps,
+  DefeatRecoveryAction,
+} from "./ceremony/DefeatStage.js";
 export { XpDeltaBadge } from "./ceremony/XpDeltaBadge.js";
 export type { XpDeltaBadgeProps } from "./ceremony/XpDeltaBadge.js";
 export { ConfettiSpray } from "./ceremony/ConfettiSpray.js";
