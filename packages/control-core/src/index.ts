@@ -39,3 +39,24 @@ export { VerifyRuleExecutor } from "./quest-forge/VerifyRuleExecutor.js";
 export { PhasedRunOrchestrator } from "./quest-forge/PhasedRunOrchestrator.js";
 export { describeVerifyRule } from "./quest-forge/VerifyRule.js";
 export type { VerifyRule, VerifyRuleResult } from "./quest-forge/VerifyRule.js";
+export { ClaudeCodeAdapter } from "./adapters/ClaudeCodeAdapter.js";
+export { CodexAdapter } from "./adapters/CodexAdapter.js";
+export { PiAdapter } from "./adapters/PiAdapter.js";
+export {
+  ProviderAdapterRegistry,
+  UnknownProviderError,
+  defaultAdapters,
+} from "./adapters/ProviderAdapterRegistry.js";
+export {
+  InvalidProviderPathError,
+  assertProviderRelativePath,
+  cleanupProviderPaths,
+  materializeProviderFiles,
+  resolveProviderPath,
+} from "./adapters/materialize.js";
+export type {
+  AgentProviderAdapter,
+  ProviderAdapterInput,
+  ProviderAdapterOutput,
+  ProviderMaterializedFile,
+} from "./adapters/AgentProviderAdapter.js";

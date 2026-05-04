@@ -9,6 +9,8 @@ import {
   type SandboxProvider,
 } from "@ai-hero/sandcastle";
 import type {
+  Deck,
+  Planet,
   PostRunDecisionResponse,
   PostQuestForgeEngageRequest,
   PostRunsRequest,
@@ -33,6 +35,17 @@ import { QuestForgeParser } from "../quest-forge/QuestForgeParser.js";
 import { spawn, type StdioOptions } from "node:child_process";
 import { createInterface } from "node:readline";
 import { join } from "node:path";
+import { DeckLoader } from "../deck/DeckLoader.js";
+import {
+  ProviderAdapterRegistry,
+  UnknownProviderError,
+} from "../adapters/ProviderAdapterRegistry.js";
+import type {
+  AgentProviderAdapter,
+  ProviderAdapterOutput,
+} from "../adapters/AgentProviderAdapter.js";
+import { cleanupProviderPaths } from "../adapters/materialize.js";
+import { withProviderMaterialization } from "../adapters/wrapAgentWithProviderMaterialization.js";
 
 export type EngineAgentStreamEvent = RunEvent;
 
@@ -49,6 +62,8 @@ export interface RunSupervisorOptions {
   readonly coordinator?: RepoRunCoordinator;
   readonly budgetService?: FleetBudgetService;
   readonly operativeStore?: Pick<OperativeStore, "getIdentity">;
+  readonly deckLoader?: DeckLoader;
+  readonly providerAdapterRegistry?: ProviderAdapterRegistry;
 }
 
 const toProvider = (request: PostRunsRequest): AgentProvider => {
@@ -145,6 +160,8 @@ export class RunSupervisor {
   private readonly budgetService: FleetBudgetService;
   private readonly activityFeed: ActivityFeed;
   private readonly xpLedger: XpLedger;
+  private readonly deckLoader: DeckLoader;
+  private readonly providerAdapterRegistry: ProviderAdapterRegistry;
 
   constructor(private readonly options: RunSupervisorOptions) {
     this.runImpl = options.runImpl ?? sandcastleRun;
@@ -154,6 +171,9 @@ export class RunSupervisor {
     this.budgetService = options.budgetService ?? new FleetBudgetService();
     this.activityFeed = new ActivityFeed(options.store);
     this.xpLedger = new XpLedger(options.store);
+    this.deckLoader = options.deckLoader ?? new DeckLoader();
+    this.providerAdapterRegistry =
+      options.providerAdapterRegistry ?? new ProviderAdapterRegistry();
     for (const run of options.store.listRuns()) {
       this.projector.createQueued({
         id: run.id,
@@ -243,7 +263,17 @@ export class RunSupervisor {
 
     const controller = new AbortController();
     this.controllers.set(runId, controller);
-    const agent = this.agentFactory(request);
+    const materialization = await this.materializeProvider({
+      run: queued,
+      operative,
+      directive: request.directive,
+      targetBranch,
+    });
+    const agent = this.wrapAgentForProviderMaterialization(
+      this.agentFactory(request),
+      materialization,
+      runId,
+    );
     const sandbox = this.sandboxFactory();
 
     void Promise.resolve()
@@ -278,7 +308,11 @@ export class RunSupervisor {
         });
         console.error("[sandcastle-control] run failed", error);
       })
-      .finally(() => {
+      .finally(async () => {
+        await cleanupProviderPaths(
+          worktreePath ?? this.options.repoRoot,
+          materialization?.cleanupPaths,
+        );
         prepared.release();
         this.controllers.delete(runId);
       });
@@ -349,13 +383,24 @@ export class RunSupervisor {
 
     const controller = new AbortController();
     this.controllers.set(runId, controller);
+    const materialization = await this.materializeProvider({
+      run: queued,
+      operative,
+      directive: request.directive,
+      targetBranch,
+    });
     const orchestrator = new PhasedRunOrchestrator({
       repoRoot: this.options.repoRoot,
       runImpl: this.runImpl,
-      agent: this.agentFactory(request),
+      agent: this.wrapAgentForProviderMaterialization(
+        this.agentFactory(request),
+        materialization,
+        runId,
+      ),
       sandbox: this.sandboxFactory(),
       prepared,
       worktreePath,
+      providerCleanupPaths: materialization?.cleanupPaths,
       maxIterations: request.maxIterations,
       completionSignal: request.completionSignal,
       signal: controller.signal,
@@ -376,7 +421,11 @@ export class RunSupervisor {
         });
         console.error("[sandcastle-control] phased run failed", error);
       })
-      .finally(() => {
+      .finally(async () => {
+        await cleanupProviderPaths(
+          worktreePath ?? this.options.repoRoot,
+          materialization?.cleanupPaths,
+        );
         prepared.release();
         this.controllers.delete(runId);
       });
@@ -513,6 +562,84 @@ export class RunSupervisor {
       sleeveCardIds: [],
       unlockedTraits: [],
     };
+  }
+
+  private async materializeProvider(input: {
+    readonly run: Run;
+    readonly operative: OperativeIdentity;
+    readonly directive: string;
+    readonly targetBranch: string;
+  }): Promise<ProviderAdapterOutput | undefined> {
+    let adapter: AgentProviderAdapter;
+    try {
+      adapter = this.providerAdapterRegistry.get(input.run.provider);
+    } catch (error) {
+      if (error instanceof UnknownProviderError) {
+        console.warn(
+          `[sandcastle-control] no provider adapter for ${input.run.provider}; skipping provider materialization`,
+        );
+        return undefined;
+      }
+      throw error;
+    }
+
+    const deck = this.deckLoader.loadDeck(this.options.repoRoot);
+    const planet = this.buildPlanet(deck, input.targetBranch);
+    return adapter.materialize({
+      repoRoot: this.options.repoRoot,
+      sandcastleDir: join(this.options.repoRoot, ".sandcastle"),
+      deck,
+      planet,
+      operative: input.operative,
+      run: input.run,
+      directive: input.directive,
+    });
+  }
+
+  private buildPlanet(deck: Deck, targetBranch: string): Planet {
+    return {
+      id: "planet-local",
+      repoName:
+        this.options.repoRoot.split(/[\\/]/).at(-1) ?? this.options.repoRoot,
+      repoRoot: this.options.repoRoot,
+      defaultBranch: targetBranch,
+      terraformStage: 0,
+      scars: [],
+      wards: [],
+      deck,
+      telemetry: {
+        coveragePct: null,
+        ciGreenRate30d: null,
+        openIssues: null,
+        churnScore: null,
+        ageDays: null,
+        testCount: null,
+        branch: targetBranch,
+        lastCommitAt: null,
+        lastIndexedAt: null,
+      },
+      activeRunIds: [],
+      lastRunAt: null,
+    };
+  }
+
+  private wrapAgentForProviderMaterialization(
+    agent: AgentProvider,
+    materialization: ProviderAdapterOutput | undefined,
+    runId: string,
+  ): AgentProvider {
+    if (!materialization) return agent;
+    return withProviderMaterialization({
+      agent,
+      output: materialization,
+      runnerDir: join(
+        this.options.repoRoot,
+        ".sandcastle",
+        "state",
+        "adapter-runners",
+      ),
+      runId,
+    });
   }
 }
 

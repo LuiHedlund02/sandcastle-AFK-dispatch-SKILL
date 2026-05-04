@@ -14,6 +14,7 @@ import type {
   VerifyRuleResult,
 } from "@sandcastle/protocol";
 import type { PreparedRun } from "../runs/RepoRunCoordinator.js";
+import { cleanupProviderPaths } from "../adapters/materialize.js";
 import { describeVerifyRule } from "./VerifyRule.js";
 import { VerifyRuleExecutor } from "./VerifyRuleExecutor.js";
 
@@ -36,6 +37,7 @@ export interface PhasedRunOrchestratorOptions {
   readonly signal: AbortSignal;
   readonly emitEvent: EmitEvent;
   readonly executorFactory?: ExecutorFactory;
+  readonly providerCleanupPaths?: readonly string[];
 }
 
 export class PhasedRunOrchestrator {
@@ -47,125 +49,132 @@ export class PhasedRunOrchestrator {
     readonly phases: readonly ParsedPhase[];
   }): Promise<void> {
     const runId = input.runId;
-    let phaseIndex = 0;
-    for (const parsed of input.phases) {
-      this.options.signal.throwIfAborted();
-      const phase = toRuntimePhase(runId, parsed, "active");
-      this.emit({
-        type: "phase.started",
-        runId,
-        phaseId: phase.id,
-        phase,
-        iteration: 0,
-        timestamp: new Date(),
-      });
-
-      const phaseWorktreeBefore = this.currentWorktreeOrRepo();
-      const baseCommit = await revParse(phaseWorktreeBefore, "HEAD");
-      let engineSucceeded = false;
-
-      try {
-        const completionSignal = normalizeCompletionSignal(
-          this.options.completionSignal,
-        );
-        // Phase 1 creates the worktree from the configured strategy.
-        // Phase 2+ runs inside the already-created worktree as if it
-        // were the main checkout (head strategy), so the engine doesn't
-        // try to re-create a worktree on the existing branch.
-        const isFirstPhase = phaseIndex === 0;
-        const phaseCwd =
-          !isFirstPhase && this.options.worktreePath
-            ? this.options.worktreePath
-            : this.options.repoRoot;
-        const phaseStrategy = isFirstPhase
-          ? this.options.prepared.engineBranchStrategy
-          : ({ type: "head" } as const);
-        const result = await this.options.runImpl({
-          cwd: phaseCwd,
-          agent: this.options.agent,
-          sandbox: this.options.sandbox,
-          prompt: parsed.directiveSlice,
-          maxIterations: this.options.maxIterations,
-          completionSignal,
-          branchStrategy: phaseStrategy,
-          name: runId,
-          signal: this.options.signal,
-          logging: {
-            type: "file",
-            path: `${this.options.repoRoot}/.sandcastle/logs/${runId}-${phase.id}.log`,
-            onAgentStreamEvent: (event: unknown) => {
-              const normalized = normalizeRunId(runId, event as RunEvent);
-              if (normalized.type === "run.started") return;
-              if (normalized.type === "run.resolved") {
-                engineSucceeded = normalized.result === "victory";
-                return;
-              }
-              this.options.emitEvent(runId, normalized);
-            },
-          },
+    try {
+      let phaseIndex = 0;
+      for (const parsed of input.phases) {
+        this.options.signal.throwIfAborted();
+        const phase = toRuntimePhase(runId, parsed, "active");
+        this.emit({
+          type: "phase.started",
+          runId,
+          phaseId: phase.id,
+          phase,
+          iteration: 0,
+          timestamp: new Date(),
         });
-        engineSucceeded =
-          engineSucceeded || result.completionSignal !== undefined;
-        phaseIndex += 1;
-      } catch (error) {
-        if (this.options.signal.aborted) throw error;
-        this.emitFailed(runId, phase.id, [
-          failedResult(
-            parsed,
-            error instanceof Error ? error.message : String(error),
-          ),
-        ]);
-        return;
+
+        const phaseWorktreeBefore = this.currentWorktreeOrRepo();
+        const baseCommit = await revParse(phaseWorktreeBefore, "HEAD");
+        let engineSucceeded = false;
+
+        try {
+          const completionSignal = normalizeCompletionSignal(
+            this.options.completionSignal,
+          );
+          // Phase 1 creates the worktree from the configured strategy.
+          // Phase 2+ runs inside the already-created worktree as if it
+          // were the main checkout (head strategy), so the engine doesn't
+          // try to re-create a worktree on the existing branch.
+          const isFirstPhase = phaseIndex === 0;
+          const phaseCwd =
+            !isFirstPhase && this.options.worktreePath
+              ? this.options.worktreePath
+              : this.options.repoRoot;
+          const phaseStrategy = isFirstPhase
+            ? this.options.prepared.engineBranchStrategy
+            : ({ type: "head" } as const);
+          const result = await this.options.runImpl({
+            cwd: phaseCwd,
+            agent: this.options.agent,
+            sandbox: this.options.sandbox,
+            prompt: parsed.directiveSlice,
+            maxIterations: this.options.maxIterations,
+            completionSignal,
+            branchStrategy: phaseStrategy,
+            name: runId,
+            signal: this.options.signal,
+            logging: {
+              type: "file",
+              path: `${this.options.repoRoot}/.sandcastle/logs/${runId}-${phase.id}.log`,
+              onAgentStreamEvent: (event: unknown) => {
+                const normalized = normalizeRunId(runId, event as RunEvent);
+                if (normalized.type === "run.started") return;
+                if (normalized.type === "run.resolved") {
+                  engineSucceeded = normalized.result === "victory";
+                  return;
+                }
+                this.options.emitEvent(runId, normalized);
+              },
+            },
+          });
+          engineSucceeded =
+            engineSucceeded || result.completionSignal !== undefined;
+          phaseIndex += 1;
+        } catch (error) {
+          if (this.options.signal.aborted) throw error;
+          this.emitFailed(runId, phase.id, [
+            failedResult(
+              parsed,
+              error instanceof Error ? error.message : String(error),
+            ),
+          ]);
+          return;
+        }
+
+        if (!engineSucceeded) {
+          this.emitFailed(runId, phase.id, [
+            failedResult(parsed, "completion-signal"),
+          ]);
+          return;
+        }
+
+        const verifyWorktree = await this.ensureWorktree();
+        this.emit({
+          type: "phase.verifying",
+          runId,
+          phaseId: phase.id,
+          rules: parsed.verifyRules,
+          iteration: 0,
+          timestamp: new Date(),
+        });
+        const executor =
+          this.options.executorFactory?.({
+            worktreePath: verifyWorktree,
+            baseCommit,
+          }) ??
+          new VerifyRuleExecutor({ worktreePath: verifyWorktree, baseCommit });
+        const results = await executor.execute(parsed.verifyRules);
+        const failed = results.filter((result) => !result.ok);
+        if (failed.length > 0) {
+          this.emitFailed(runId, phase.id, results);
+          return;
+        }
+        this.emit({
+          type: "phase.verified",
+          runId,
+          phaseId: phase.id,
+          results,
+          iteration: 0,
+          timestamp: new Date(),
+        });
       }
 
-      if (!engineSucceeded) {
-        this.emitFailed(runId, phase.id, [
-          failedResult(parsed, "completion-signal"),
-        ]);
-        return;
-      }
-
-      const verifyWorktree = await this.ensureWorktree();
-      this.emit({
-        type: "phase.verifying",
+      this.emit(
+        {
+          type: "verification.finished",
+          allGreen: true,
+          failedChecks: [],
+          iteration: 0,
+          timestamp: new Date(),
+        },
         runId,
-        phaseId: phase.id,
-        rules: parsed.verifyRules,
-        iteration: 0,
-        timestamp: new Date(),
-      });
-      const executor =
-        this.options.executorFactory?.({
-          worktreePath: verifyWorktree,
-          baseCommit,
-        }) ??
-        new VerifyRuleExecutor({ worktreePath: verifyWorktree, baseCommit });
-      const results = await executor.execute(parsed.verifyRules);
-      const failed = results.filter((result) => !result.ok);
-      if (failed.length > 0) {
-        this.emitFailed(runId, phase.id, results);
-        return;
-      }
-      this.emit({
-        type: "phase.verified",
-        runId,
-        phaseId: phase.id,
-        results,
-        iteration: 0,
-        timestamp: new Date(),
-      });
+      );
+    } finally {
+      await cleanupProviderPaths(
+        this.currentWorktreeOrRepo(),
+        this.options.providerCleanupPaths,
+      );
     }
-
-    this.emit(
-      {
-        type: "verification.finished",
-        allGreen: true,
-        failedChecks: [],
-        iteration: 0,
-        timestamp: new Date(),
-      },
-      runId,
-    );
   }
 
   private async ensureWorktree(): Promise<string> {
