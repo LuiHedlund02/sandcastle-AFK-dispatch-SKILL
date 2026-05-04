@@ -10,6 +10,8 @@ export class RunEventProjector {
     readonly id: string;
     readonly directive: string;
     readonly branch: string;
+    readonly worktreePath?: string;
+    readonly operativeId?: string;
     readonly provider?: Run["provider"];
     readonly sandboxProvider?: string;
     readonly startedAt?: string;
@@ -19,12 +21,13 @@ export class RunEventProjector {
     const run: Run = {
       id: input.id,
       planetId: PLANET_ID,
-      operativeId: OPERATIVE_ID,
+      operativeId: input.operativeId ?? OPERATIVE_ID,
       provider: input.provider ?? "codex",
       sandboxProvider: input.sandboxProvider ?? "no-sandbox",
       status: "queued",
       directive: input.directive,
       branch: input.branch,
+      worktreePath: input.worktreePath,
       startedAt: input.startedAt ?? new Date().toISOString(),
       endedAt: null,
       phaseIds: [],
@@ -53,7 +56,7 @@ export class RunEventProjector {
         status: "starting",
         directive: event.directive,
         branch: event.branch,
-        worktreePath: event.worktreePath,
+        worktreePath: event.worktreePath ?? run.worktreePath,
         startedAt: event.timestamp.toISOString(),
       };
       this.runs.set(runId, run);

@@ -5,10 +5,15 @@ import {
   type ServerResponse,
 } from "node:http";
 import { URL } from "node:url";
-import { zPostReposRequest, zPostRunsRequest } from "@sandcastle/protocol";
+import {
+  zPostReposRequest,
+  zPostRunDecisionRequest,
+  zPostRunsRequest,
+} from "@sandcastle/protocol";
 import type { FleetState } from "@sandcastle/protocol";
 import { resolveToken } from "./auth/token.js";
 import { DeckLoader } from "./deck/DeckLoader.js";
+import { BudgetExceededError } from "./fleet/FleetBudgetService.js";
 import { OperativeStore } from "./operatives/OperativeStore.js";
 import { SnapshotProjector } from "./projector/SnapshotProjector.js";
 import { RepoRegistry } from "./repos/RepoRegistry.js";
@@ -57,11 +62,11 @@ export const createApp = (options?: StartServerOptions): AppContext => {
   const repoRegistry =
     options?.repoRegistry ?? new RepoRegistry(options?.repo ?? process.cwd());
   const store = options?.store ?? new SqliteStore(repoRegistry.root);
+  const operativeStore = options?.operativeStore ?? new OperativeStore();
   const runSupervisor =
     options?.runSupervisor ??
-    new RunSupervisor({ repoRoot: repoRegistry.root, store });
+    new RunSupervisor({ repoRoot: repoRegistry.root, store, operativeStore });
   const deckLoader = options?.deckLoader ?? new DeckLoader();
-  const operativeStore = options?.operativeStore ?? new OperativeStore();
   const snapshotProjector = new SnapshotProjector(
     repoRegistry,
     runSupervisor,
@@ -177,6 +182,11 @@ const handleRequest = async (ctx: {
       return;
     }
 
+    if (req.method === "POST" && url.pathname === "/merge-all-green") {
+      writeJson(res, 200, await ctx.runSupervisor.mergeAllGreen());
+      return;
+    }
+
     if (req.method === "GET" && url.pathname === "/repos") {
       writeJson(res, 200, { repos: ctx.repoRegistry.listRepos() });
       return;
@@ -278,6 +288,21 @@ const handleRequest = async (ctx: {
       return;
     }
 
+    const decideMatch = url.pathname.match(/^\/runs\/([^/]+)\/decide$/);
+    if (req.method === "POST" && decideMatch) {
+      const runId = decodeURIComponent(decideMatch[1]!);
+      const body = zPostRunDecisionRequest.parse(await readJson(req));
+      const result = await ctx.runSupervisor.decideRun(runId, body);
+      if (!result) {
+        writeJson(res, 404, {
+          error: { code: "NOT_FOUND", message: "Run not found" },
+        });
+        return;
+      }
+      writeJson(res, 200, result);
+      return;
+    }
+
     const runMatch = url.pathname.match(/^\/runs\/([^/]+)$/);
     if (req.method === "GET" && runMatch) {
       const run = ctx.runSupervisor.getRun(decodeURIComponent(runMatch[1]!));
@@ -307,6 +332,10 @@ const handleRequest = async (ctx: {
       error: { code: "NOT_FOUND", message: "Route not found" },
     });
   } catch (error) {
+    if (error instanceof BudgetExceededError) {
+      writeJson(res, 429, { error: error.toJSON() });
+      return;
+    }
     writeJson(res, 400, {
       error: {
         code: "BAD_REQUEST",

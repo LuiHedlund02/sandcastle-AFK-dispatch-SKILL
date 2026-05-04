@@ -8,12 +8,25 @@ import {
   type AgentProvider,
   type SandboxProvider,
 } from "@ai-hero/sandcastle";
-import type { PostRunsRequest, Run, RunEvent } from "@sandcastle/protocol";
-import { allocateRunId } from "./RunIdAllocator.js";
+import type {
+  PostRunDecisionResponse,
+  PostRunsRequest,
+  Run,
+  RunEvent,
+} from "@sandcastle/protocol";
+import type { OperativeIdentity } from "@sandcastle/protocol";
+import { DecisionActions } from "../decisions/DecisionActions.js";
+import { FleetBudgetService } from "../fleet/FleetBudgetService.js";
+import type { OperativeStore } from "../operatives/OperativeStore.js";
 import { RunEventProjector } from "./RunEventProjector.js";
+import {
+  RepoRunCoordinator,
+  type CoordinatedRunStrategy,
+} from "./RepoRunCoordinator.js";
 import type { SqliteStore } from "../telemetry/SqliteStore.js";
 import { spawn, type StdioOptions } from "node:child_process";
 import { createInterface } from "node:readline";
+import { join } from "node:path";
 
 export type EngineAgentStreamEvent = RunEvent;
 
@@ -27,6 +40,9 @@ export interface RunSupervisorOptions {
   readonly runImpl?: RunImpl;
   readonly agentFactory?: (request: PostRunsRequest) => AgentProvider;
   readonly sandboxFactory?: () => SandboxProvider;
+  readonly coordinator?: RepoRunCoordinator;
+  readonly budgetService?: FleetBudgetService;
+  readonly operativeStore?: Pick<OperativeStore, "getIdentity">;
 }
 
 const toProvider = (request: PostRunsRequest): AgentProvider => {
@@ -119,16 +135,22 @@ export class RunSupervisor {
   private readonly runImpl: RunImpl;
   private readonly agentFactory: (request: PostRunsRequest) => AgentProvider;
   private readonly sandboxFactory: () => SandboxProvider;
+  private readonly coordinator: RepoRunCoordinator;
+  private readonly budgetService: FleetBudgetService;
 
   constructor(private readonly options: RunSupervisorOptions) {
     this.runImpl = options.runImpl ?? sandcastleRun;
     this.agentFactory = options.agentFactory ?? toProvider;
     this.sandboxFactory = options.sandboxFactory ?? hostSandbox;
+    this.coordinator = options.coordinator ?? new RepoRunCoordinator();
+    this.budgetService = options.budgetService ?? new FleetBudgetService();
     for (const run of options.store.listRuns()) {
       this.projector.createQueued({
         id: run.id,
         directive: run.directive,
         branch: run.branch,
+        worktreePath: run.worktreePath,
+        operativeId: run.operativeId,
         provider: run.provider,
         sandboxProvider: run.sandboxProvider,
         startedAt: run.startedAt,
@@ -154,14 +176,43 @@ export class RunSupervisor {
   }
 
   async startRun(request: PostRunsRequest): Promise<{ runId: string }> {
-    const runId = allocateRunId();
-    const branch = await currentBranch(this.options.repoRoot).catch(
+    const operativeId = request.operativeId ?? "pi-default";
+    const operative = this.getOperative(operativeId);
+    this.budgetService.assertCanStart({
+      operative,
+      repoRoot: this.options.repoRoot,
+      activeRuns: this.listRuns().map((run) => ({
+        id: run.id,
+        operativeId: run.operativeId,
+        repoRoot: this.options.repoRoot,
+        status: run.status,
+      })),
+    });
+
+    const targetBranch = await currentBranch(this.options.repoRoot).catch(
       () => "unknown",
     );
+    const prepared = this.coordinator.prepareRun({
+      repoRoot: this.options.repoRoot,
+      targetBranch,
+      strategy: toCoordinatedStrategy(request),
+    });
+    const runId = prepared.runId;
+    const worktreePath =
+      prepared.engineBranchStrategy.type === "head"
+        ? undefined
+        : join(
+            this.options.repoRoot,
+            ".sandcastle",
+            "worktrees",
+            prepared.branch.replace(/\//g, "-"),
+          );
     const queued = this.projector.createQueued({
       id: runId,
       directive: request.directive,
-      branch,
+      branch: prepared.branch,
+      worktreePath,
+      operativeId,
       provider: request.provider,
       sandboxProvider: "host-bind-mount",
     });
@@ -172,23 +223,26 @@ export class RunSupervisor {
     const agent = this.agentFactory(request);
     const sandbox = this.sandboxFactory();
 
-    void this.runImpl({
-      cwd: this.options.repoRoot,
-      agent,
-      sandbox,
-      prompt: request.directive,
-      maxIterations: request.maxIterations,
-      completionSignal: request.completionSignal,
-      branchStrategy: { type: "head" },
-      name: runId,
-      signal: controller.signal,
-      logging: {
-        type: "file",
-        path: `${this.options.repoRoot}/.sandcastle/logs/${runId}.log`,
-        onAgentStreamEvent: (event: unknown) =>
-          this.handleEngineEvent(runId, event as EngineAgentStreamEvent),
-      },
-    })
+    void Promise.resolve()
+      .then(() =>
+        this.runImpl({
+          cwd: this.options.repoRoot,
+          agent,
+          sandbox,
+          prompt: request.directive,
+          maxIterations: request.maxIterations,
+          completionSignal: request.completionSignal,
+          branchStrategy: prepared.engineBranchStrategy,
+          name: runId,
+          signal: controller.signal,
+          logging: {
+            type: "file",
+            path: `${this.options.repoRoot}/.sandcastle/logs/${runId}.log`,
+            onAgentStreamEvent: (event: unknown) =>
+              this.handleEngineEvent(runId, event as EngineAgentStreamEvent),
+          },
+        }),
+      )
       .catch((error: unknown) => {
         if (controller.signal.aborted) return;
         this.handleEvent(runId, {
@@ -202,6 +256,7 @@ export class RunSupervisor {
         console.error("[sandcastle-control] run failed", error);
       })
       .finally(() => {
+        prepared.release();
         this.controllers.delete(runId);
       });
 
@@ -229,10 +284,72 @@ export class RunSupervisor {
     return true;
   }
 
+  async decideRun(
+    runId: string,
+    request: { readonly kind: "merge" | "revise" | "discard" },
+  ): Promise<PostRunDecisionResponse | undefined> {
+    return this.decisionActions().decide(runId, request);
+  }
+
+  async mergeAllGreen(): Promise<{
+    readonly results: Array<{
+      readonly runId: string;
+      readonly ok: boolean;
+      readonly action: "merge";
+      readonly message?: string;
+    }>;
+    readonly aborted: boolean;
+  }> {
+    const results: Array<{
+      readonly runId: string;
+      readonly ok: boolean;
+      readonly action: "merge";
+      readonly message?: string;
+    }> = [];
+
+    for (const run of this.listRuns().filter(
+      (candidate) => candidate.status === "win-pending",
+    )) {
+      const result = await this.decisionActions().decide(run.id, {
+        kind: "merge",
+      });
+      if (!result) continue;
+      results.push({
+        runId: result.runId,
+        ok: result.ok,
+        action: "merge",
+        message: result.message,
+      });
+      if (!result.ok) return { results, aborted: true };
+    }
+
+    return { results, aborted: false };
+  }
+
   private handleEngineEvent(
     runId: string,
     event: EngineAgentStreamEvent,
   ): void {
+    if (event.type === "run.resolved" && event.result === "victory") {
+      this.handleEvent(runId, {
+        type: "verification.finished",
+        allGreen: true,
+        failedChecks: [],
+        iteration: event.iteration,
+        timestamp: event.timestamp,
+      });
+      return;
+    }
+    if (event.type === "run.resolved" && event.result === "defeat") {
+      this.handleEvent(runId, {
+        type: "verification.finished",
+        allGreen: false,
+        failedChecks: ["completion-signal"],
+        iteration: event.iteration,
+        timestamp: event.timestamp,
+      });
+      return;
+    }
     this.handleEvent(runId, normalizeRunId(runId, event));
   }
 
@@ -242,7 +359,55 @@ export class RunSupervisor {
     this.options.store.appendEvent(runId, event);
     for (const subscriber of this.subscribers) subscriber(runId, event);
   }
+
+  private decisionActions(): DecisionActions {
+    return new DecisionActions({
+      repoRoot: this.options.repoRoot,
+      coordinator: this.coordinator,
+      getRun: (runId) => this.getRun(runId),
+      emitEvent: (runId, event) => this.handleEvent(runId, event),
+      targetBranch: () => currentBranch(this.options.repoRoot),
+    });
+  }
+
+  private getOperative(operativeId: string): OperativeIdentity {
+    const identity = this.options.operativeStore?.getIdentity(operativeId);
+    if (identity) return identity;
+    return {
+      id: operativeId,
+      codename: operativeId,
+      provider: "codex",
+      model: "gpt-5.4",
+      species: "synthetic",
+      className: "Builder",
+      level: 1,
+      globalXp: 0,
+      bond: 0,
+      streak: 0,
+      concurrencyCap: 5,
+      sleeveCardIds: [],
+      unlockedTraits: [],
+    };
+  }
 }
+
+const toCoordinatedStrategy = (
+  request: PostRunsRequest,
+): CoordinatedRunStrategy => {
+  const strategy = request.branchStrategy ?? { type: "merge-to-head" as const };
+  switch (strategy.type) {
+    case "head":
+      return { type: "head" };
+    case "branch":
+      return {
+        type: "branch",
+        branch: strategy.branch,
+        baseBranch: strategy.baseBranch,
+      };
+    case "merge-to-head":
+      return { type: "merge-to-head", name: strategy.name };
+  }
+};
 
 const normalizeRunId = (runId: string, event: RunEvent): RunEvent => {
   if ("runId" in event && event.runId === runId) return event;

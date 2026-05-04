@@ -17,12 +17,12 @@ describe("RunSupervisor", () => {
       supervisor.subscribe((_runId, event) => seen.push(event.type));
 
       const { runId } = await supervisor.startRun({ directive: "do it" });
-      await waitFor(() => seen.includes("run.resolved"));
+      await waitFor(() => supervisor.getRun(runId)?.status === "win-pending");
 
       expect(seen).toContain("text");
       expect(seen).toContain("tool.started");
       expect(seen).toContain("tool.finished");
-      expect(supervisor.getRun(runId)?.status).toBe("victory");
+      expect(seen).toContain("verification.finished");
       expect(store.listEvents(runId).length).toBeGreaterThan(0);
     } finally {
       store.close();
@@ -51,4 +51,37 @@ describe("RunSupervisor", () => {
       store.close();
     }
   }, 10000);
+
+  it("runs 5 parallel worktree-backed runs without branch collisions", async () => {
+    const repo = makeRepo();
+    const store = new SqliteStore(repo);
+    try {
+      const supervisor = new RunSupervisor({
+        repoRoot: repo,
+        store,
+        agentFactory: () => fakeAgent({ delayMs: 50 }),
+      });
+
+      const started = await Promise.all(
+        Array.from({ length: 5 }, (_, index) =>
+          supervisor.startRun({ directive: `do it ${index}` }),
+        ),
+      );
+      const runIds = started.map((run) => run.runId);
+
+      await waitFor(() =>
+        runIds.every(
+          (runId) => supervisor.getRun(runId)?.status === "win-pending",
+        ),
+      );
+
+      const branches = runIds.map((runId) => supervisor.getRun(runId)!.branch);
+      expect(new Set(branches).size).toBe(5);
+      expect(branches.every((branch) => branch.startsWith("sandcastle/"))).toBe(
+        true,
+      );
+    } finally {
+      store.close();
+    }
+  }, 15000);
 });
