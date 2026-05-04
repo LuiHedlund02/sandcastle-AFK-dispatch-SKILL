@@ -125,3 +125,46 @@ export const zRunEvent = z.discriminatedUnion("type", [
 ]);
 
 export type RunEvent = z.infer<typeof zRunEvent>;
+
+const zActivityBase = z.object({
+  id: z.string(),
+  at: z.string(),
+  runId: z.string(),
+  planetId: z.string(),
+  operativeId: z.string(),
+});
+
+export const zActivityEvent = z.discriminatedUnion("type", [
+  zActivityBase.extend({
+    type: z.literal("run.started"),
+    payload: z.object({ directive: z.string() }),
+  }),
+  zActivityBase.extend({
+    type: z.literal("run.status-changed"),
+    payload: z.object({ from: zRunStatus, to: zRunStatus }),
+  }),
+  zActivityBase.extend({
+    type: z.literal("phase.updated"),
+    payload: z.object({
+      phaseId: z.string(),
+      status: z.enum(["pending", "active", "verified", "failed", "skipped"]),
+    }),
+  }),
+  zActivityBase.extend({
+    type: z.literal("tool.called"),
+    payload: z.object({ name: z.string(), formattedArgs: z.string() }),
+  }),
+  zActivityBase.extend({
+    type: z.literal("intervention.used"),
+    payload: z.object({ action: z.string() }),
+  }),
+  zActivityBase.extend({
+    type: z.literal("run.resolved"),
+    payload: z.object({
+      result: z.enum(["victory", "defeat", "aborted"]),
+      xpDelta: z.number(),
+    }),
+  }),
+]);
+
+export type ActivityEvent = z.infer<typeof zActivityEvent>;

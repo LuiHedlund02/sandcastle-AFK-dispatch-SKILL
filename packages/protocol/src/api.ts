@@ -10,7 +10,9 @@ import {
   zMergeAllGreenResponse,
   zParsedPhase,
   zRunDecisionKind,
+  zOperativeXpSummary,
 } from "./state.js";
+import { zActivityEvent } from "./events.js";
 
 const zRunBranchStrategy = z.discriminatedUnion("type", [
   z.object({ type: z.literal("merge-to-head"), name: z.string().optional() }),
@@ -88,6 +90,7 @@ export const zPostRunDecisionResponse = z.object({
   kind: zRunDecisionKind,
   ok: z.boolean(),
   message: z.string().optional(),
+  xpDelta: z.number().optional(),
 });
 export type PostRunDecisionResponse = z.infer<typeof zPostRunDecisionResponse>;
 
@@ -143,3 +146,11 @@ export const zGetOperativeResponse = zOperativeIdentity.extend({
   repoRecord: zOperativeRepoRecord.optional(),
 });
 export type GetOperativeResponse = z.infer<typeof zGetOperativeResponse>;
+
+export const zGetActivityResponse = z.object({
+  events: z.array(zActivityEvent),
+});
+export type GetActivityResponse = z.infer<typeof zGetActivityResponse>;
+
+export const zGetOperativeXpResponse = zOperativeXpSummary;
+export type GetOperativeXpResponse = z.infer<typeof zGetOperativeXpResponse>;

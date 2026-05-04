@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { zRunEvent, type RunEvent } from "../src/index.js";
+import { zActivityEvent, zRunEvent, type RunEvent } from "../src/index.js";
 
 const timestamp = new Date("2026-01-01T00:00:00.000Z");
 
@@ -164,5 +164,21 @@ describe("RunEvent schema", () => {
         timestamp,
       }),
     ).toThrow();
+  });
+});
+
+describe("ActivityEvent schema", () => {
+  it("parses activity feed events", () => {
+    expect(
+      zActivityEvent.parse({
+        id: "activity-a",
+        at: "2026-01-01T00:00:00.000Z",
+        type: "run.resolved",
+        runId: "run_123",
+        planetId: "planet-local",
+        operativeId: "op-a",
+        payload: { result: "victory", xpDelta: 500 },
+      }),
+    ).toMatchObject({ type: "run.resolved" });
   });
 });

@@ -16,6 +16,8 @@ import {
   zRunDecisionKind,
   zRunStatus,
   zBudgetExceededError,
+  zOperativeXpSummary,
+  zXpLedgerEntry,
 } from "../src/index.js";
 
 const mode = {
@@ -218,5 +220,34 @@ describe("state schemas", () => {
         aborted: false,
       }),
     ).toMatchObject({ aborted: false });
+  });
+
+  it("round-trips XP ledger schemas", () => {
+    expect(
+      zXpLedgerEntry.parse({
+        runId: "run_123",
+        repoRoot: "/repo",
+        operativeId: "op-a",
+        patchHash: "abc",
+        baseXp: 500,
+        bonus: 250,
+        penalty: 0,
+        netXp: 750,
+        recordedAt: "2026-01-01T00:00:00.000Z",
+        revertedAt: null,
+      }),
+    ).toMatchObject({ netXp: 750 });
+    expect(
+      zOperativeXpSummary.parse({
+        totalXp: 750,
+        recentRuns: [
+          {
+            runId: "run_123",
+            netXp: 750,
+            recordedAt: "2026-01-01T00:00:00.000Z",
+          },
+        ],
+      }),
+    ).toMatchObject({ totalXp: 750 });
   });
 });

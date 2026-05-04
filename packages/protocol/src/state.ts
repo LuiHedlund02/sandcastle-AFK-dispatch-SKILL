@@ -275,3 +275,29 @@ export const zMergeAllGreenResponse = z.object({
   aborted: z.boolean(),
 });
 export type MergeAllGreenResponse = z.infer<typeof zMergeAllGreenResponse>;
+
+export const zXpLedgerEntry = z.object({
+  runId: z.string(),
+  repoRoot: z.string(),
+  operativeId: z.string(),
+  patchHash: z.string(),
+  baseXp: z.number(),
+  bonus: z.number(),
+  penalty: z.number(),
+  netXp: z.number(),
+  recordedAt: z.string(),
+  revertedAt: z.string().nullable(),
+});
+export type XpLedgerEntry = z.infer<typeof zXpLedgerEntry>;
+
+export const zOperativeXpSummary = z.object({
+  totalXp: z.number(),
+  recentRuns: z.array(
+    z.object({
+      runId: z.string(),
+      netXp: z.number(),
+      recordedAt: z.string(),
+    }),
+  ),
+});
+export type OperativeXpSummary = z.infer<typeof zOperativeXpSummary>;
