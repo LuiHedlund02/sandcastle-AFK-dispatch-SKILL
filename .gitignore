@@ -6,3 +6,5 @@ apps/*/out
 .codex-run/*.out
 .codex-run/*.err
 .codex-run/*.json
+.sandcastle/state/
+docs/.next-*.log
