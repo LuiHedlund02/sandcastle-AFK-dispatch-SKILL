@@ -8,6 +8,8 @@ import {
   zGetReposResponse,
   zGetRunResponse,
   zPostMergeAllGreenResponse,
+  zPostQuestForgeEngageResponse,
+  zPostQuestForgeParseResponse,
   zPostRunCancelResponse,
   zPostRunDecisionResponse,
   zPostRunsResponse,
@@ -20,6 +22,9 @@ import {
   type GetReposResponse,
   type GetRunResponse,
   type PostMergeAllGreenResponse,
+  type PostQuestForgeEngageRequest,
+  type PostQuestForgeEngageResponse,
+  type PostQuestForgeParseResponse,
   type PostRunsRequest,
   type PostRunsResponse,
   type PostRunCancelResponse,
@@ -102,6 +107,28 @@ export const apiClient = {
       await requestJson<unknown>(`/runs/${encodeURIComponent(runId)}/decide`, {
         method: "POST",
         body: JSON.stringify({ kind }),
+      }),
+    );
+  },
+
+  async parseQuestForge(
+    directive: string,
+  ): Promise<PostQuestForgeParseResponse> {
+    return zPostQuestForgeParseResponse.parse(
+      await requestJson<unknown>("/quest-forge/parse", {
+        method: "POST",
+        body: JSON.stringify({ directive }),
+      }),
+    );
+  },
+
+  async engageQuestForge(
+    request: PostQuestForgeEngageRequest,
+  ): Promise<PostQuestForgeEngageResponse> {
+    return zPostQuestForgeEngageResponse.parse(
+      await requestJson<unknown>("/quest-forge/engage", {
+        method: "POST",
+        body: JSON.stringify(request),
       }),
     );
   },

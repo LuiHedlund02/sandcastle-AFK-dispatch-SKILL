@@ -1,6 +1,6 @@
 import type { JSX } from "react";
 import { useMemo } from "react";
-import { Navigate, useParams } from "react-router-dom";
+import { Link, Navigate, useParams } from "react-router-dom";
 import { Ban, GitBranch, ScrollText } from "lucide-react";
 import { RunTimeline, StatusPill } from "@sandcastle/ui";
 import { useCancelRun, useRun } from "../api/queries";
@@ -89,6 +89,12 @@ function CockpitContent({ runId }: { readonly runId: string }): JSX.Element {
           </div>
           <div className="cockpit-actions">
             <StatusPill status={run.status} />
+            <Link
+              to={`/runs/${encodeURIComponent(run.id)}/combat`}
+              className="cockpit-head__combat-link"
+            >
+              Combat view
+            </Link>
             <button
               className="danger-action"
               type="button"

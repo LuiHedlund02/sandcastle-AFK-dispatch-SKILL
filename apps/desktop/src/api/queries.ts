@@ -1,5 +1,10 @@
+import { useEffect, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import type { PostRunsRequest, RunDecisionKind } from "@sandcastle/protocol";
+import type {
+  PostQuestForgeEngageRequest,
+  PostRunsRequest,
+  RunDecisionKind,
+} from "@sandcastle/protocol";
 import { apiClient } from "./client";
 
 export const queryKeys = {
@@ -11,6 +16,45 @@ export const queryKeys = {
   repoTelemetry: (repoId: string) => ["repo", repoId, "telemetry"] as const,
   operatives: ["operatives"] as const,
   operative: (operativeId: string) => ["operative", operativeId] as const,
+  questForgeParse: (directive: string) =>
+    ["quest-forge", "parse", directive] as const,
+};
+
+/**
+ * Debounces the directive on the way to `apiClient.parseQuestForge`. Disabled
+ * for inputs <= 4 chars (control-core's parser is cheap, but we don't want
+ * to spam it on every keystroke). The debounce is 300ms; the query key is
+ * the (debounced) directive, so React Query natively dedupes identical
+ * snapshots.
+ */
+export const useQuestForgeParse = (
+  directive: string,
+  options?: { readonly debounceMs?: number; readonly minChars?: number },
+) => {
+  const debounceMs = options?.debounceMs ?? 300;
+  const minChars = options?.minChars ?? 4;
+  const [debounced, setDebounced] = useState(directive);
+  useEffect(() => {
+    const handle = setTimeout(() => setDebounced(directive), debounceMs);
+    return () => clearTimeout(handle);
+  }, [directive, debounceMs]);
+  return useQuery({
+    queryKey: queryKeys.questForgeParse(debounced),
+    queryFn: () => apiClient.parseQuestForge(debounced),
+    enabled: debounced.trim().length > minChars,
+    staleTime: 30_000,
+  });
+};
+
+export const useEngageQuestForge = () => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (request: PostQuestForgeEngageRequest) =>
+      apiClient.engageQuestForge(request),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: queryKeys.fleet });
+    },
+  });
 };
 
 export const useFleet = () =>

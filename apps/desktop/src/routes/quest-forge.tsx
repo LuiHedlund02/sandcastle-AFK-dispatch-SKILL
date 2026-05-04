@@ -1,5 +1,6 @@
 import type { JSX } from "react";
-import { useId, useMemo, useState } from "react";
+import { useEffect, useId, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import {
   ChromaticHeadline,
   CommandCardView,
@@ -7,187 +8,96 @@ import {
   FilmGrainOverlay,
   ModeCardView,
   OctaPanel,
+  PhaseEditorList,
   ReactiveOperativeTile,
   SkillCardView,
 } from "@sandcastle/ui";
-import type { OperativeIdentity } from "@sandcastle/protocol";
-import { useOperatives, useRepoDeck, useRepos } from "../api/queries";
+import type { OperativeIdentity, ParsedPhase } from "@sandcastle/protocol";
+import {
+  useEngageQuestForge,
+  useOperatives,
+  useQuestForgeParse,
+  useRepoDeck,
+  useRepos,
+} from "../api/queries";
 
 /**
- * Quest Forge — Phase 1 read-only screen.
+ * Quest Forge — Phase 3 wired editor.
  *
- * The user types a directive and sees a heuristic phase preview generated
- * locally. There is NO run dispatch, NO mutation, NO persistence: the
- * directive lives entirely in local React state. The deck strip on the
- * left and the operative strip on the right are fed by `useRepoDeck` and
- * `useOperatives` from control-core; the parser preview in the centre is
- * a deterministic stub (see {@link parseDirectiveStub}) that exists only
- * to demonstrate the editor + preview UX. The real parser ships in
- * Phase 3 (LLM-or-deterministic) and will replace the stub call site.
- */
-
-interface PreviewPhase {
-  readonly id: string;
-  readonly ordinal: number;
-  readonly title: string;
-  readonly directiveSlice: string;
-  readonly objective: string;
-  readonly xpEstimate: number;
-  readonly verifyRules: readonly string[];
-  readonly detectedVerb: string | null;
-}
-
-const IMPERATIVE_VERBS = [
-  "Add",
-  "Fix",
-  "Refactor",
-  "Test",
-  "Document",
-  "Reproduce",
-  "Diagnose",
-  "Patch",
-  "Commit",
-  "Implement",
-  "Remove",
-  "Update",
-  "Verify",
-  "Build",
-  "Migrate",
-  "Replace",
-  "Introduce",
-  "Extract",
-];
-
-const NUMBERED_LIST_RE = /^\s*(?:\d+[.)]\s+|step\s+\d+\s*:\s+)/i;
-
-/**
- * **Phase 1 placeholder parser** — splits a directive into preview phases
- * via three heuristics:
- *  - Sentence boundaries (`. `, `\n\n`)
- *  - Imperative verb starts ("Add", "Fix", "Refactor", "Test", "Document", ...)
- *  - Numbered lists ("1.", "2.", "Step 1:")
+ * The user types a directive on the left; control-core's parser
+ * (`POST /quest-forge/parse`, debounced 300ms) returns structured
+ * `ParsedPhase`s on the right which the user can rename, reorder, attach
+ * verify rules to, or delete. Clicking **Engage** fires
+ * `POST /quest-forge/engage` with the (optionally edited) phases and
+ * navigates to the new run's `/runs/:runId/combat` view.
  *
- * Each phase gets a 60-char title slice, the full segment as `directiveSlice`,
- * a placeholder objective ("verify <verb>"), an xpEstimate (50 base, +25 if
- * an imperative verb is detected at the head), and an empty verifyRules array.
- * This is intentionally honest — it is NOT the real parser. Phase 3 will
- * replace this with a deterministic-or-LLM parser shipped in control-core.
+ * Dirty-edit semantics: as soon as the user touches a phase card the local
+ * `phases` state is decoupled from the server response. Re-typing the
+ * directive does NOT clobber edits — only an explicit "Reset to parser
+ * output" action restores the server snapshot.
  */
-function parseDirectiveStub(directive: string): readonly PreviewPhase[] {
-  const trimmed = directive.trim();
-  if (trimmed.length === 0) return [];
-
-  // First split on hard breaks (blank lines), then on sentence boundaries
-  // and numbered-list / imperative-verb starts within each block.
-  const blocks = trimmed
-    .split(/\n{2,}/)
-    .map((b) => b.trim())
-    .filter((b) => b.length > 0);
-
-  const segments: string[] = [];
-  for (const block of blocks) {
-    const lines = block
-      .split(/\n+/)
-      .map((l) => l.trim())
-      .filter(Boolean);
-    let buffer = "";
-    const flush = () => {
-      const out = buffer.trim();
-      if (out.length > 0) segments.push(out);
-      buffer = "";
-    };
-
-    for (const line of lines) {
-      const startsList = NUMBERED_LIST_RE.test(line);
-      const startsVerb = IMPERATIVE_VERBS.some((v) =>
-        new RegExp(`^${v}\\b`, "i").test(line),
-      );
-      if ((startsList || startsVerb) && buffer.trim().length > 0) {
-        flush();
-      }
-      // Within the line, also split on sentence boundaries ". " when the
-      // following sentence starts with an imperative verb.
-      const parts = line.split(/(?<=[.!?])\s+(?=[A-Z])/);
-      for (let i = 0; i < parts.length; i += 1) {
-        const part = parts[i] ?? "";
-        const startsVerbPart = IMPERATIVE_VERBS.some((v) =>
-          new RegExp(`^${v}\\b`, "i").test(part),
-        );
-        if (i > 0 && startsVerbPart && buffer.trim().length > 0) {
-          flush();
-        }
-        buffer = buffer.length > 0 ? `${buffer} ${part}` : part;
-      }
-      flush();
-    }
-    flush();
-  }
-
-  if (segments.length === 0) {
-    segments.push(trimmed);
-  }
-
-  return segments.map((slice, idx): PreviewPhase => {
-    const verbMatch = IMPERATIVE_VERBS.find((v) =>
-      new RegExp(`^${v}\\b`, "i").test(slice),
-    );
-    const detectedVerb = verbMatch ?? null;
-    const titleRaw = slice.replace(/\s+/g, " ").trim();
-    const title =
-      titleRaw.length <= 60 ? titleRaw : `${titleRaw.slice(0, 57)}...`;
-    const objective = detectedVerb
-      ? `verify ${detectedVerb.toLowerCase()}`
-      : "verify outcome";
-    const xpEstimate = 50 + (detectedVerb ? 25 : 0);
-    return {
-      id: `preview-${idx + 1}`,
-      ordinal: idx + 1,
-      title,
-      directiveSlice: slice,
-      objective,
-      xpEstimate,
-      verifyRules: [],
-      detectedVerb,
-    };
-  });
-}
-
-const ROMAN = [
-  "I",
-  "II",
-  "III",
-  "IV",
-  "V",
-  "VI",
-  "VII",
-  "VIII",
-  "IX",
-  "X",
-  "XI",
-  "XII",
-];
-
-function toRoman(n: number): string {
-  return ROMAN[n - 1] ?? String(n);
-}
 
 const SAMPLE_DIRECTIVE = `Reproduce the failing auth refresh loop with a focused vitest case. Diagnose the race condition in src/auth/refresh.ts. Patch the call site to serialize concurrent callers through a single in-flight promise. Add a regression test that fans 50 concurrent callers and asserts a single network refresh. Commit with a changeset.`;
 
 export function QuestForgeRoute(): JSX.Element {
   const [directive, setDirective] = useState<string>(SAMPLE_DIRECTIVE);
+  const [editedPhases, setEditedPhases] = useState<readonly ParsedPhase[]>([]);
+  const [dirty, setDirty] = useState(false);
   const directiveId = useId();
+  const navigate = useNavigate();
 
   const reposQuery = useRepos();
   const operativesQuery = useOperatives();
-
   const repoId = reposQuery.data?.repos[0]?.id;
   const deckQuery = useRepoDeck(repoId);
 
-  const phases = useMemo(() => parseDirectiveStub(directive), [directive]);
+  const parseQuery = useQuestForgeParse(directive);
+  const engageMutation = useEngageQuestForge();
+
+  // Sync server-parsed phases into local state when the user has not edited.
+  useEffect(() => {
+    if (dirty) return;
+    if (parseQuery.data) setEditedPhases(parseQuery.data.phases);
+  }, [parseQuery.data, dirty]);
+
+  const phases = editedPhases;
 
   const charCount = directive.length;
-  const verbCount = phases.filter((p) => p.detectedVerb !== null).length;
+  const phaseCount = phases.length;
   const totalXp = phases.reduce((acc, p) => acc + p.xpEstimate, 0);
+  const verifyRuleCount = phases.reduce(
+    (acc, p) => acc + p.verifyRules.length,
+    0,
+  );
+
+  const onPhasesChange = (next: readonly ParsedPhase[]) => {
+    setDirty(true);
+    setEditedPhases(next);
+  };
+
+  const onResetEdits = () => {
+    setDirty(false);
+    if (parseQuery.data) setEditedPhases(parseQuery.data.phases);
+  };
+
+  const onEngage = () => {
+    engageMutation.mutate(
+      {
+        directive,
+        phases: dirty ? phases.map((p) => ({ ...p })) : undefined,
+      },
+      {
+        onSuccess: ({ runId }) => {
+          navigate(`/runs/${encodeURIComponent(runId)}/combat`);
+        },
+      },
+    );
+  };
+
+  const canEngage =
+    directive.trim().length > 0 &&
+    !engageMutation.isPending &&
+    parseQuery.status !== "pending";
 
   return (
     <section className="quest-forge" aria-labelledby={`${directiveId}-heading`}>
@@ -197,13 +107,15 @@ export function QuestForgeRoute(): JSX.Element {
 
       <header className="quest-forge__head">
         <div>
-          <div className="eyebrow">quest forge / phase 1 preview</div>
+          <div className="eyebrow">quest forge / phase 3 wired</div>
           <ChromaticHeadline as="h1">
             <span id={`${directiveId}-heading`}>Forge a directive</span>
           </ChromaticHeadline>
           <p className="muted-copy">
-            Compose a directive on the left; the heuristic parser previews the
-            phases on the right. Phase 1 does not dispatch runs.
+            Compose a directive on the left; the backend parser previews
+            structured phases on the right. Edit titles, objectives, and verify
+            rules. Click <strong>Engage</strong> to dispatch a phased run and
+            jump to the Combat view.
           </p>
         </div>
         <dl className="quest-forge__stats">
@@ -212,12 +124,12 @@ export function QuestForgeRoute(): JSX.Element {
             <dd>{charCount}</dd>
           </div>
           <div>
-            <dt>Verbs</dt>
-            <dd>{verbCount}</dd>
+            <dt>Phases</dt>
+            <dd>{phaseCount}</dd>
           </div>
           <div>
-            <dt>Phases</dt>
-            <dd>{phases.length}</dd>
+            <dt>Verify rules</dt>
+            <dd>{verifyRuleCount}</dd>
           </div>
           <div>
             <dt>Total XP</dt>
@@ -245,16 +157,21 @@ export function QuestForgeRoute(): JSX.Element {
           header={
             <div className="quest-forge__editor-head">
               <ChromaticHeadline as="h2">Directive</ChromaticHeadline>
-              <span className="mono-chip">PARSER · STUB</span>
+              <span className="mono-chip">
+                {parseQuery.isFetching ? "parsing…" : "PARSER · LIVE"}
+              </span>
             </div>
           }
           footer={
             <div className="quest-forge__editor-foot">
               <span className="mono-chip">CHARS {charCount}</span>
-              <span className="mono-chip">VERBS {verbCount}</span>
-              <span className="mono-chip">PHASES {phases.length}</span>
+              <span className="mono-chip">PHASES {phaseCount}</span>
               <span className="muted-copy" aria-live="polite">
-                Phase 1 preview: this editor does not dispatch runs.
+                {parseQuery.error
+                  ? `Parser error: ${parseQuery.error.message}`
+                  : dirty
+                    ? "Edited locally — server output ignored."
+                    : "Phases auto-update from the backend parser."}
               </span>
             </div>
           }
@@ -276,8 +193,8 @@ export function QuestForgeRoute(): JSX.Element {
             id={`${directiveId}-hint`}
             className="muted-copy quest-forge__hint"
           >
-            The parser splits on sentence boundaries, numbered lists, and
-            imperative verbs. Output is heuristic only.
+            Backend parser splits on sentence boundaries, numbered lists, and
+            imperative verbs and attaches default verify rules.
           </p>
         </OctaPanel>
 
@@ -291,12 +208,44 @@ export function QuestForgeRoute(): JSX.Element {
           }
           header={
             <div className="quest-forge__preview-head">
-              <ChromaticHeadline as="h2">Phase preview</ChromaticHeadline>
-              <span className="mono-chip">{phases.length} PHASES</span>
+              <ChromaticHeadline as="h2">Phase editor</ChromaticHeadline>
+              <span className="mono-chip">{phaseCount} PHASES</span>
+            </div>
+          }
+          footer={
+            <div className="quest-forge__editor-foot">
+              <button
+                type="button"
+                className="quest-forge__engage"
+                onClick={onEngage}
+                disabled={!canEngage}
+              >
+                {engageMutation.isPending ? "Engaging…" : "Engage"}
+              </button>
+              {dirty ? (
+                <button
+                  type="button"
+                  className="quest-forge__reset"
+                  onClick={onResetEdits}
+                >
+                  Reset edits
+                </button>
+              ) : null}
+              {engageMutation.error ? (
+                <span className="muted-copy" role="alert">
+                  Engage failed: {engageMutation.error.message}
+                </span>
+              ) : null}
             </div>
           }
         >
-          <PhasePreview phases={phases} />
+          {parseQuery.isLoading && phases.length === 0 ? (
+            <p className="muted-copy" role="status">
+              Parsing directive…
+            </p>
+          ) : (
+            <PhaseEditorList phases={phases} onChange={onPhasesChange} />
+          )}
         </OctaPanel>
       </div>
 
@@ -396,56 +345,6 @@ function DeckStrip({
   );
 }
 
-function PhasePreview({
-  phases,
-}: {
-  readonly phases: readonly PreviewPhase[];
-}): JSX.Element {
-  if (phases.length === 0) {
-    return (
-      <p className="muted-copy" role="status">
-        No phases yet — type a directive on the left.
-      </p>
-    );
-  }
-  return (
-    <ol className="quest-forge__phase-list">
-      {phases.map((phase) => (
-        <li key={phase.id} className="quest-forge__phase">
-          <header className="quest-forge__phase-head">
-            <span className="quest-forge__phase-roman" aria-hidden="true">
-              {toRoman(phase.ordinal)}
-            </span>
-            <div className="quest-forge__phase-title">
-              <div className="eyebrow">
-                Phase {toRoman(phase.ordinal)}
-                {phase.detectedVerb ? ` · ${phase.detectedVerb}` : ""}
-              </div>
-              <strong>{phase.title}</strong>
-            </div>
-            <span className="mono-chip">+{phase.xpEstimate} XP</span>
-          </header>
-          <p className="quest-forge__phase-slice">{phase.directiveSlice}</p>
-          <dl className="quest-forge__phase-meta">
-            <div>
-              <dt>Objective</dt>
-              <dd>{phase.objective}</dd>
-            </div>
-            <div>
-              <dt>Verify rules</dt>
-              <dd>
-                {phase.verifyRules.length === 0
-                  ? "—"
-                  : phase.verifyRules.join(", ")}
-              </dd>
-            </div>
-          </dl>
-        </li>
-      ))}
-    </ol>
-  );
-}
-
 function OperativeStrip({
   isLoading,
   error,
@@ -497,7 +396,7 @@ function OperativeStrip({
         <div className="quest-forge__deck-head">
           <ChromaticHeadline as="h2">Available operatives</ChromaticHeadline>
           <span className="muted-copy">
-            (selection is Phase 2 — preview only)
+            (selection picks the first available operative for now)
           </span>
         </div>
       }
@@ -625,65 +524,38 @@ const QUEST_FORGE_CSS = `
   margin: 8px 0 0;
   font-size: 11px;
 }
-.quest-forge__phase-list {
-  list-style: none;
-  margin: 0;
-  padding: 0;
-  display: grid;
-  gap: 12px;
-}
-.quest-forge__phase {
-  border: 1px solid var(--rule-2);
-  background: var(--hull-1);
-  padding: 12px 14px;
-  display: grid;
-  gap: 8px;
-  clip-path: polygon(7px 0, 100% 0, 100% calc(100% - 7px), calc(100% - 7px) 100%, 0 100%, 0 7px);
-}
-.quest-forge__phase-head {
-  display: grid;
-  grid-template-columns: 36px 1fr auto;
-  align-items: center;
-  gap: 12px;
-}
-.quest-forge__phase-roman {
+.quest-forge__engage {
   font-family: var(--display);
-  font-size: 22px;
-  color: var(--magenta);
-  letter-spacing: 0.05em;
-  text-shadow: 0 0 12px rgba(255, 46, 136, 0.35);
-}
-.quest-forge__phase-title strong {
-  display: block;
-  font-family: var(--display);
-  font-size: 14px;
-  color: var(--frost);
-  letter-spacing: 0.02em;
-  margin-top: 2px;
-}
-.quest-forge__phase-slice {
-  margin: 0;
-  color: var(--mist);
-  font-size: 12px;
-  border-left: 2px solid var(--cyan-dim);
-  padding-left: 10px;
-}
-.quest-forge__phase-meta {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
-  gap: 10px 18px;
-  margin: 0;
-}
-.quest-forge__phase-meta dt {
-  color: var(--steel);
-  font-size: 10px;
-  letter-spacing: 0.14em;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.22em;
   text-transform: uppercase;
+  padding: 8px 18px;
+  color: var(--frost);
+  background: linear-gradient(180deg, var(--magenta), #c01568);
+  border: 1px solid var(--magenta);
+  cursor: pointer;
+  clip-path: polygon(8px 0, 100% 0, 100% calc(100% - 8px), calc(100% - 8px) 100%, 0 100%, 0 8px);
 }
-.quest-forge__phase-meta dd {
-  margin: 2px 0 0;
+.quest-forge__engage:hover:not(:disabled) {
+  box-shadow: 0 0 18px rgba(255, 46, 136, 0.35);
+}
+.quest-forge__engage:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+.quest-forge__reset {
+  font-family: var(--mono);
+  font-size: 10.5px;
   color: var(--mist);
-  font-size: 12px;
+  background: var(--hull-2);
+  border: 1px solid var(--rule-2);
+  padding: 6px 10px;
+  cursor: pointer;
+}
+.quest-forge__reset:hover {
+  color: var(--cyan);
+  border-color: var(--cyan-dim);
 }
 .quest-forge__operative-row {
   display: grid;

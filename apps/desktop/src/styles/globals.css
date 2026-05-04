@@ -711,3 +711,48 @@ kbd {
     display: none;
   }
 }
+
+.combat-route {
+  display: grid;
+  min-height: 0;
+  padding: 18px 22px;
+  gap: 14px;
+  grid-template-rows: minmax(0, 1fr);
+}
+
+.combat-route__view-link {
+  font-family: var(--display);
+  font-size: 10px;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  color: var(--cyan);
+  padding: 4px 10px;
+  border: 1px solid var(--cyan-dim);
+  background: var(--cyan-ink);
+  text-decoration: none;
+}
+
+.combat-route__view-link:hover,
+.combat-route__view-link:focus-visible {
+  color: var(--frost);
+  border-color: var(--cyan);
+  outline: none;
+}
+
+.cockpit-head__combat-link {
+  font-family: var(--display);
+  font-size: 10px;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--magenta);
+  padding: 4px 10px;
+  border: 1px solid var(--magenta-dim);
+  background: var(--magenta-ink);
+  text-decoration: none;
+}
+.cockpit-head__combat-link:hover,
+.cockpit-head__combat-link:focus-visible {
+  color: var(--frost);
+  border-color: var(--magenta);
+  outline: none;
+}
