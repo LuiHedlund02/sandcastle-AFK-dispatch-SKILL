@@ -37,9 +37,9 @@
   "scripts": {
     "build": "tsgo --project tsconfig.build.json",
     "postbuild": "rm -rf dist/templates && cp -r src/templates dist/templates",
-    "test": "vitest run",
+    "test": "vitest run && npm run --workspaces --if-present test",
     "test:watch": "vitest",
-    "typecheck": "tsgo --noEmit",
+    "typecheck": "tsgo --noEmit && npm run --workspaces --if-present typecheck",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
     "prepare": "husky",
@@ -47,7 +47,11 @@
     "sandcastle": "npm run build && tsx .sandcastle/run.ts",
     "test-podman": "npm run build && tsx --env-file=.sandcastle/.env .sandcastle/test-podman.ts",
     "test-vercel": "npm run build && tsx --env-file=.sandcastle/.env .sandcastle/test-vercel.ts",
-    "test-interactive": "npm run build && tsx --env-file=.sandcastle/.env .sandcastle/test-interactive.ts"
+    "test-interactive": "npm run build && tsx --env-file=.sandcastle/.env .sandcastle/test-interactive.ts",
+    "dev:desktop": "npm run dev -w @sandcastle/desktop",
+    "control-core:dev": "npm run dev -w @sandcastle/control-core",
+    "control-core:test": "npm run test -w @sandcastle/control-core",
+    "protocol:test": "npm run test -w @sandcastle/protocol"
   },
   "keywords": [
     "cli",
@@ -64,9 +68,11 @@
   "license": "MIT",
   "devDependencies": {
     "@changesets/cli": "^2.30.0",
+    "@daytona/sdk": "^0.164.0",
     "@effect/vitest": "^0.28.0",
     "@types/node": "^25.5.0",
     "@typescript/native-preview": "^7.0.0-dev.20260317.1",
+    "@vercel/sandbox": "^1.10.0",
     "husky": "^9.1.7",
     "lint-staged": "^15.5.1",
     "prettier": "^3.5.3",
@@ -83,8 +89,8 @@
     "effect": "^3.20.0"
   },
   "peerDependencies": {
-    "@vercel/sandbox": ">=1.0.0",
-    "@daytona/sdk": "^0.164.0"
+    "@daytona/sdk": "^0.164.0",
+    "@vercel/sandbox": ">=1.0.0"
   },
   "peerDependenciesMeta": {
     "@vercel/sandbox": {
@@ -99,5 +105,9 @@
   },
   "files": [
     "dist"
+  ],
+  "workspaces": [
+    "apps/*",
+    "packages/*"
   ]
 }

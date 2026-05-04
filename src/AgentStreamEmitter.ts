@@ -1,5 +1,17 @@
 import { Context, Effect, Layer } from "effect";
 
+export type RunStatus =
+  | "queued"
+  | "starting"
+  | "casting"
+  | "striking"
+  | "verifying"
+  | "win-pending"
+  | "fail-pending"
+  | "victory"
+  | "defeat"
+  | "aborted";
+
 /**
  * A single event in the agent's output stream, surfaced to callers of `run()`
  * so they can forward it to their own observability system.
@@ -18,6 +30,74 @@ export type AgentStreamEvent =
       readonly type: "toolCall";
       readonly name: string;
       readonly formattedArgs: string;
+      readonly iteration: number;
+      readonly timestamp: Date;
+    }
+  | {
+      readonly type: "run.started";
+      readonly runId: string;
+      readonly directive: string;
+      readonly branch: string;
+      readonly worktreePath?: string;
+      readonly iteration: number;
+      readonly timestamp: Date;
+    }
+  | {
+      readonly type: "run.statusChanged";
+      readonly runId: string;
+      readonly from: RunStatus;
+      readonly to: RunStatus;
+      readonly iteration: number;
+      readonly timestamp: Date;
+    }
+  | {
+      readonly type: "tool.started";
+      readonly name: string;
+      readonly formattedArgs: string;
+      readonly toolCallId: string;
+      readonly iteration: number;
+      readonly timestamp: Date;
+    }
+  | {
+      readonly type: "tool.finished";
+      readonly name: string;
+      readonly toolCallId: string;
+      readonly durationMs: number;
+      readonly ok: boolean;
+      readonly output?: string;
+      readonly iteration: number;
+      readonly timestamp: Date;
+    }
+  | {
+      readonly type: "verification.started";
+      readonly checks: readonly string[];
+      readonly iteration: number;
+      readonly timestamp: Date;
+    }
+  | {
+      readonly type: "verification.finished";
+      readonly allGreen: boolean;
+      readonly failedChecks: readonly string[];
+      readonly iteration: number;
+      readonly timestamp: Date;
+    }
+  | {
+      readonly type: "decision.required";
+      readonly kind: "merge" | "revise" | "discard";
+      readonly iteration: number;
+      readonly timestamp: Date;
+    }
+  | {
+      readonly type: "run.resolved";
+      readonly runId: string;
+      readonly result: "victory" | "defeat" | "aborted";
+      readonly xpDelta: number;
+      readonly iteration: number;
+      readonly timestamp: Date;
+    }
+  | {
+      readonly type: "intervention.used";
+      readonly action: string;
       readonly iteration: number;
       readonly timestamp: Date;
     };

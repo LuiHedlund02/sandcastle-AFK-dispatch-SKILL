@@ -127,9 +127,7 @@ const invokeAgent = (
           errorDetail = resultText;
         }
         if (!errorDetail.trim()) {
-          const lines = execResult.stdout
-            .split("\n")
-            .filter((l) => l.trim());
+          const lines = execResult.stdout.split("\n").filter((l) => l.trim());
           errorDetail = lines.slice(-20).join("\n");
         }
         return yield* Effect.fail(
@@ -252,6 +250,7 @@ export const orchestrate = (
     let allStdout = "";
     let resolvedBranch = "";
     let iterationPreservedPath: string | undefined;
+    let toolCallSequence = 0;
 
     // Helper: check abort signal and bail via defect so run() can
     // re-throw the signal's reason verbatim (no Sandcastle wrapping).
@@ -328,12 +327,35 @@ export const orchestrate = (
                 };
                 const onToolCall = (name: string, formattedArgs: string) => {
                   textBuffer.flush();
+                  const toolCallId = `${i}-${++toolCallSequence}`;
+                  const startedAt = Date.now();
                   Effect.runPromise(display.toolCall(name, formattedArgs));
+                  Effect.runPromise(
+                    streamEmitter.emit({
+                      type: "tool.started",
+                      name,
+                      formattedArgs,
+                      toolCallId,
+                      iteration: i,
+                      timestamp: new Date(),
+                    }),
+                  );
                   Effect.runPromise(
                     streamEmitter.emit({
                       type: "toolCall",
                       name,
                       formattedArgs,
+                      iteration: i,
+                      timestamp: new Date(),
+                    }),
+                  );
+                  Effect.runPromise(
+                    streamEmitter.emit({
+                      type: "tool.finished",
+                      name,
+                      toolCallId,
+                      durationMs: Date.now() - startedAt,
+                      ok: true,
                       iteration: i,
                       timestamp: new Date(),
                     }),

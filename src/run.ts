@@ -27,9 +27,11 @@ import { resolveEnv } from "./EnvResolver.js";
 import { formatErrorMessage } from "./ErrorHandler.js";
 import type { SandboxError } from "./errors.js";
 import {
+  AgentStreamEmitter,
   callbackAgentStreamEmitterLayer,
   noopAgentStreamEmitterLayer,
   type AgentStreamEvent,
+  type RunStatus,
 } from "./AgentStreamEmitter.js";
 import type { SandboxHooks } from "./SandboxLifecycle.js";
 import { mergeProviderEnv } from "./mergeProviderEnv.js";
@@ -383,6 +385,7 @@ export const run = async (options: RunOptions): Promise<RunResult> => {
   // (the host's current branch) so developers can tell which branch was targeted.
   const targetBranch =
     effectiveBranchType === "merge-to-head" ? currentHostBranch : undefined;
+  const streamRunId = options.name ?? resolvedBranch;
 
   // Resolve logging option
   const resolvedLogging: LoggingOption = options.logging ?? {
@@ -429,9 +432,48 @@ export const run = async (options: RunOptions): Promise<RunResult> => {
     ),
   );
 
+  const userAgentStreamCallback =
+    resolvedLogging.type === "file"
+      ? resolvedLogging.onAgentStreamEvent
+      : undefined;
+  let streamStatus: RunStatus = "starting";
+  const forwardAgentStreamEvent = (
+    event: AgentStreamEvent,
+    emitStatusTransition = true,
+  ): void => {
+    const emitSafely = (forwarded: AgentStreamEvent): void => {
+      try {
+        userAgentStreamCallback?.(forwarded);
+      } catch {
+        // Observability callbacks must not affect the run.
+      }
+    };
+
+    if (
+      emitStatusTransition &&
+      streamStatus === "starting" &&
+      (event.type === "text" ||
+        event.type === "toolCall" ||
+        event.type === "tool.started")
+    ) {
+      const statusEvent: AgentStreamEvent = {
+        type: "run.statusChanged",
+        runId: streamRunId,
+        from: "starting",
+        to: "casting",
+        iteration: event.iteration,
+        timestamp: new Date(),
+      };
+      streamStatus = "casting";
+      emitSafely(statusEvent);
+    }
+
+    emitSafely(event);
+  };
+
   const agentStreamEmitterLayer =
-    resolvedLogging.type === "file" && resolvedLogging.onAgentStreamEvent
-      ? callbackAgentStreamEmitterLayer(resolvedLogging.onAgentStreamEvent)
+    userAgentStreamCallback !== undefined
+      ? callbackAgentStreamEmitterLayer(forwardAgentStreamEvent)
       : noopAgentStreamEmitterLayer;
 
   const runLayer = Layer.mergeAll(
@@ -443,6 +485,7 @@ export const run = async (options: RunOptions): Promise<RunResult> => {
 
   const baseEffect = Effect.gen(function* () {
     const d = yield* Display;
+    const streamEmitter = yield* AgentStreamEmitter;
     yield* d.intro(options.name ?? "sandcastle");
     const rows = buildRunSummaryRows({
       name: options.name,
@@ -452,6 +495,14 @@ export const run = async (options: RunOptions): Promise<RunResult> => {
       branch: resolvedBranch,
     });
     yield* d.summary("Sandcastle Run", rows);
+    yield* streamEmitter.emit({
+      type: "run.started",
+      runId: streamRunId,
+      directive: rawPrompt,
+      branch: resolvedBranch,
+      iteration: 0,
+      timestamp: new Date(),
+    });
 
     const userArgs = options.promptArgs ?? {};
 
@@ -506,6 +557,16 @@ export const run = async (options: RunOptions): Promise<RunResult> => {
       yield* d.text(line);
     }
 
+    yield* streamEmitter.emit({
+      type: "run.resolved",
+      runId: streamRunId,
+      result:
+        orchestrateResult.completionSignal !== undefined ? "victory" : "defeat",
+      xpDelta: 0,
+      iteration: orchestrateResult.iterations.length,
+      timestamp: new Date(),
+    });
+
     return orchestrateResult;
   });
 
@@ -534,6 +595,31 @@ export const run = async (options: RunOptions): Promise<RunResult> => {
     );
   } catch (error: unknown) {
     // If the signal was aborted, surface its reason verbatim (no wrapping)
+    if (options.signal?.aborted) {
+      forwardAgentStreamEvent(
+        {
+          type: "run.resolved",
+          runId: streamRunId,
+          result: "aborted",
+          xpDelta: 0,
+          iteration: 0,
+          timestamp: new Date(),
+        },
+        false,
+      );
+    } else {
+      forwardAgentStreamEvent(
+        {
+          type: "run.resolved",
+          runId: streamRunId,
+          result: "defeat",
+          xpDelta: 0,
+          iteration: 0,
+          timestamp: new Date(),
+        },
+        false,
+      );
+    }
     options.signal?.throwIfAborted();
     throw error;
   }
