@@ -37,16 +37,28 @@ export const useFleetStore = create<FleetStore>((set) => ({
   setConnectionState: (connectionState) => set({ connectionState }),
 
   tickMicroStates: (now = Date.now()) => {
+    let nextDeadline: number | null = null;
     set((state) => {
       let dirty = false;
       const next: Record<string, OperativeMicroEntry> = {};
       for (const [runId, entry] of Object.entries(state.runMicroStates)) {
         const decayed = decayEntry(entry, now);
         if (decayed !== entry) dirty = true;
+        if (decayed.state === "idle" && decayed.decayAt === null) {
+          dirty = true;
+          continue;
+        }
+        if (
+          decayed.decayAt !== null &&
+          (nextDeadline === null || decayed.decayAt < nextDeadline)
+        ) {
+          nextDeadline = decayed.decayAt;
+        }
         next[runId] = decayed;
       }
       return dirty ? { runMicroStates: next } : state;
     });
+    if (nextDeadline !== null) scheduleDecay(nextDeadline);
   },
 
   applyServerMessage: (message) => {
@@ -82,9 +94,9 @@ export const useFleetStore = create<FleetStore>((set) => ({
             ? state.runMicroStates
             : { ...state.runMicroStates, [message.runId]: projected };
 
-        // Schedule a decay tick when this projection introduces a deadline
-        // that's later than anything we've already scheduled. Keeps the
-        // store self-driving; consumers don't need to poll.
+        // Schedule a decay tick when this projection introduces a deadline.
+        // scheduleDecay keeps the earliest pending deadline armed, and
+        // tickMicroStates re-arms the next one after each decay pass.
         if (projected !== prevEntry && projected.decayAt !== null) {
           scheduleDecay(projected.decayAt);
         }

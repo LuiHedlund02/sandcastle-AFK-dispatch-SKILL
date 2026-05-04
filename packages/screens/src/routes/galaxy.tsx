@@ -697,7 +697,7 @@ function SelectedPlanetPanel({
             value={
               t.ciGreenRate30d == null
                 ? "—"
-                : `${Math.round(t.ciGreenRate30d * 100)} %`
+                : `${Math.round(t.ciGreenRate30d)} %`
             }
             tone="p"
           />

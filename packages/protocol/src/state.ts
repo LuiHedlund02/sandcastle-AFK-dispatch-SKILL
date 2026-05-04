@@ -119,6 +119,7 @@ export type OperativeRepoRecord = z.infer<typeof zOperativeRepoRecord>;
 
 export const zRepoTelemetry = z.object({
   coveragePct: z.number().nullable(),
+  /** Successful CI workflow runs in the last 30 days, as a percent from 0..100. */
   ciGreenRate30d: z.number().nullable(),
   openIssues: z.number().nullable(),
   churnScore: z.number().nullable(),

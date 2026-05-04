@@ -8,7 +8,7 @@ export type PlanetClimate = "clear" | "warm" | "storm" | "live" | "idle";
  *
  *   live   — at least one run is in flight (override, beats everything)
  *   storm  — open issues ≥ 5 OR churn score ≥ 0.6 (turbulent code)
- *   clear  — coverage ≥ 70 % AND CI green-rate (when known) ≥ 0.85
+ *   clear  — coverage ≥ 70 % AND CI green-rate (when known) ≥ 85 %
  *   idle   — no run, no commits in the last 30 days, or stage ≤ 0
  *   warm   — fallback for anything signal-bearing in between
  *
@@ -27,7 +27,7 @@ export function planetClimate(planet: Planet): PlanetClimate {
 
   const coverage = t.coveragePct;
   const ci = t.ciGreenRate30d;
-  if (coverage != null && coverage >= 70 && (ci == null || ci >= 0.85)) {
+  if (coverage != null && coverage >= 70 && (ci == null || ci >= 85)) {
     return "clear";
   }
 

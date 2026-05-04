@@ -84,11 +84,25 @@ describe("planetClimate", () => {
           telemetry: {
             ...basePlanet().telemetry,
             coveragePct: 78,
-            ciGreenRate30d: 0.95,
+            ciGreenRate30d: 95,
           },
         }),
       ),
     ).toBe("clear");
+  });
+
+  it("does not treat CI green-rate percents as fractions", () => {
+    expect(
+      planetClimate(
+        basePlanet({
+          telemetry: {
+            ...basePlanet().telemetry,
+            coveragePct: 78,
+            ciGreenRate30d: 50,
+          },
+        }),
+      ),
+    ).toBe("warm");
   });
 
   it("returns 'idle' when the repo hasn't seen a commit in 30+ days", () => {
