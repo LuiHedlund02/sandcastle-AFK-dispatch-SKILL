@@ -1,0 +1,1696 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>SANDCASTLE :: ROSTER</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@300;400;500;600;700&family=JetBrains+Mono:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --void:    #03060a;
+    --hull-0:  #060a10;
+    --hull-1:  #0a1018;
+    --hull-2:  #11181f;
+    --hull-3:  #1a232c;
+    --hull-4:  #243140;
+
+    --frost:   #dceaf3;
+    --mist:    #9eb3c2;
+    --steel:   #5b6b7a;
+    --gunmetal:#3a4754;
+
+    --rule:    rgba(120, 200, 220, 0.07);
+    --rule-2:  rgba(120, 200, 220, 0.13);
+    --rule-3:  rgba(120, 200, 220, 0.22);
+
+    --cyan:    #56d4e0;
+    --cyan-2:  #7fe6ef;
+    --cyan-dim:rgba(86, 212, 224, 0.16);
+    --cyan-ink:rgba(86, 212, 224, 0.06);
+
+    --magenta:    #ff2e88;
+    --magenta-2:  #ff5ca7;
+    --magenta-dim:rgba(255, 46, 136, 0.16);
+    --magenta-ink:rgba(255, 46, 136, 0.06);
+
+    --plasma:  #6cffaa;
+    --plasma-dim: rgba(108,255,170,0.14);
+    --amber:   #ffb547;
+    --amber-dim: rgba(255,181,71,0.14);
+    --crimson: #ff5e6c;
+    --crimson-dim: rgba(255,94,108,0.14);
+    --slate:   #6f8aa3;
+
+    --mono:    'JetBrains Mono', ui-monospace, 'SF Mono', Menlo, Consolas, monospace;
+    --display: 'Chakra Petch', 'Eurostile', system-ui, sans-serif;
+  }
+
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  html, body {
+    height: 100%;
+    background: var(--void);
+    color: var(--frost);
+    font-family: var(--mono);
+    font-size: 12.5px;
+    line-height: 1.5;
+    -webkit-font-smoothing: antialiased;
+    overflow: hidden;
+    font-feature-settings: "ss01", "cv01", "zero";
+  }
+  button { font: inherit; color: inherit; background: none; border: 0; cursor: pointer; }
+  input { font: inherit; color: inherit; background: none; border: 0; outline: 0; }
+  ::selection { background: var(--cyan-dim); color: var(--frost); }
+
+  body::before {
+    content: "";
+    position: fixed; inset: 0;
+    pointer-events: none;
+    z-index: 9999;
+    opacity: 0.5;
+    background:
+      repeating-linear-gradient(0deg, rgba(0,0,0,0) 0 2px, rgba(180,220,235,0.035) 2px 3px),
+      linear-gradient(180deg, rgba(255,46,136,0.018), rgba(86,212,224,0.022) 50%, rgba(255,46,136,0.018));
+    animation: crt 5.5s steps(60) infinite;
+  }
+  @keyframes crt {
+    0%, 96%, 100% { opacity: 0.5; }
+    97%   { opacity: 0.32; }
+    97.5% { opacity: 0.62; }
+    98%   { opacity: 0.40; }
+  }
+
+  .app {
+    display: grid;
+    grid-template-rows: 44px 1fr;
+    height: 100vh;
+    background:
+      radial-gradient(1100px 480px at 78% -12%, rgba(86,212,224,0.10), transparent 60%),
+      radial-gradient(900px 420px at 12% 118%, rgba(255,46,136,0.08), transparent 60%),
+      var(--void);
+    position: relative;
+  }
+  .app::after {
+    content: "サンドキャッスル ／ ROSTER ／ AGENT-π ／ レベル 08 ／ 接続済";
+    position: fixed;
+    top: 50%; right: -10px;
+    transform: rotate(-90deg) translateX(50%);
+    transform-origin: right center;
+    font-family: var(--mono);
+    font-size: 9.5px;
+    letter-spacing: 0.7em;
+    color: var(--magenta);
+    opacity: 0.18;
+    pointer-events: none;
+    white-space: nowrap;
+    text-shadow: 0 0 6px rgba(255,46,136,0.5);
+  }
+
+  /* ─── titlebar ─── */
+  .titlebar {
+    display: grid;
+    grid-template-columns: 1fr auto 1fr;
+    align-items: center;
+    padding: 0 14px;
+    border-bottom: 1px solid var(--rule-2);
+    background: linear-gradient(180deg, rgba(10,16,24,0.7), rgba(3,6,10,0.95));
+    backdrop-filter: blur(20px);
+    position: relative;
+    z-index: 10;
+  }
+  .titlebar::after {
+    content: "";
+    position: absolute;
+    bottom: -1px; left: 0; right: 0; height: 1px;
+    background: linear-gradient(90deg, transparent 5%, var(--cyan-dim) 50%, transparent 95%);
+  }
+  .tb-left, .tb-right { display: flex; align-items: center; gap: 14px; }
+  .tb-right { justify-content: flex-end; }
+  .traffic { display: flex; gap: 8px; padding-right: 6px; }
+  .traffic i { width: 11px; height: 11px; transform: rotate(45deg); }
+  .traffic i:nth-child(1) { background: var(--crimson); }
+  .traffic i:nth-child(2) { background: var(--amber); }
+  .traffic i:nth-child(3) { background: var(--plasma); }
+
+  .brand { display: flex; align-items: center; gap: 10px; font-size: 11px; color: var(--mist); letter-spacing: 0.04em; }
+  .brand-mark {
+    width: 22px; height: 22px;
+    background: linear-gradient(135deg, #1a0a14, #061418);
+    border: 1px solid var(--cyan);
+    display: grid; place-items: center;
+    font-family: var(--display); font-weight: 700; font-size: 12px;
+    color: var(--cyan);
+    clip-path: polygon(20% 0, 100% 0, 100% 80%, 80% 100%, 0 100%, 0 20%);
+    box-shadow: 0 0 12px rgba(86,212,224,0.45), -2px 2px 0 rgba(255,46,136,0.6);
+  }
+  .brand-name {
+    font-family: var(--display); font-weight: 600; color: var(--frost);
+    letter-spacing: 0.18em; font-size: 12px; text-transform: uppercase;
+    text-shadow: -0.5px 0 var(--magenta), 0.5px 0 var(--cyan);
+  }
+  .brand-name::after {
+    content: "／ ロースター";
+    margin-left: 8px;
+    font-family: var(--mono); font-size: 9.5px; color: var(--magenta);
+    letter-spacing: 0.15em; opacity: 0.75;
+  }
+  .brand-sep { color: var(--gunmetal); }
+  .brand-ctx {
+    font-family: var(--mono); font-size: 10.5px; color: var(--mist);
+    padding: 2px 8px; border: 1px solid var(--rule-2); background: var(--hull-1);
+    letter-spacing: 0.04em;
+  }
+
+  .mode-switch {
+    display: flex; padding: 3px;
+    background: var(--hull-1); border: 1px solid var(--rule-2); gap: 1px;
+    clip-path: polygon(8px 0, calc(100% - 8px) 0, 100% 8px, 100% calc(100% - 8px), calc(100% - 8px) 100%, 8px 100%, 0 calc(100% - 8px), 0 8px);
+  }
+  .mode {
+    display: inline-flex; align-items: center; gap: 7px;
+    padding: 5px 14px;
+    font-family: var(--display); font-size: 10.5px; font-weight: 500;
+    letter-spacing: 0.16em; text-transform: uppercase;
+    color: var(--steel); transition: color .15s, background .15s;
+  }
+  .mode svg { width: 13px; height: 13px; opacity: .7; }
+  .mode:hover { color: var(--mist); }
+  .mode.is-active {
+    background: linear-gradient(180deg, var(--hull-3), var(--hull-2));
+    color: var(--magenta);
+    box-shadow: inset 0 0 0 0.5px var(--magenta-dim), 0 0 14px rgba(255,46,136,0.18);
+    text-shadow: 0 0 6px rgba(255,46,136,0.4);
+  }
+  .mode.is-active svg { opacity: 1; color: var(--magenta); }
+
+  .icon-btn {
+    width: 28px; height: 28px;
+    display: grid; place-items: center;
+    color: var(--mist);
+    transition: background .15s, color .15s;
+    border: 1px solid transparent;
+  }
+  .icon-btn svg { width: 14px; height: 14px; }
+  .icon-btn:hover { background: var(--hull-2); color: var(--cyan); border-color: var(--rule-2); }
+
+  .kbd {
+    font-family: var(--mono); font-size: 10px; color: var(--mist);
+    padding: 2px 7px; border: 1px solid var(--rule-2); background: var(--hull-1);
+    letter-spacing: 0.05em;
+  }
+
+  .search {
+    display: flex; align-items: center; gap: 8px;
+    padding: 5px 10px; background: var(--hull-1); border: 1px solid var(--rule-2);
+    width: 290px; color: var(--mist);
+    clip-path: polygon(6px 0, 100% 0, 100% calc(100% - 6px), calc(100% - 6px) 100%, 0 100%, 0 6px);
+  }
+  .search svg { width: 13px; height: 13px; color: var(--cyan); }
+  .search input { flex: 1; font-size: 11.5px; color: var(--frost); }
+  .search input::placeholder { color: var(--steel); }
+
+  /* ─── shell ─── */
+  .shell {
+    display: grid;
+    grid-template-columns: 248px 1fr;
+    overflow: hidden;
+    min-height: 0;
+  }
+
+  /* ─── roster rail ─── */
+  .roster-rail {
+    border-right: 1px solid var(--rule-2);
+    background: linear-gradient(180deg, var(--hull-1), var(--hull-0));
+    overflow-y: auto;
+    position: relative;
+  }
+  .roster-rail::before {
+    content: ""; position: absolute; top: 0; bottom: 0; right: 0; width: 1px;
+    background: linear-gradient(180deg, transparent, var(--cyan-dim) 30%, var(--cyan-dim) 70%, transparent);
+  }
+  .roster-rail::-webkit-scrollbar { width: 6px; }
+  .roster-rail::-webkit-scrollbar-thumb { background: var(--hull-3); }
+
+  .roster-head {
+    padding: 14px 16px;
+    border-bottom: 1px solid var(--rule);
+    display: flex; align-items: center; justify-content: space-between;
+  }
+  .roster-head h2 {
+    font-family: var(--display); font-size: 11px; font-weight: 600;
+    letter-spacing: 0.22em; text-transform: uppercase;
+    color: var(--frost);
+    text-shadow: -0.5px 0 var(--magenta), 0.5px 0 var(--cyan);
+  }
+  .roster-head .add-btn {
+    color: var(--cyan); font-size: 18px; font-weight: 300;
+    transition: color .15s;
+  }
+  .roster-head .add-btn:hover { color: var(--magenta); text-shadow: 0 0 8px var(--magenta); }
+
+  .roster-list { padding: 8px; }
+
+  .agent-row {
+    display: grid;
+    grid-template-columns: 36px 1fr auto;
+    gap: 11px;
+    align-items: center;
+    width: 100%;
+    padding: 9px 10px;
+    text-align: left;
+    border: 1px solid transparent;
+    margin-bottom: 4px;
+    transition: all .15s;
+    color: var(--mist);
+    position: relative;
+  }
+  .agent-row:hover { background: var(--hull-2); border-color: var(--rule-2); color: var(--frost); }
+  .agent-row.is-active {
+    background: linear-gradient(90deg, var(--magenta-ink), var(--cyan-ink));
+    border-color: var(--magenta-dim);
+    color: var(--frost);
+  }
+  .agent-row.is-active::before {
+    content: ""; position: absolute; left: -8px; top: 50%; width: 4px; height: 26px;
+    margin-top: -13px; background: var(--magenta);
+    box-shadow: 0 0 10px var(--magenta);
+  }
+  .agent-row .portrait {
+    width: 32px; height: 32px;
+    background: linear-gradient(135deg, #1a0a14, #061218);
+    border: 1px solid var(--cyan);
+    display: grid; place-items: center;
+    font-family: var(--display); font-weight: 700; font-size: 16px;
+    color: var(--cyan);
+    clip-path: polygon(22% 0, 100% 0, 100% 78%, 78% 100%, 0 100%, 0 22%);
+    text-shadow: -1px 0 var(--magenta), 1px 0 var(--cyan);
+  }
+  .agent-row .body { min-width: 0; }
+  .agent-row .name {
+    font-family: var(--display); font-size: 11.5px; font-weight: 600;
+    letter-spacing: 0.06em; text-transform: uppercase;
+    overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  }
+  .agent-row .meta {
+    font-family: var(--mono); font-size: 9.5px;
+    color: var(--steel); margin-top: 2px; letter-spacing: 0.04em;
+  }
+  .agent-row.is-active .meta { color: var(--cyan); }
+  .agent-row .lvl {
+    font-family: var(--display); font-weight: 700; font-size: 16px;
+    color: var(--magenta); line-height: 1;
+    text-shadow: -0.5px 0 var(--cyan), 0 0 8px rgba(255,46,136,0.4);
+    letter-spacing: 0;
+  }
+  .agent-row .lvl small {
+    font-family: var(--mono); font-size: 8px; color: var(--steel);
+    display: block; letter-spacing: 0.18em; text-transform: uppercase;
+    text-shadow: none; font-weight: 500;
+  }
+
+  .roster-section-label {
+    font-family: var(--display); font-size: 9px;
+    letter-spacing: 0.24em; text-transform: uppercase;
+    color: var(--steel); font-weight: 500;
+    padding: 14px 14px 6px;
+    display: flex; align-items: center; gap: 8px;
+  }
+  .roster-section-label .hex { font-family: var(--mono); color: var(--cyan); letter-spacing: 0.05em; }
+  .roster-section-label .line { flex: 1; height: 1px; background: var(--rule-2); }
+
+  /* ─── stage ─── */
+  .stage {
+    overflow-y: auto;
+    min-height: 0;
+    padding: 0 0 40px;
+  }
+  .stage::-webkit-scrollbar { width: 8px; }
+  .stage::-webkit-scrollbar-thumb { background: var(--hull-3); }
+
+  /* ─── hero strip ─── */
+  .hero {
+    display: grid;
+    grid-template-columns: 280px 1fr 280px;
+    gap: 24px;
+    padding: 28px 32px;
+    border-bottom: 1px solid var(--rule-2);
+    background:
+      radial-gradient(ellipse 60% 60% at 50% 0%, rgba(255,46,136,0.06), transparent 70%),
+      radial-gradient(ellipse 40% 60% at 100% 100%, rgba(86,212,224,0.05), transparent 70%),
+      var(--hull-0);
+    position: relative;
+  }
+  .hero::after {
+    content: ""; position: absolute; bottom: -1px; left: 0; right: 0; height: 2px;
+    background: linear-gradient(90deg, transparent 5%, var(--magenta) 30%, var(--cyan) 70%, transparent 95%);
+    opacity: 0.55; filter: blur(0.4px);
+  }
+
+  /* portrait card */
+  .portrait-card {
+    position: relative;
+    aspect-ratio: 1 / 1.05;
+    background:
+      linear-gradient(180deg, #15091c, #060a14);
+    border: 1px solid var(--cyan);
+    box-shadow: 0 0 28px rgba(86,212,224,0.22), -3px 3px 0 rgba(255,46,136,0.55);
+    display: grid; place-items: center;
+    overflow: hidden;
+    clip-path: polygon(18px 0, 100% 0, 100% calc(100% - 18px), calc(100% - 18px) 100%, 0 100%, 0 18px);
+  }
+  .portrait-card::before {
+    content: ""; position: absolute; inset: 0;
+    background:
+      repeating-linear-gradient(0deg, rgba(0,0,0,0) 0 3px, rgba(86,212,224,0.05) 3px 4px),
+      radial-gradient(circle at 50% 30%, var(--magenta-dim), transparent 60%),
+      radial-gradient(circle at 50% 80%, var(--cyan-dim), transparent 60%);
+  }
+  .portrait-card::after {
+    content: ""; position: absolute; inset: 8px;
+    background:
+      linear-gradient(90deg, var(--cyan) 0 18px, transparent 18px) top    left  / 18px 1px no-repeat,
+      linear-gradient(0deg,  var(--cyan) 0 18px, transparent 18px) top    left  / 1px 18px no-repeat,
+      linear-gradient(90deg, transparent calc(100% - 18px), var(--magenta) calc(100% - 18px)) top    right / 100% 1px no-repeat,
+      linear-gradient(0deg,  var(--magenta) 0 18px, transparent 18px) top    right / 1px 18px no-repeat,
+      linear-gradient(90deg, var(--magenta) 0 18px, transparent 18px) bottom left  / 18px 1px no-repeat,
+      linear-gradient(0deg,  transparent calc(100% - 18px), var(--magenta) calc(100% - 18px)) bottom left / 1px 18px no-repeat,
+      linear-gradient(90deg, transparent calc(100% - 18px), var(--cyan) calc(100% - 18px)) bottom right / 100% 1px no-repeat,
+      linear-gradient(0deg,  transparent calc(100% - 18px), var(--cyan) calc(100% - 18px)) bottom right / 1px 18px no-repeat;
+    opacity: 0.7;
+    pointer-events: none;
+  }
+  .portrait-glyph {
+    position: relative;
+    font-family: var(--display); font-weight: 700;
+    font-size: 180px; line-height: 1;
+    color: var(--cyan);
+    text-shadow:
+      -4px 0 var(--magenta),
+      4px 0 var(--cyan),
+      0 0 40px rgba(86,212,224,0.6),
+      0 0 80px rgba(255,46,136,0.35);
+    animation: glitch 8s steps(1) infinite;
+  }
+  @keyframes glitch {
+    0%, 96%, 100% { transform: translate(0); clip-path: inset(0 0 0 0); }
+    96.5%         { transform: translate(-3px, 0); clip-path: inset(20% 0 30% 0); }
+    97%           { transform: translate(3px, 0);  clip-path: inset(45% 0 5% 0); }
+    97.5%         { transform: translate(-1px, 0); clip-path: inset(0 0 60% 0); }
+    98%           { transform: translate(0); clip-path: inset(0 0 0 0); }
+  }
+  .portrait-tag {
+    position: absolute; bottom: 14px; left: 14px;
+    font-family: var(--mono); font-size: 9.5px; color: var(--magenta);
+    letter-spacing: 0.18em;
+    text-shadow: 0 0 6px rgba(255,46,136,0.5);
+  }
+  .portrait-class {
+    position: absolute; top: 14px; right: 14px;
+    font-family: var(--mono); font-size: 9.5px; color: var(--cyan);
+    letter-spacing: 0.18em;
+    text-shadow: 0 0 6px rgba(86,212,224,0.5);
+  }
+
+  /* hero center */
+  .hero-center { display: flex; flex-direction: column; justify-content: space-between; padding: 6px 0; }
+  .agent-eyebrow {
+    font-family: var(--mono); font-size: 10px;
+    letter-spacing: 0.22em; text-transform: uppercase;
+    color: var(--steel);
+  }
+  .agent-eyebrow .hex { color: var(--cyan); }
+  .agent-eyebrow em { color: var(--magenta); font-style: normal; }
+
+  .agent-codename {
+    font-family: var(--display); font-weight: 600;
+    font-size: 64px; line-height: 1;
+    letter-spacing: 0.005em;
+    color: var(--frost);
+    margin-top: 8px;
+    text-transform: uppercase;
+    text-shadow:
+      -2.5px 0 rgba(255,46,136,0.6),
+      2.5px 0 rgba(86,212,224,0.6),
+      0 0 22px rgba(86,212,224,0.25);
+    animation: chroma 6s ease-in-out infinite;
+  }
+  .agent-codename em {
+    font-style: normal; color: var(--magenta);
+    text-shadow: -3px 0 var(--magenta), 3px 0 var(--cyan), 0 0 28px rgba(255,46,136,0.55);
+  }
+  @keyframes chroma {
+    0%, 100% { text-shadow: -2.5px 0 rgba(255,46,136,0.6), 2.5px 0 rgba(86,212,224,0.6), 0 0 22px rgba(86,212,224,0.25); }
+    50%      { text-shadow: -3.5px 0 rgba(255,46,136,0.65), 3.5px 0 rgba(86,212,224,0.65), 0 0 28px rgba(86,212,224,0.3); }
+  }
+
+  .agent-class-line {
+    margin-top: 14px;
+    font-family: var(--display); font-size: 13px;
+    letter-spacing: 0.16em; text-transform: uppercase;
+    color: var(--mist);
+    display: flex; align-items: center; gap: 14px;
+  }
+  .agent-class-line .glyph {
+    color: var(--cyan); font-size: 18px;
+    text-shadow: 0 0 8px rgba(86,212,224,0.6);
+  }
+  .agent-class-line .pipe { color: var(--gunmetal); }
+  .agent-class-line .model {
+    font-family: var(--mono); font-size: 11px;
+    padding: 3px 10px;
+    border: 1px solid var(--cyan-dim); background: var(--cyan-ink);
+    color: var(--cyan); letter-spacing: 0.05em;
+    clip-path: polygon(6px 0, 100% 0, 100% calc(100% - 6px), calc(100% - 6px) 100%, 0 100%, 0 6px);
+  }
+
+  .agent-bio {
+    font-family: var(--mono); font-size: 12px;
+    line-height: 1.65; color: var(--mist);
+    max-width: 580px; letter-spacing: 0.01em;
+    margin-top: 18px;
+    padding-left: 12px;
+    border-left: 1px solid var(--magenta-dim);
+  }
+  .agent-bio em { color: var(--cyan); font-style: normal; }
+
+  .hero-actions {
+    margin-top: 22px;
+    display: flex; gap: 8px;
+  }
+  .btn {
+    display: inline-flex; align-items: center; gap: 8px;
+    padding: 9px 16px;
+    font-family: var(--display); font-size: 11px; font-weight: 500;
+    letter-spacing: 0.16em; text-transform: uppercase;
+    border: 1px solid var(--rule-2);
+    background: var(--hull-3); color: var(--frost);
+    transition: all .15s;
+    clip-path: polygon(8px 0, 100% 0, 100% calc(100% - 8px), calc(100% - 8px) 100%, 0 100%, 0 8px);
+  }
+  .btn:hover { background: var(--hull-4); }
+  .btn svg { width: 12px; height: 12px; }
+  .btn-primary {
+    background: linear-gradient(180deg, var(--cyan-2), var(--cyan));
+    color: var(--void); border-color: var(--cyan); font-weight: 700;
+    box-shadow: 0 0 18px rgba(86,212,224,0.45), inset 0 1px 0 rgba(255,255,255,0.2);
+  }
+  .btn-magenta {
+    background: linear-gradient(180deg, var(--magenta-2), var(--magenta));
+    color: var(--void); border-color: var(--magenta); font-weight: 700;
+    box-shadow: 0 0 18px rgba(255,46,136,0.45), inset 0 1px 0 rgba(255,255,255,0.2);
+  }
+
+  /* hero right: level + xp */
+  .hero-right {
+    display: flex; flex-direction: column; justify-content: center;
+    gap: 18px;
+  }
+  .level-block {
+    text-align: center;
+    padding: 16px 14px;
+    background:
+      linear-gradient(180deg, var(--hull-2), var(--hull-1)),
+      radial-gradient(circle at 50% 0, var(--magenta-dim), transparent 70%);
+    border: 1px solid var(--magenta);
+    box-shadow: 0 0 22px rgba(255,46,136,0.2);
+    clip-path: polygon(14px 0, 100% 0, 100% calc(100% - 14px), calc(100% - 14px) 100%, 0 100%, 0 14px);
+    position: relative;
+  }
+  .level-block::before {
+    content: ""; position: absolute; top: 0; left: 0; right: 0; height: 2px;
+    background: linear-gradient(90deg, transparent, var(--magenta), transparent);
+  }
+  .level-block .lbl {
+    font-family: var(--display); font-size: 9px;
+    letter-spacing: 0.28em; text-transform: uppercase;
+    color: var(--steel); margin-bottom: 4px; font-weight: 500;
+  }
+  .level-block .v {
+    font-family: var(--display); font-weight: 700;
+    font-size: 76px; line-height: 1;
+    color: var(--magenta);
+    text-shadow:
+      -3px 0 var(--cyan), 3px 0 var(--magenta),
+      0 0 24px rgba(255,46,136,0.6);
+    letter-spacing: 0;
+  }
+  .level-block .next {
+    margin-top: 6px;
+    font-family: var(--mono); font-size: 10px;
+    color: var(--cyan); letter-spacing: 0.05em;
+  }
+
+  .xp-block { display: flex; flex-direction: column; gap: 6px; }
+  .xp-row {
+    display: flex; justify-content: space-between;
+    font-family: var(--display); font-size: 9px;
+    letter-spacing: 0.24em; text-transform: uppercase;
+    color: var(--steel); font-weight: 500;
+  }
+  .xp-row .v {
+    font-family: var(--mono); font-size: 11px;
+    color: var(--cyan); letter-spacing: 0.05em;
+    text-transform: none;
+  }
+  .xp-bar {
+    height: 8px; background: var(--hull-3);
+    border: 1px solid var(--rule-2); position: relative;
+    clip-path: polygon(3px 0, 100% 0, 100% calc(100% - 3px), calc(100% - 3px) 100%, 0 100%, 0 3px);
+  }
+  .xp-fill {
+    height: 100%; width: 47%;
+    background: linear-gradient(90deg, var(--cyan), var(--magenta));
+    box-shadow: 0 0 12px rgba(86,212,224,0.6);
+    position: relative;
+  }
+  .xp-fill::after {
+    content: ""; position: absolute; right: 0; top: 0; bottom: 0; width: 8px;
+    background: var(--frost); opacity: 0.85;
+    box-shadow: 0 0 12px var(--frost);
+  }
+  .streak {
+    margin-top: 4px;
+    font-family: var(--mono); font-size: 10px;
+    color: var(--magenta); letter-spacing: 0.06em;
+    text-shadow: 0 0 6px rgba(255,46,136,0.5);
+  }
+
+  /* ─── content grid ─── */
+  .grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 24px;
+    padding: 28px 32px;
+  }
+
+  .panel {
+    background: linear-gradient(180deg, var(--hull-1), var(--hull-0));
+    border: 1px solid var(--rule-2);
+    padding: 20px 22px;
+    position: relative;
+    clip-path: polygon(12px 0, 100% 0, 100% calc(100% - 12px), calc(100% - 12px) 100%, 0 100%, 0 12px);
+  }
+  .panel::before {
+    content: ""; position: absolute; top: 0; left: 0; right: 0; height: 1px;
+    background: linear-gradient(90deg, transparent, var(--cyan-dim), transparent);
+  }
+  .panel-head {
+    display: flex; align-items: center; justify-content: space-between;
+    gap: 10px; margin-bottom: 18px;
+  }
+  .panel-head h3 {
+    font-family: var(--display); font-size: 11px; font-weight: 600;
+    letter-spacing: 0.22em; text-transform: uppercase;
+    color: var(--frost);
+    text-shadow: -0.5px 0 var(--magenta), 0.5px 0 var(--cyan);
+    display: flex; align-items: center; gap: 10px;
+  }
+  .panel-head h3 .hex {
+    font-family: var(--mono); color: var(--cyan); letter-spacing: 0.05em;
+    text-shadow: none;
+  }
+  .panel-head .meta {
+    font-family: var(--mono); font-size: 9.5px;
+    color: var(--steel); letter-spacing: 0.05em;
+  }
+
+  /* ─── radar ─── */
+  .radar-wrap {
+    display: grid;
+    grid-template-columns: 220px 1fr;
+    gap: 22px;
+    align-items: center;
+  }
+  .radar-svg { width: 220px; height: 220px; }
+  .stat-list {
+    display: flex; flex-direction: column; gap: 10px;
+  }
+  .stat-line {
+    display: grid; grid-template-columns: 22px 1fr auto;
+    align-items: center; gap: 12px;
+  }
+  .stat-glyph {
+    width: 18px; height: 18px;
+    transform: rotate(45deg);
+    background: var(--hull-3);
+    border: 1px solid var(--cyan);
+    box-shadow: 0 0 6px var(--cyan-dim);
+  }
+  .stat-glyph.m { border-color: var(--magenta); box-shadow: 0 0 6px var(--magenta-dim); }
+  .stat-glyph.p { border-color: var(--plasma); box-shadow: 0 0 6px var(--plasma-dim); }
+  .stat-glyph.a { border-color: var(--amber); box-shadow: 0 0 6px var(--amber-dim); }
+  .stat-line .body { min-width: 0; }
+  .stat-line .lbl {
+    font-family: var(--display); font-size: 9.5px;
+    letter-spacing: 0.22em; text-transform: uppercase;
+    color: var(--steel); font-weight: 500;
+  }
+  .stat-line .desc {
+    font-family: var(--mono); font-size: 10px;
+    color: var(--mist); margin-top: 1px; letter-spacing: 0.02em;
+  }
+  .stat-line .v {
+    font-family: var(--mono); font-size: 14px; font-weight: 600;
+    color: var(--cyan); letter-spacing: 0.04em;
+    text-shadow: 0 0 6px rgba(86,212,224,0.4);
+  }
+  .stat-line.m .v { color: var(--magenta); text-shadow: 0 0 6px rgba(255,46,136,0.4); }
+  .stat-line.p .v { color: var(--plasma); text-shadow: 0 0 6px rgba(108,255,170,0.4); }
+  .stat-line.a .v { color: var(--amber); text-shadow: 0 0 6px rgba(255,181,71,0.4); }
+
+  /* ─── unlock tree ─── */
+  .tree {
+    display: flex; flex-direction: column; gap: 10px;
+    position: relative;
+  }
+  .tree::before {
+    content: "";
+    position: absolute;
+    top: 16px; bottom: 16px; left: 18px; width: 1px;
+    background: linear-gradient(180deg, var(--cyan), var(--magenta));
+    opacity: 0.4;
+  }
+  .tier {
+    display: grid; grid-template-columns: 38px 1fr;
+    align-items: stretch; gap: 14px;
+    position: relative;
+  }
+  .tier-node {
+    width: 36px; height: 36px;
+    display: grid; place-items: center;
+    background: var(--hull-2); border: 1px solid var(--rule-2);
+    color: var(--steel);
+    font-family: var(--display); font-size: 12px; font-weight: 700;
+    clip-path: polygon(20% 0, 100% 0, 100% 80%, 80% 100%, 0 100%, 0 20%);
+    z-index: 1;
+  }
+  .tier.unlocked .tier-node {
+    background: linear-gradient(135deg, var(--cyan-ink), var(--hull-3));
+    border-color: var(--cyan); color: var(--cyan);
+    box-shadow: 0 0 14px rgba(86,212,224,0.4);
+    text-shadow: 0 0 6px rgba(86,212,224,0.6);
+  }
+  .tier.current .tier-node {
+    background: linear-gradient(135deg, var(--magenta-ink), var(--hull-3));
+    border-color: var(--magenta); color: var(--magenta);
+    box-shadow: 0 0 18px rgba(255,46,136,0.5);
+    text-shadow: 0 0 8px rgba(255,46,136,0.6);
+    animation: pulse-node 2s ease-in-out infinite;
+  }
+  @keyframes pulse-node {
+    0%, 100% { box-shadow: 0 0 18px rgba(255,46,136,0.5); }
+    50%      { box-shadow: 0 0 28px rgba(255,46,136,0.8); }
+  }
+  .tier.locked { opacity: 0.55; }
+  .tier-card {
+    padding: 9px 12px;
+    border: 1px solid var(--rule-2);
+    background: var(--hull-2);
+    display: grid;
+    grid-template-columns: 1fr auto;
+    gap: 8px;
+    align-items: center;
+    clip-path: polygon(8px 0, 100% 0, 100% calc(100% - 8px), calc(100% - 8px) 100%, 0 100%, 0 8px);
+  }
+  .tier.unlocked .tier-card { border-color: var(--cyan-dim); background: var(--cyan-ink); }
+  .tier.current .tier-card { border-color: var(--magenta); background: var(--magenta-ink); }
+
+  .tier-body { min-width: 0; }
+  .tier-name {
+    font-family: var(--display); font-size: 11.5px; font-weight: 600;
+    letter-spacing: 0.06em; text-transform: uppercase; color: var(--frost);
+  }
+  .tier.locked .tier-name { color: var(--mist); }
+  .tier-desc {
+    font-family: var(--mono); font-size: 10px;
+    color: var(--mist); margin-top: 2px; letter-spacing: 0.02em;
+  }
+  .tier-status {
+    font-family: var(--mono); font-size: 9.5px;
+    padding: 2px 7px; border: 1px solid var(--rule-2);
+    color: var(--steel); letter-spacing: 0.05em;
+    text-transform: uppercase;
+  }
+  .tier.unlocked .tier-status { color: var(--cyan); border-color: var(--cyan-dim); background: var(--cyan-ink); }
+  .tier.current .tier-status { color: var(--magenta); border-color: var(--magenta); background: var(--magenta-ink); }
+
+  /* ─── mission log / kill feed ─── */
+  .log-list {
+    display: flex; flex-direction: column;
+    max-height: 380px; overflow-y: auto;
+  }
+  .log-list::-webkit-scrollbar { width: 6px; }
+  .log-list::-webkit-scrollbar-thumb { background: var(--hull-3); }
+  .log-row {
+    display: grid;
+    grid-template-columns: 36px 1fr auto;
+    gap: 12px; align-items: center;
+    padding: 10px 4px;
+    border-bottom: 1px solid var(--rule);
+  }
+  .log-row:last-child { border-bottom: 0; }
+  .log-glyph {
+    width: 22px; height: 22px;
+    transform: rotate(45deg);
+    background: var(--plasma);
+    box-shadow: 0 0 8px var(--plasma);
+  }
+  .log-row.fail .log-glyph { background: var(--crimson); box-shadow: 0 0 8px var(--crimson); }
+  .log-row.review .log-glyph { background: var(--amber); box-shadow: 0 0 8px var(--amber); }
+  .log-row.boss .log-glyph { background: var(--magenta); box-shadow: 0 0 10px var(--magenta); width: 24px; height: 24px; }
+
+  .log-body { min-width: 0; }
+  .log-title {
+    font-family: var(--mono); font-size: 11.5px;
+    color: var(--frost); letter-spacing: 0.02em;
+    overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  }
+  .log-title em {
+    font-style: normal; color: var(--cyan);
+    text-shadow: 0 0 4px rgba(86,212,224,0.4);
+  }
+  .log-row.boss .log-title em { color: var(--magenta); text-shadow: 0 0 4px rgba(255,46,136,0.5); }
+  .log-meta {
+    font-family: var(--mono); font-size: 9.5px;
+    color: var(--steel); margin-top: 2px; letter-spacing: 0.04em;
+  }
+  .log-xp {
+    font-family: var(--mono); font-size: 11.5px; font-weight: 600;
+    letter-spacing: 0.05em;
+    color: var(--plasma);
+    text-shadow: 0 0 6px rgba(108,255,170,0.4);
+  }
+  .log-row.fail .log-xp { color: var(--crimson); text-shadow: 0 0 6px rgba(255,94,108,0.4); }
+  .log-row.boss .log-xp { color: var(--magenta); text-shadow: 0 0 6px rgba(255,46,136,0.5); }
+
+  /* ─── inventory / loot ─── */
+  .inv-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 8px;
+  }
+  .slot {
+    aspect-ratio: 1 / 1;
+    background: var(--hull-2);
+    border: 1px solid var(--rule-2);
+    display: grid; place-items: center;
+    color: var(--steel);
+    transition: all .15s;
+    cursor: pointer;
+    position: relative;
+    clip-path: polygon(8px 0, 100% 0, 100% calc(100% - 8px), calc(100% - 8px) 100%, 0 100%, 0 8px);
+  }
+  .slot:hover { border-color: var(--cyan-dim); color: var(--cyan); }
+  .slot.has { color: var(--cyan); border-color: var(--cyan-dim); background: var(--cyan-ink); box-shadow: inset 0 0 10px rgba(86,212,224,0.1); }
+  .slot.has.rare { color: var(--magenta); border-color: var(--magenta); background: var(--magenta-ink); box-shadow: 0 0 10px rgba(255,46,136,0.3); }
+  .slot.has.epic { color: var(--plasma); border-color: var(--plasma); background: var(--plasma-dim); box-shadow: 0 0 12px rgba(108,255,170,0.3); }
+  .slot .icon { font-family: var(--display); font-size: 22px; font-weight: 700; }
+  .slot .qty {
+    position: absolute; bottom: 4px; right: 6px;
+    font-family: var(--mono); font-size: 8.5px;
+    color: var(--frost); letter-spacing: 0.04em;
+  }
+  .slot .label {
+    position: absolute; top: 5px; left: 6px;
+    font-family: var(--mono); font-size: 7.5px;
+    color: var(--steel); letter-spacing: 0.12em;
+    text-transform: uppercase;
+  }
+  .slot.has .label { color: currentColor; }
+
+  /* ─── achievements ─── */
+  .badge-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 12px;
+  }
+  .badge {
+    padding: 12px 10px 10px;
+    border: 1px solid var(--rule-2);
+    background: var(--hull-2);
+    text-align: center;
+    clip-path: polygon(10px 0, 100% 0, 100% calc(100% - 10px), calc(100% - 10px) 100%, 0 100%, 0 10px);
+    transition: all .15s;
+  }
+  .badge.earned {
+    border-color: var(--magenta);
+    background: linear-gradient(180deg, var(--magenta-ink), var(--hull-2));
+    box-shadow: 0 0 12px rgba(255,46,136,0.2);
+  }
+  .badge.locked { opacity: 0.4; }
+  .badge .glyph {
+    font-family: var(--display); font-weight: 700;
+    font-size: 26px; color: var(--steel); line-height: 1;
+  }
+  .badge.earned .glyph {
+    color: var(--magenta);
+    text-shadow: -1.5px 0 var(--cyan), 1.5px 0 var(--magenta), 0 0 14px rgba(255,46,136,0.6);
+  }
+  .badge .name {
+    margin-top: 8px;
+    font-family: var(--display); font-size: 10px;
+    letter-spacing: 0.16em; text-transform: uppercase;
+    color: var(--frost); font-weight: 600;
+  }
+  .badge.locked .name { color: var(--mist); }
+  .badge .desc {
+    font-family: var(--mono); font-size: 9px;
+    color: var(--steel); margin-top: 4px; letter-spacing: 0.02em;
+    line-height: 1.4;
+  }
+
+  /* full-width panel */
+  .span-2 { grid-column: 1 / -1; }
+</style>
+</head>
+<body>
+  <div class="app">
+
+    <!-- titlebar -->
+    <div class="titlebar">
+      <div class="tb-left">
+        <div class="traffic"><i></i><i></i><i></i></div>
+        <div class="brand">
+          <div class="brand-mark">S</div>
+          <span class="brand-name">Sandcastle</span>
+          <span class="brand-sep">/</span>
+          <span class="brand-ctx">SANDCASTLE</span>
+          <span class="brand-sep">·</span>
+          <span class="brand-ctx" style="color: var(--cyan); border-color: var(--cyan-dim);">main</span>
+        </div>
+      </div>
+
+      <div class="mode-switch">
+        <button class="mode">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="12" cy="12" r="3"/><circle cx="12" cy="12" r="9" stroke-dasharray="2 4"/></svg>
+          Cockpit
+        </button>
+        <button class="mode">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M3 6l4-3 5 3 5-3 4 3v15l-4-3-5 3-5-3-4 3z"/><path d="M7 3v15M12 6v15M17 3v15"/></svg>
+          Map
+        </button>
+        <button class="mode is-active">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="12" cy="8" r="4"/><path d="M4 21c0-4 4-7 8-7s8 3 8 7"/></svg>
+          Roster
+        </button>
+        <button class="mode">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M3 12a9 9 0 1 0 9-9"/><path d="M3 4v5h5"/></svg>
+          Logs
+        </button>
+      </div>
+
+      <div class="tb-right">
+        <div class="search">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/></svg>
+          <input placeholder="QUERY · agent, perk, mission…" />
+          <span class="kbd">⌘K</span>
+        </div>
+        <button class="icon-btn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M3 12h4l3-9 4 18 3-9h4"/></svg></button>
+      </div>
+    </div>
+
+    <!-- shell -->
+    <div class="shell">
+
+      <!-- roster rail -->
+      <aside class="roster-rail">
+        <div class="roster-head">
+          <h2>ROSTER</h2>
+          <button class="add-btn" title="Recruit agent">＋</button>
+        </div>
+
+        <div class="roster-section-label"><span class="hex">0x01</span>ACTIVE<span class="line"></span></div>
+
+        <div class="roster-list">
+          <button class="agent-row is-active">
+            <div class="portrait">π</div>
+            <div class="body">
+              <div class="name">PI · KAGE</div>
+              <div class="meta">⌬ SURGEON · CL.II</div>
+            </div>
+            <div class="lvl">08<small>LVL</small></div>
+          </button>
+
+          <button class="agent-row">
+            <div class="portrait" style="color: var(--magenta); border-color: var(--magenta);">C</div>
+            <div class="body">
+              <div class="name">CODEX · RŌNIN</div>
+              <div class="meta">π ARCHITECT · CL.I</div>
+            </div>
+            <div class="lvl">06<small>LVL</small></div>
+          </button>
+
+          <button class="agent-row">
+            <div class="portrait" style="color: var(--plasma); border-color: var(--plasma); text-shadow: -1px 0 var(--magenta), 1px 0 var(--plasma);">▣</div>
+            <div class="body">
+              <div class="name">CLAUDE · WRAITH</div>
+              <div class="meta">▣ SENTINEL · CL.II</div>
+            </div>
+            <div class="lvl">11<small>LVL</small></div>
+          </button>
+
+          <button class="agent-row">
+            <div class="portrait" style="color: var(--amber); border-color: var(--amber); text-shadow: -1px 0 var(--magenta), 1px 0 var(--amber);">◊</div>
+            <div class="body">
+              <div class="name">SCOUT · NULL</div>
+              <div class="meta">◊ SCOUT · CL.I</div>
+            </div>
+            <div class="lvl">03<small>LVL</small></div>
+          </button>
+        </div>
+
+        <div class="roster-section-label"><span class="hex">0x02</span>BENCHED<span class="line"></span></div>
+
+        <div class="roster-list">
+          <button class="agent-row" style="opacity: 0.7;">
+            <div class="portrait" style="color: var(--steel); border-color: var(--gunmetal); text-shadow: none;">G</div>
+            <div class="body">
+              <div class="name">GEMINI · ECHO</div>
+              <div class="meta">⌬ SURGEON · CL.0</div>
+            </div>
+            <div class="lvl" style="color: var(--steel); text-shadow: none;">02<small>LVL</small></div>
+          </button>
+        </div>
+      </aside>
+
+      <!-- stage -->
+      <div class="stage">
+
+        <!-- HERO STRIP -->
+        <div class="hero">
+
+          <!-- portrait -->
+          <div class="portrait-card">
+            <span class="portrait-class">⌬ CL.II</span>
+            <span class="portrait-glyph">π</span>
+            <span class="portrait-tag">AGENT-π / KAGE</span>
+          </div>
+
+          <!-- center -->
+          <div class="hero-center">
+            <div>
+              <div class="agent-eyebrow"><span class="hex">0x01</span> ・ SELECTED OPERATIVE ・ <em>ID #π-04A</em></div>
+              <h1 class="agent-codename">PI · <em>KAGE</em></h1>
+              <div class="agent-class-line">
+                <span class="glyph">⌬</span>
+                <span>SURGEON</span>
+                <span class="pipe">/</span>
+                <span>CLASS II</span>
+                <span class="pipe">/</span>
+                <span class="model">openai-codex / gpt-5.5</span>
+              </div>
+
+              <p class="agent-bio">
+                Specialist operative tuned for surgical bug excision. <em>+25% XP</em> on closing-issue commits with diff &lt; 30 lines.
+                Trained on 47 merged ops across <em>src/auth</em>, <em>src/cli</em>, <em>src/InitService</em>.
+                Last seen: chamber <em>refresh.ts:47</em>, T+12:04, hostile signature confirmed.
+              </p>
+            </div>
+
+            <div class="hero-actions">
+              <button class="btn btn-primary">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 4l14 8-14 8V4z"/></svg>
+                Deploy
+              </button>
+              <button class="btn">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><circle cx="12" cy="12" r="3"/><path d="M19 12c0 4-3 7-7 7s-7-3-7-7 3-7 7-7"/></svg>
+                Configure
+              </button>
+              <button class="btn">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M4 4h16M4 12h16M4 20h16"/></svg>
+                Loadout
+              </button>
+            </div>
+          </div>
+
+          <!-- right -->
+          <div class="hero-right">
+            <div class="level-block">
+              <div class="lbl">LEVEL</div>
+              <div class="v">08</div>
+              <div class="next">→ L9 · 460 XP TO ASCEND</div>
+            </div>
+
+            <div class="xp-block">
+              <div class="xp-row">
+                <span>EXPERIENCE</span>
+                <span class="v">2,140 / 2,600</span>
+              </div>
+              <div class="xp-bar"><div class="xp-fill"></div></div>
+              <div class="streak">▸ STREAK ×3 · 3 MERGED, 0 REVERTS · +15% XP MULTIPLIER</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- CONTENT GRID -->
+        <div class="grid">
+
+          <!-- STATS RADAR -->
+          <div class="panel">
+            <div class="panel-head">
+              <h3><span class="hex">0x02</span>VITALS</h3>
+              <span class="meta">SAMPLED FROM 47 RUNS</span>
+            </div>
+
+            <div class="radar-wrap">
+              <svg class="radar-svg" viewBox="0 0 220 220">
+                <defs>
+                  <radialGradient id="radarGrad" cx="50%" cy="50%">
+                    <stop offset="0%" stop-color="rgba(86,212,224,0.18)"/>
+                    <stop offset="100%" stop-color="rgba(86,212,224,0)"/>
+                  </radialGradient>
+                </defs>
+                <!-- rings -->
+                <g stroke="rgba(120,200,220,0.18)" stroke-width="0.7" fill="none">
+                  <polygon points="110,18 192,67 192,153 110,202 28,153 28,67"/>
+                  <polygon points="110,46 168,80 168,140 110,174 52,140 52,80"/>
+                  <polygon points="110,74 144,93 144,127 110,146 76,127 76,93"/>
+                </g>
+                <!-- spokes -->
+                <g stroke="rgba(120,200,220,0.12)" stroke-width="0.5">
+                  <line x1="110" y1="18" x2="110" y2="202"/>
+                  <line x1="28" y1="67" x2="192" y2="153"/>
+                  <line x1="192" y1="67" x2="28" y2="153"/>
+                </g>
+                <!-- labels -->
+                <g font-family="JetBrains Mono" font-size="9" fill="#5b6b7a" letter-spacing="1">
+                  <text x="110" y="12" text-anchor="middle">PRECISION</text>
+                  <text x="200" y="65" text-anchor="start">SCOPE</text>
+                  <text x="200" y="158" text-anchor="start">RESILIENCE</text>
+                  <text x="110" y="216" text-anchor="middle">VELOCITY</text>
+                  <text x="20" y="158" text-anchor="end">CREATIVITY</text>
+                  <text x="20" y="65" text-anchor="end">PRUDENCE</text>
+                </g>
+                <!-- shape -->
+                <polygon
+                  points="110,28 178,75 158,135 110,190 60,140 50,75"
+                  fill="url(#radarGrad)"
+                  stroke="#56d4e0"
+                  stroke-width="1.5"
+                  filter="drop-shadow(0 0 6px #56d4e0)"
+                />
+                <!-- magenta inner shape (target / class avg) -->
+                <polygon
+                  points="110,52 152,80 142,130 110,170 78,130 70,80"
+                  fill="rgba(255,46,136,0.06)"
+                  stroke="#ff2e88"
+                  stroke-width="1"
+                  stroke-dasharray="3 3"
+                  opacity="0.7"
+                />
+                <!-- vertices -->
+                <g fill="#56d4e0">
+                  <circle cx="110" cy="28" r="2.5"/>
+                  <circle cx="178" cy="75" r="2.5"/>
+                  <circle cx="158" cy="135" r="2.5"/>
+                  <circle cx="110" cy="190" r="2.5"/>
+                  <circle cx="60" cy="140" r="2.5"/>
+                  <circle cx="50" cy="75" r="2.5"/>
+                </g>
+                <!-- center reticle -->
+                <circle cx="110" cy="110" r="3" fill="#ff2e88" filter="drop-shadow(0 0 4px #ff2e88)"/>
+              </svg>
+
+              <div class="stat-list">
+                <div class="stat-line p">
+                  <span class="stat-glyph p"></span>
+                  <div class="body">
+                    <div class="lbl">PRECISION</div>
+                    <div class="desc">Tests-green on first attempt</div>
+                  </div>
+                  <span class="v">94 %</span>
+                </div>
+                <div class="stat-line">
+                  <span class="stat-glyph"></span>
+                  <div class="body">
+                    <div class="lbl">VELOCITY</div>
+                    <div class="desc">Median run completion</div>
+                  </div>
+                  <span class="v">11.4 m</span>
+                </div>
+                <div class="stat-line a">
+                  <span class="stat-glyph a"></span>
+                  <div class="body">
+                    <div class="lbl">SCOPE</div>
+                    <div class="desc">Avg files / merged run</div>
+                  </div>
+                  <span class="v">3.8 ƒ</span>
+                </div>
+                <div class="stat-line m">
+                  <span class="stat-glyph m"></span>
+                  <div class="body">
+                    <div class="lbl">RESILIENCE</div>
+                    <div class="desc">Recovery after blocked</div>
+                  </div>
+                  <span class="v">81 %</span>
+                </div>
+                <div class="stat-line">
+                  <span class="stat-glyph"></span>
+                  <div class="body">
+                    <div class="lbl">CREATIVITY</div>
+                    <div class="desc">Refactor depth multiplier</div>
+                  </div>
+                  <span class="v">62 %</span>
+                </div>
+                <div class="stat-line m">
+                  <span class="stat-glyph m"></span>
+                  <div class="body">
+                    <div class="lbl">PRUDENCE</div>
+                    <div class="desc">Reverts avoided / 30d</div>
+                  </div>
+                  <span class="v">98 %</span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- UNLOCK TREE -->
+          <div class="panel">
+            <div class="panel-head">
+              <h3><span class="hex">0x03</span>ASCENSION</h3>
+              <span class="meta">TIER 8 / 25 · 3 LOCKED</span>
+            </div>
+
+            <div class="tree">
+              <div class="tier unlocked">
+                <div class="tier-node">III</div>
+                <div class="tier-card">
+                  <div class="tier-body">
+                    <div class="tier-name">Adversarial Review</div>
+                    <div class="tier-desc">Hostile reviewer mode for high-risk diffs.</div>
+                  </div>
+                  <span class="tier-status">EARNED</span>
+                </div>
+              </div>
+
+              <div class="tier unlocked">
+                <div class="tier-node">V</div>
+                <div class="tier-card">
+                  <div class="tier-body">
+                    <div class="tier-name">Parallel Slot ×2</div>
+                    <div class="tier-desc">Run 2 concurrent ops without context bleed.</div>
+                  </div>
+                  <span class="tier-status">EARNED</span>
+                </div>
+              </div>
+
+              <div class="tier unlocked">
+                <div class="tier-node">VII</div>
+                <div class="tier-card">
+                  <div class="tier-body">
+                    <div class="tier-name">Custom Prompt Slot</div>
+                    <div class="tier-desc">Forge a permanent system directive.</div>
+                  </div>
+                  <span class="tier-status">EARNED</span>
+                </div>
+              </div>
+
+              <div class="tier current">
+                <div class="tier-node">X</div>
+                <div class="tier-card">
+                  <div class="tier-body">
+                    <div class="tier-name">Premium Model · GPT-5.5</div>
+                    <div class="tier-desc">Unlock high-tier weapon. 460 XP to engrave.</div>
+                  </div>
+                  <span class="tier-status">460 XP</span>
+                </div>
+              </div>
+
+              <div class="tier locked">
+                <div class="tier-node">XII</div>
+                <div class="tier-card">
+                  <div class="tier-body">
+                    <div class="tier-name">Deep Think</div>
+                    <div class="tier-desc">Extended reasoning budget. Locked at L12.</div>
+                  </div>
+                  <span class="tier-status">LOCKED</span>
+                </div>
+              </div>
+
+              <div class="tier locked">
+                <div class="tier-node">XV</div>
+                <div class="tier-card">
+                  <div class="tier-body">
+                    <div class="tier-name">Auto-Merge on Green</div>
+                    <div class="tier-desc">Streak-gated. Locked at L15.</div>
+                  </div>
+                  <span class="tier-status">LOCKED</span>
+                </div>
+              </div>
+
+              <div class="tier locked">
+                <div class="tier-node">XX</div>
+                <div class="tier-card">
+                  <div class="tier-body">
+                    <div class="tier-name">Self-Directed Ops</div>
+                    <div class="tier-desc">Agent generates its own follow-up missions.</div>
+                  </div>
+                  <span class="tier-status">LOCKED</span>
+                </div>
+              </div>
+
+              <div class="tier locked">
+                <div class="tier-node">XXV</div>
+                <div class="tier-card">
+                  <div class="tier-body">
+                    <div class="tier-name">Prestige · Reset for Perk Slot</div>
+                    <div class="tier-desc">Reset to L1, gain a permanent perk.</div>
+                  </div>
+                  <span class="tier-status">LOCKED</span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- MISSION LOG -->
+          <div class="panel">
+            <div class="panel-head">
+              <h3><span class="hex">0x04</span>MISSION LOG</h3>
+              <span class="meta">LAST 7 OPS</span>
+            </div>
+
+            <div class="log-list">
+              <div class="log-row boss">
+                <span class="log-glyph"></span>
+                <div class="log-body">
+                  <div class="log-title">BOSS ／ <em>Auth Refresh Loop</em> ・ #42</div>
+                  <div class="log-meta">RUN-042 · 14:18 · 5 files · risk×2</div>
+                </div>
+                <span class="log-xp">+ 525</span>
+              </div>
+
+              <div class="log-row">
+                <span class="log-glyph"></span>
+                <div class="log-body">
+                  <div class="log-title">MERGE ／ <em>Default Pi to GPT-5.5</em> ・ #58</div>
+                  <div class="log-meta">RUN-058 · 11:30 · 5 files · streak ×3</div>
+                </div>
+                <span class="log-xp">+ 175</span>
+              </div>
+
+              <div class="log-row review">
+                <span class="log-glyph"></span>
+                <div class="log-body">
+                  <div class="log-title">REVIEW ／ <em>Tighten changeset wording</em> ・ #39</div>
+                  <div class="log-meta">RUN-039 · 09:14 · review accepted</div>
+                </div>
+                <span class="log-xp">+ 50</span>
+              </div>
+
+              <div class="log-row">
+                <span class="log-glyph"></span>
+                <div class="log-body">
+                  <div class="log-title">MERGE ／ <em>Stop {{TASK_ID}} leaking</em> ・ #48</div>
+                  <div class="log-meta">RUN-048 · YESTERDAY · 1 file · surgical</div>
+                </div>
+                <span class="log-xp">+ 130</span>
+              </div>
+
+              <div class="log-row fail">
+                <span class="log-glyph"></span>
+                <div class="log-body">
+                  <div class="log-title">REVERT ／ <em>Worktree cleanup race</em> ・ #71</div>
+                  <div class="log-meta">RUN-071 · −2D · 1st-revert grace consumed</div>
+                </div>
+                <span class="log-xp">− 100</span>
+              </div>
+
+              <div class="log-row">
+                <span class="log-glyph"></span>
+                <div class="log-body">
+                  <div class="log-title">MERGE ／ <em>Review dashboard copy</em></div>
+                  <div class="log-meta">RUN-066 · −2D · 3 files</div>
+                </div>
+                <span class="log-xp">+ 100</span>
+              </div>
+
+              <div class="log-row">
+                <span class="log-glyph"></span>
+                <div class="log-body">
+                  <div class="log-title">MERGE ／ <em>Prompt template substitution</em></div>
+                  <div class="log-meta">RUN-061 · −3D · 2 files · speed bonus</div>
+                </div>
+                <span class="log-xp">+ 145</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- INVENTORY -->
+          <div class="panel">
+            <div class="panel-head">
+              <h3><span class="hex">0x05</span>INVENTORY</h3>
+              <span class="meta">12 / 24 SLOTS</span>
+            </div>
+
+            <div class="inv-grid">
+              <div class="slot has">
+                <span class="label">CHROME</span>
+                <span class="icon">◊</span>
+                <span class="qty">×4</span>
+              </div>
+              <div class="slot has">
+                <span class="label">CIRCUIT</span>
+                <span class="icon">⌬</span>
+                <span class="qty">×11</span>
+              </div>
+              <div class="slot has">
+                <span class="label">POLYMER</span>
+                <span class="icon">▣</span>
+                <span class="qty">×7</span>
+              </div>
+              <div class="slot has rare">
+                <span class="label">RARE</span>
+                <span class="icon">π</span>
+                <span class="qty">×2</span>
+              </div>
+
+              <div class="slot has">
+                <span class="label">TOKEN</span>
+                <span class="icon">↻</span>
+                <span class="qty">×3</span>
+              </div>
+              <div class="slot has">
+                <span class="label">REVIVE</span>
+                <span class="icon">+</span>
+                <span class="qty">×1</span>
+              </div>
+              <div class="slot has epic">
+                <span class="label">EPIC</span>
+                <span class="icon">∇</span>
+                <span class="qty">×1</span>
+              </div>
+              <div class="slot"><span class="icon" style="font-size:14px;">···</span></div>
+            </div>
+
+            <div class="panel-head" style="margin-top: 22px;">
+              <h3><span class="hex">0x06</span>BADGES</h3>
+              <span class="meta">7 / 18 EARNED</span>
+            </div>
+
+            <div class="badge-grid">
+              <div class="badge earned">
+                <div class="glyph">⚔</div>
+                <div class="name">FIRST BLOOD</div>
+                <div class="desc">First boss defeated</div>
+              </div>
+              <div class="badge earned">
+                <div class="glyph">∞</div>
+                <div class="name">STREAK ×3</div>
+                <div class="desc">3 clean merges in row</div>
+              </div>
+              <div class="badge earned">
+                <div class="glyph">π</div>
+                <div class="name">SURGEON</div>
+                <div class="desc">10 surgical fixes</div>
+              </div>
+              <div class="badge locked">
+                <div class="glyph">⚡</div>
+                <div class="name">SPEED</div>
+                <div class="desc">Sub-5m run · 0 / 1</div>
+              </div>
+              <div class="badge locked">
+                <div class="glyph">◇</div>
+                <div class="name">PRESTIGE</div>
+                <div class="desc">Reach L25</div>
+              </div>
+              <div class="badge locked">
+                <div class="glyph">∇</div>
+                <div class="name">RAID</div>
+                <div class="desc">Crew of 3 ops</div>
+              </div>
+            </div>
+          </div>
+
+        </div>
+      </div>
+    </div>
+  </div>
+
+<!-- ─── INJECTED · FLEET DOCK + DEPLOY CHORD ─── -->
+<style>
+  .app { height: calc(100vh - 88px) !important; }
+  .sc-dock { position: fixed; left: 0; right: 0; bottom: 0; height: 88px; z-index: 80;
+    display: grid; grid-template-columns: auto 1fr auto; gap: 12px; align-items: center; padding: 10px 14px;
+    background: linear-gradient(180deg, rgba(10,16,24,0.95), rgba(3,6,10,0.98)); backdrop-filter: blur(20px);
+    border-top: 1px solid var(--cyan-dim); box-shadow: 0 -16px 40px rgba(0,0,0,0.6) }
+  .sc-dock::before { content: ""; position: absolute; top: 0; left: 0; right: 0; height: 1px;
+    background: linear-gradient(90deg, transparent 5%, var(--magenta) 25%, var(--cyan) 75%, transparent 95%);
+    opacity: 0.6; filter: blur(0.4px) }
+  .sc-dock-head { display: flex; flex-direction: column; justify-content: center; padding-right: 14px;
+    border-right: 1px solid var(--rule-2); min-width: 150px; cursor: pointer }
+  .sc-dock-head:hover { background: rgba(86,212,224,0.05) }
+  .sc-dock-head .lbl { font-family: var(--display); font-size: 8.5px; letter-spacing: 0.28em;
+    text-transform: uppercase; color: var(--steel); font-weight: 500 }
+  .sc-dock-head .v { font-family: var(--display); font-weight: 700; font-size: 18px; color: var(--cyan);
+    letter-spacing: 0.05em; line-height: 1; margin-top: 3px; text-shadow: 0 0 8px rgba(86,212,224,0.4) }
+  .sc-dock-head .v em { font-style: normal; color: var(--magenta); text-shadow: 0 0 6px rgba(255,46,136,0.4); font-weight: 700 }
+  .sc-dock-head .v small { font-size: 9px; color: var(--steel); letter-spacing: 0.18em; display: block;
+    margin-top: 2px; text-shadow: none; font-weight: 500 }
+  .sc-cells { display: flex; gap: 8px; overflow-x: auto; padding: 2px 0 }
+  .sc-cells::-webkit-scrollbar { height: 4px } .sc-cells::-webkit-scrollbar-thumb { background: var(--hull-3) }
+  .sc-cell { display: grid; grid-template-columns: 46px 1fr; gap: 10px; align-items: center; padding: 8px 12px;
+    background: var(--hull-2); border: 1px solid var(--rule-2); min-width: 262px; flex-shrink: 0;
+    clip-path: polygon(8px 0, 100% 0, 100% calc(100% - 8px), calc(100% - 8px) 100%, 0 100%, 0 8px);
+    transition: all .2s; cursor: pointer; position: relative; color: inherit; font-family: inherit; text-align: left }
+  .sc-cell:hover { background: var(--hull-3) }
+  .sc-cell.casting { border-color: var(--cyan); background: var(--cyan-ink); box-shadow: 0 0 16px rgba(86,212,224,0.20) }
+  .sc-cell.striking { border-color: var(--cyan); box-shadow: 0 0 18px rgba(86,212,224,0.30) }
+  .sc-cell.boss { border-color: var(--magenta); box-shadow: 0 0 18px rgba(255,46,136,0.25) }
+  .sc-cell.win-pending { border-color: var(--plasma); background: var(--plasma-ink); animation: scWin 2.4s ease-in-out infinite }
+  @keyframes scWin { 0%, 100% { box-shadow: 0 0 22px rgba(108,255,170,0.30) } 50% { box-shadow: 0 0 36px rgba(108,255,170,0.55) } }
+  .sc-cell.fail-pending { border-color: var(--crimson); background: var(--crimson-dim); animation: scFail 1.8s ease-in-out infinite }
+  @keyframes scFail { 0%, 100% { box-shadow: 0 0 18px rgba(255,94,108,0.25) } 50% { box-shadow: 0 0 32px rgba(255,94,108,0.5) } }
+  .sc-cell.is-current { outline: 1px dashed var(--cyan); outline-offset: 4px }
+  .sc-av { position: relative; width: 46px; height: 46px;
+    background: linear-gradient(135deg, #1a0a14, #061218); border: 1px solid currentColor;
+    display: grid; place-items: center; color: var(--cyan);
+    clip-path: polygon(20% 0, 100% 0, 100% 80%, 80% 100%, 0 100%, 0 20%) }
+  .sc-av .glyph { font-family: var(--display); font-weight: 700; font-size: 18px; color: currentColor;
+    text-shadow: -1px 0 var(--magenta), 1px 0 currentColor, 0 0 6px currentColor }
+  .sc-av .lvl { position: absolute; bottom: -3px; right: -3px; font-family: var(--mono); font-size: 8px;
+    color: var(--magenta); background: var(--void); padding: 1px 4px; border: 1px solid var(--magenta-dim);
+    letter-spacing: 0; text-shadow: 0 0 3px rgba(255,46,136,0.5) }
+  .sc-cell.casting .sc-av { color: var(--cyan) } .sc-cell.boss .sc-av { color: var(--magenta) }
+  .sc-cell.win-pending .sc-av { color: var(--plasma) } .sc-cell.fail-pending .sc-av { color: var(--crimson) }
+  .sc-eye { position: absolute; top: 9px; left: 50%; transform: translateX(-50%); width: 4px; height: 4px;
+    border-radius: 50%; background: var(--magenta); box-shadow: 0 0 4px var(--magenta);
+    animation: scEye 2.6s ease-in-out infinite }
+  @keyframes scEye { 0%, 100% { opacity: 1 } 50% { opacity: 0.5 } }
+  .sc-cell.casting .sc-eye { animation: scEyeCast 0.4s steps(2) infinite }
+  @keyframes scEyeCast { 0%, 100% { opacity: 1 } 50% { opacity: 0.3 } }
+  .sc-body { min-width: 0; display: flex; flex-direction: column; gap: 3px }
+  .sc-row1 { display: flex; align-items: center; gap: 6px; font-family: var(--display); font-size: 10.5px;
+    font-weight: 600; letter-spacing: 0.05em; color: var(--frost); text-transform: uppercase;
+    overflow: hidden; text-overflow: ellipsis; white-space: nowrap }
+  .sc-row1 .sep { color: var(--gunmetal); font-weight: 400 }
+  .sc-row1 .phase { color: var(--cyan); font-family: var(--mono); font-size: 9.5px; letter-spacing: 0.05em; text-transform: none }
+  .sc-cell.boss .sc-row1 .phase { color: var(--magenta) }
+  .sc-cell.win-pending .sc-row1 .phase { color: var(--plasma) }
+  .sc-cell.fail-pending .sc-row1 .phase { color: var(--crimson) }
+  .sc-row2 { display: flex; align-items: center; gap: 8px; font-family: var(--mono); font-size: 9.5px;
+    color: var(--steel); letter-spacing: 0.04em }
+  .sc-row2 .ico { font-family: var(--display); font-weight: 700; font-size: 9px; color: currentColor }
+  .sc-cell.casting .sc-row2 { color: var(--cyan) } .sc-cell.boss .sc-row2 { color: var(--magenta) }
+  .sc-cell.win-pending .sc-row2 { color: var(--plasma) }
+  .sc-prog { height: 2px; background: var(--hull-3); position: relative; margin-top: 2px }
+  .sc-prog i { display: block; height: 100%; background: linear-gradient(90deg, var(--cyan), var(--magenta));
+    box-shadow: 0 0 4px rgba(86,212,224,0.5) }
+  .sc-cell.win-pending .sc-prog i { width: 100% !important; background: linear-gradient(90deg, var(--plasma), var(--cyan)) }
+  .sc-cell.fail-pending .sc-prog i { width: 100% !important; background: linear-gradient(90deg, var(--crimson), var(--magenta)) }
+  .sc-warn { position: absolute; top: -6px; right: -6px; width: 18px; height: 18px;
+    color: var(--void); display: grid; place-items: center;
+    font-family: var(--display); font-weight: 700; font-size: 11px;
+    transform: rotate(45deg); z-index: 6 }
+  .sc-warn span { transform: rotate(-45deg); display: block }
+  .sc-warn.win { background: var(--plasma); box-shadow: 0 0 8px var(--plasma) }
+  .sc-warn.fail { background: var(--crimson); box-shadow: 0 0 8px var(--crimson) }
+  .sc-dock-right { display: flex; align-items: center; gap: 10px; padding-left: 14px; border-left: 1px solid var(--rule-2) }
+  .sc-bulk { display: inline-flex; align-items: center; gap: 6px; padding: 8px 12px;
+    font-family: var(--display); font-size: 10px; font-weight: 600;
+    letter-spacing: 0.16em; text-transform: uppercase; border: 1px solid; cursor: pointer;
+    clip-path: polygon(6px 0, 100% 0, 100% calc(100% - 6px), calc(100% - 6px) 100%, 0 100%, 0 6px);
+    transition: all .15s; background: var(--hull-3); color: var(--frost); border-color: var(--rule-2) }
+  .sc-bulk svg { width: 11px; height: 11px }
+  .sc-bulk.gated { opacity: 0.5; cursor: not-allowed; color: var(--steel) }
+  .sc-bulk.deploy { color: var(--void); background: linear-gradient(180deg, var(--magenta-2), var(--magenta));
+    border-color: var(--magenta); font-weight: 700;
+    box-shadow: 0 0 18px rgba(255,46,136,0.45), inset 0 1px 0 rgba(255,255,255,0.2); letter-spacing: 0.2em }
+  .sc-bulk.deploy:hover { box-shadow: 0 0 26px rgba(255,46,136,0.6) }
+  .sc-bulk .kc { font-family: var(--mono); font-size: 9px; padding: 1px 4px;
+    background: rgba(0,0,0,0.25); letter-spacing: 0; border-radius: 2px }
+  .sc-chord-bg { position: fixed; inset: 0; background: rgba(3,6,10,0.55); backdrop-filter: blur(8px);
+    z-index: 200; display: none; align-items: flex-start; justify-content: center; padding-top: 18vh }
+  .sc-chord-bg.is-open { display: flex }
+  .sc-chord { width: 780px; max-width: calc(100vw - 32px);
+    background: linear-gradient(180deg, var(--hull-2), var(--hull-1));
+    border: 1px solid var(--magenta);
+    box-shadow: 0 0 48px rgba(255,46,136,0.30), 0 32px 64px -16px rgba(0,0,0,0.7);
+    clip-path: polygon(16px 0, 100% 0, 100% calc(100% - 16px), calc(100% - 16px) 100%, 0 100%, 0 16px);
+    position: relative }
+  .sc-chord::before { content: ""; position: absolute; top: 0; left: 0; right: 0; height: 2px;
+    background: linear-gradient(90deg, transparent 5%, var(--magenta) 25%, var(--cyan) 75%, transparent 95%);
+    background-size: 200% 100%; animation: scHolo 3s linear infinite }
+  @keyframes scHolo { from { background-position: 0 0 } to { background-position: 200% 0 } }
+  .sc-chord-head { display: flex; align-items: center; justify-content: space-between;
+    padding: 14px 22px; border-bottom: 1px solid var(--rule) }
+  .sc-chord-head .lbl { font-family: var(--display); font-size: 11px; font-weight: 700;
+    letter-spacing: 0.28em; text-transform: uppercase; color: var(--magenta);
+    text-shadow: 0 0 6px rgba(255,46,136,0.5); display: flex; align-items: center; gap: 10px }
+  .sc-chord-head .lbl svg { width: 14px; height: 14px }
+  .sc-chord-head .esc { font-family: var(--mono); font-size: 10px; color: var(--steel); letter-spacing: 0.05em;
+    display: flex; align-items: center; gap: 6px }
+  .sc-chord-row { display: grid; grid-template-columns: auto auto auto auto auto 1fr; gap: 14px;
+    align-items: center; padding: 18px 22px 14px;
+    font-family: var(--mono); font-size: 14px; color: var(--mist); letter-spacing: 0.02em }
+  .sc-chord-row .verb { font-family: var(--display); font-weight: 700; font-size: 14px;
+    letter-spacing: 0.18em; text-transform: uppercase; color: var(--magenta);
+    text-shadow: 0 0 6px rgba(255,46,136,0.5) }
+  .sc-chord-row .conn { color: var(--steel); font-family: var(--display); font-size: 11px;
+    letter-spacing: 0.18em; text-transform: uppercase }
+  .sc-cf { display: flex; align-items: center; gap: 6px; padding: 6px 10px;
+    background: var(--hull-2); border: 1px solid var(--cyan-dim); color: var(--cyan);
+    font-family: var(--mono); font-size: 13px; letter-spacing: 0.04em;
+    clip-path: polygon(5px 0, 100% 0, 100% calc(100% - 5px), calc(100% - 5px) 100%, 0 100%, 0 5px);
+    text-shadow: 0 0 4px rgba(86,212,224,0.3) }
+  .sc-cf svg { width: 11px; height: 11px; color: var(--cyan-dim) }
+  .sc-cf.targets { background: var(--magenta-ink); border-color: var(--magenta-dim); color: var(--magenta);
+    text-shadow: 0 0 4px rgba(255,46,136,0.3) }
+  .sc-cf .chip { padding: 2px 6px; background: rgba(0,0,0,0.3); font-size: 11px; letter-spacing: 0.05em;
+    border: 1px solid currentColor; color: currentColor; border-radius: 2px }
+  .sc-chord-dir { display: grid; grid-template-columns: auto 1fr auto; gap: 14px; align-items: center;
+    padding: 12px 22px 18px; border-top: 1px dashed var(--rule-2) }
+  .sc-chord-dir .k { font-family: var(--display); font-size: 10px; font-weight: 600;
+    letter-spacing: 0.22em; text-transform: uppercase; color: var(--steel) }
+  .sc-chord-dir input { flex: 1; font-family: var(--mono); font-size: 14px; color: var(--frost);
+    letter-spacing: 0.02em; padding: 6px 0; border: 0; border-bottom: 1px solid var(--cyan-dim);
+    background: transparent; outline: 0; min-width: 0; width: 100% }
+  .sc-chord-dir input::placeholder { color: var(--steel); font-style: italic }
+  .sc-chord-dir .send { font-family: var(--display); font-size: 10px; font-weight: 700;
+    letter-spacing: 0.18em; text-transform: uppercase; color: var(--void);
+    padding: 8px 16px; background: linear-gradient(180deg, var(--magenta-2), var(--magenta));
+    border: 1px solid var(--magenta);
+    box-shadow: 0 0 18px rgba(255,46,136,0.5), inset 0 1px 0 rgba(255,255,255,0.2);
+    clip-path: polygon(6px 0, 100% 0, 100% calc(100% - 6px), calc(100% - 6px) 100%, 0 100%, 0 6px); cursor: pointer }
+  .sc-chord-dir .send .kc { font-family: var(--mono); font-size: 9px; padding: 1px 4px;
+    background: rgba(0,0,0,0.3); letter-spacing: 0; border-radius: 2px; margin-left: 6px }
+  .sc-chord-foot { display: flex; align-items: center; gap: 14px; padding: 10px 22px;
+    border-top: 1px solid var(--rule); background: var(--hull-1);
+    font-family: var(--mono); font-size: 9.5px; color: var(--steel); letter-spacing: 0.05em }
+  .sc-chord-foot .sep { color: var(--gunmetal) }
+  .sc-chord-foot .k { padding: 1px 5px; border: 1px solid var(--rule-2); color: var(--mist);
+    letter-spacing: 0; border-radius: 2px }
+</style>
+
+<div class="sc-dock">
+  <div class="sc-dock-head" onclick="document.getElementById('scChord').classList.add('is-open')">
+    <div class="lbl">FLEET</div>
+    <div class="v">3 <em>/ 5</em><small>π · BUDGET</small></div>
+  </div>
+  <div class="sc-cells">
+    <button class="sc-cell casting">
+      <div class="sc-av"><span class="glyph">π</span><span class="sc-eye"></span><span class="lvl">L8</span></div>
+      <div class="sc-body">
+        <div class="sc-row1"><span>Sandcastle Prime</span><span class="sep">·</span><span class="phase">phase III · serialize</span></div>
+        <div class="sc-row2"><span class="ico">▸</span><span>RUN-042 · casting · T+12:04</span></div>
+        <div class="sc-prog"><i style="width:62%"></i></div>
+      </div>
+    </button>
+    <button class="sc-cell striking">
+      <div class="sc-av"><span class="glyph">π</span><span class="sc-eye"></span><span class="lvl">L8</span></div>
+      <div class="sc-body">
+        <div class="sc-row1"><span>Helix-IV</span><span class="sep">·</span><span class="phase">phase II · diagnose</span></div>
+        <div class="sc-row2"><span class="ico">⚔</span><span>RUN-091 · striking · T+04:11</span></div>
+        <div class="sc-prog"><i style="width:38%"></i></div>
+      </div>
+    </button>
+    <button class="sc-cell boss">
+      <div class="sc-av"><span class="glyph">π</span><span class="sc-eye"></span><span class="lvl">L8</span></div>
+      <div class="sc-body">
+        <div class="sc-row1"><span>Astral-Forge</span><span class="sep">·</span><span class="phase">⚠ boss · TIER II</span></div>
+        <div class="sc-row2"><span class="ico">∇</span><span>RUN-128 · coord w/ Helix-IV</span></div>
+        <div class="sc-prog"><i style="width:24%"></i></div>
+      </div>
+    </button>
+    <button class="sc-cell win-pending">
+      <span class="sc-warn win"><span>✓</span></span>
+      <div class="sc-av"><span class="glyph">π</span><span class="lvl">L8</span></div>
+      <div class="sc-body">
+        <div class="sc-row1"><span>Mira-Doc</span><span class="sep">·</span><span class="phase">VICTORY · awaiting merge</span></div>
+        <div class="sc-row2"><span class="ico">+ 175</span><span>XP · 5/5 phases · ~9m</span></div>
+        <div class="sc-prog"><i></i></div>
+      </div>
+    </button>
+    <button class="sc-cell fail-pending">
+      <span class="sc-warn fail"><span>!</span></span>
+      <div class="sc-av"><span class="glyph">π</span><span class="lvl">L8</span></div>
+      <div class="sc-body">
+        <div class="sc-row1"><span>Vercel-Bridge</span><span class="sep">·</span><span class="phase">DEFEAT · API guard</span></div>
+        <div class="sc-row2"><span class="ico">−40</span><span>XP · 2/5 · worktree kept</span></div>
+        <div class="sc-prog"><i></i></div>
+      </div>
+    </button>
+  </div>
+  <div class="sc-dock-right">
+    <button class="sc-bulk gated" title="Gated until all pending runs are green-verified">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12l5 5L20 7"/></svg>
+      Merge all green <span class="kc">⌘ ⇧ M</span>
+    </button>
+    <button class="sc-bulk deploy" onclick="document.getElementById('scChord').classList.add('is-open')">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 4l14 8-14 8V4z"/></svg>
+      Deploy <span class="kc">⌘ D</span>
+    </button>
+  </div>
+</div>
+
+<div class="sc-chord-bg" id="scChord" onclick="if(event.target===this)this.classList.remove('is-open')">
+  <div class="sc-chord">
+    <div class="sc-chord-head">
+      <span class="lbl">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 4l14 8-14 8V4z"/></svg>
+        DEPLOY · CHORD
+      </span>
+      <span class="esc"><span class="k">esc</span> to dismiss</span>
+    </div>
+    <div class="sc-chord-row">
+      <span class="verb">DEPLOY</span>
+      <span class="sc-cf"><span class="chip">π</span> PI · KAGE
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="m6 9 6 6 6-6"/></svg></span>
+      <span class="conn">to</span>
+      <span class="sc-cf targets"><span class="chip">3</span> Sandcastle, Helix, Forge
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="m6 9 6 6 6-6"/></svg></span>
+      <span class="conn">·</span>
+      <span style="font-family:var(--mono);font-size:11px;color:var(--steel);letter-spacing:0.05em">multi-target</span>
+    </div>
+    <div class="sc-chord-dir">
+      <span class="k">DIRECTIVE</span>
+      <input type="text" placeholder="triage open issues, fix the first high-priority one, commit…" />
+      <button class="send" onclick="document.getElementById('scChord').classList.remove('is-open')">
+        DEPLOY <span class="kc">⌘ ↵</span>
+      </button>
+    </div>
+    <div class="sc-chord-foot">
+      <span><span class="k">tab</span> next</span>
+      <span class="sep">·</span>
+      <span><span class="k">,</span> add target</span>
+      <span class="sep">·</span>
+      <span><span class="k">⌘ ↵</span> deploy all</span>
+      <span class="sep">·</span>
+      <span style="margin-left:auto;color:var(--magenta);text-shadow:0 0 4px rgba(255,46,136,0.4)">▸ Pi · Kage at 3/5 focus budget</span>
+    </div>
+  </div>
+</div>
+
+<script>
+  document.addEventListener('keydown', (e) => {
+    if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'd') {
+      e.preventDefault();
+      document.getElementById('scChord').classList.add('is-open');
+    }
+    if (e.key === 'Escape') document.getElementById('scChord').classList.remove('is-open');
+  });
+</script>
+
+</body>
+</html>

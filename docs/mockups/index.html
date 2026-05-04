@@ -1,0 +1,1282 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>SANDCASTLE :: MOCKUPS</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --void:    #03060a;
+    --hull-0:  #060a10;
+    --hull-1:  #0a1018;
+    --hull-2:  #11181f;
+    --hull-3:  #1a232c;
+    --hull-4:  #243140;
+
+    --frost:   #dceaf3;
+    --mist:    #9eb3c2;
+    --steel:   #5b6b7a;
+    --gunmetal:#3a4754;
+
+    --rule:    rgba(120, 200, 220, 0.07);
+    --rule-2:  rgba(120, 200, 220, 0.13);
+    --rule-3:  rgba(120, 200, 220, 0.22);
+
+    --cyan:    #56d4e0;
+    --cyan-2:  #7fe6ef;
+    --cyan-dim:rgba(86, 212, 224, 0.16);
+    --cyan-ink:rgba(86, 212, 224, 0.06);
+
+    --magenta:    #ff2e88;
+    --magenta-2:  #ff5ca7;
+    --magenta-dim:rgba(255, 46, 136, 0.16);
+    --magenta-ink:rgba(255, 46, 136, 0.06);
+
+    --plasma:    #6cffaa;
+    --plasma-dim:rgba(108,255,170,0.14);
+    --plasma-ink:rgba(108,255,170,0.06);
+    --amber:     #ffb547;
+    --amber-dim: rgba(255,181,71,0.14);
+    --amber-ink: rgba(255,181,71,0.06);
+    --crimson:   #ff5e6c;
+    --crimson-dim:rgba(255,94,108,0.14);
+    --crimson-ink:rgba(255,94,108,0.06);
+    --slate:     #6f8aa3;
+
+    --mono:    'JetBrains Mono', ui-monospace, 'SF Mono', Menlo, Consolas, monospace;
+    --display: 'Chakra Petch', 'Eurostile', system-ui, sans-serif;
+  }
+
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  html, body {
+    min-height: 100%;
+    background: var(--void);
+    color: var(--frost);
+    font-family: var(--mono);
+    font-size: 12.5px;
+    line-height: 1.5;
+    -webkit-font-smoothing: antialiased;
+    font-feature-settings: "ss01", "cv01", "zero";
+  }
+  body { min-height: 100vh; overflow-x: hidden; }
+  button, a { font: inherit; color: inherit; background: none; border: 0; cursor: pointer; text-decoration: none; }
+  ::selection { background: var(--magenta-dim); color: var(--frost); }
+
+  /* CRT overlay */
+  body::before {
+    content: "";
+    position: fixed; inset: 0;
+    pointer-events: none;
+    z-index: 9999;
+    opacity: 0.5;
+    background:
+      repeating-linear-gradient(0deg, rgba(0,0,0,0) 0 2px, rgba(180,220,235,0.035) 2px 3px),
+      linear-gradient(180deg, rgba(255,46,136,0.018), rgba(86,212,224,0.022) 50%, rgba(255,46,136,0.018));
+    animation: crt 5.5s steps(60) infinite;
+  }
+  @keyframes crt {
+    0%, 96%, 100% { opacity: 0.5; }
+    97%   { opacity: 0.32; }
+    97.5% { opacity: 0.62; }
+    98%   { opacity: 0.40; }
+  }
+
+  /* grid background */
+  body::after {
+    content: "";
+    position: fixed; inset: 0;
+    pointer-events: none;
+    z-index: 1;
+    background:
+      radial-gradient(ellipse 70% 50% at 80% -10%, rgba(86,212,224,0.10), transparent 60%),
+      radial-gradient(ellipse 60% 50% at 12% 110%, rgba(255,46,136,0.08), transparent 60%),
+      linear-gradient(rgba(120,200,220,0.025) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(120,200,220,0.025) 1px, transparent 1px),
+      var(--void);
+    background-size: auto, auto, 80px 80px, 80px 80px, auto;
+  }
+
+  /* katakana watermark */
+  .watermark {
+    position: fixed;
+    top: 50%; right: -10px;
+    transform: rotate(-90deg) translateX(50%);
+    transform-origin: right center;
+    font-family: var(--mono);
+    font-size: 9.5px; letter-spacing: 0.7em;
+    color: var(--magenta);
+    opacity: 0.18; pointer-events: none;
+    z-index: 2;
+    white-space: nowrap;
+    text-shadow: 0 0 6px rgba(255,46,136,0.5);
+  }
+
+  .layout {
+    position: relative;
+    z-index: 5;
+    display: grid;
+    grid-template-rows: 44px 1fr;
+    min-height: 100vh;
+  }
+
+  /* titlebar */
+  .titlebar {
+    display: grid;
+    grid-template-columns: 1fr auto 1fr;
+    align-items: center;
+    padding: 0 14px;
+    border-bottom: 1px solid var(--rule-2);
+    background: linear-gradient(180deg, rgba(10,16,24,0.7), rgba(3,6,10,0.95));
+    backdrop-filter: blur(20px);
+    position: sticky; top: 0;
+    z-index: 10;
+  }
+  .titlebar::after {
+    content: ""; position: absolute; bottom: -1px; left: 0; right: 0; height: 1px;
+    background: linear-gradient(90deg, transparent 5%, var(--cyan-dim) 50%, transparent 95%);
+  }
+  .tb-left, .tb-right { display: flex; align-items: center; gap: 14px; }
+  .tb-right { justify-content: flex-end; }
+  .traffic { display: flex; gap: 8px; padding-right: 6px; }
+  .traffic i { width: 11px; height: 11px; transform: rotate(45deg); }
+  .traffic i:nth-child(1) { background: var(--crimson); }
+  .traffic i:nth-child(2) { background: var(--amber); }
+  .traffic i:nth-child(3) { background: var(--plasma); }
+
+  .brand { display: flex; align-items: center; gap: 10px; font-size: 11px; color: var(--mist); letter-spacing: 0.04em; }
+  .brand-mark {
+    width: 22px; height: 22px;
+    background: linear-gradient(135deg, #1a0a14, #061418);
+    border: 1px solid var(--cyan);
+    display: grid; place-items: center;
+    font-family: var(--display); font-weight: 700; font-size: 12px;
+    color: var(--cyan);
+    clip-path: polygon(20% 0, 100% 0, 100% 80%, 80% 100%, 0 100%, 0 20%);
+    box-shadow: 0 0 12px rgba(86,212,224,0.45), -2px 2px 0 rgba(255,46,136,0.6);
+  }
+  .brand-name {
+    font-family: var(--display); font-weight: 600; color: var(--frost);
+    letter-spacing: 0.18em; font-size: 12px; text-transform: uppercase;
+    text-shadow: -0.5px 0 var(--magenta), 0.5px 0 var(--cyan);
+  }
+  .brand-name::after {
+    content: "／ MOCKUPS";
+    margin-left: 8px; font-family: var(--mono); font-size: 9.5px;
+    color: var(--magenta); letter-spacing: 0.15em; opacity: 0.75;
+  }
+  .brand-sep { color: var(--gunmetal); }
+
+  .nav-pill {
+    display: inline-flex; align-items: center; gap: 8px;
+    padding: 4px 14px;
+    font-family: var(--display); font-size: 10px; font-weight: 600;
+    letter-spacing: 0.24em; text-transform: uppercase;
+    color: var(--cyan);
+    border: 1px solid var(--cyan-dim);
+    background: var(--cyan-ink);
+    text-shadow: 0 0 6px rgba(86,212,224,0.5);
+    clip-path: polygon(6px 0, 100% 0, 100% calc(100% - 6px), calc(100% - 6px) 100%, 0 100%, 0 6px);
+  }
+  .nav-pill .gl {
+    width: 7px; height: 7px; transform: rotate(45deg);
+    background: var(--cyan);
+    box-shadow: 0 0 8px var(--cyan);
+    animation: ping 1.6s ease-out infinite;
+  }
+  @keyframes ping { 0%, 100% { opacity: 1; } 50% { opacity: 0.4; } }
+
+  .icon-btn {
+    width: 28px; height: 28px;
+    display: grid; place-items: center;
+    color: var(--mist);
+    border: 1px solid transparent;
+  }
+  .icon-btn svg { width: 14px; height: 14px; }
+  .icon-btn:hover { background: var(--hull-2); color: var(--cyan); border-color: var(--rule-2); }
+
+  /* HERO */
+  .hero {
+    max-width: 1280px;
+    margin: 0 auto;
+    padding: 56px 32px 40px;
+    text-align: center;
+    position: relative;
+  }
+
+  .hero-eyebrow {
+    display: inline-flex; align-items: center; gap: 14px;
+    font-family: var(--mono); font-size: 10.5px;
+    letter-spacing: 0.32em; text-transform: uppercase;
+    color: var(--steel);
+  }
+  .hero-eyebrow .dot { color: var(--cyan); }
+  .hero-eyebrow .id  { color: var(--magenta); text-shadow: 0 0 6px rgba(255,46,136,0.4); }
+
+  .hero-title {
+    margin-top: 14px;
+    font-family: var(--display); font-weight: 800;
+    font-size: 80px; line-height: 0.95;
+    letter-spacing: 0.04em;
+    color: var(--frost);
+    text-transform: uppercase;
+    text-shadow:
+      -3px 0 rgba(255,46,136,0.55),
+      3px 0 rgba(86,212,224,0.55),
+      0 0 28px rgba(86,212,224,0.3);
+    animation: chroma 5s ease-in-out infinite, glitch 9s steps(1) infinite;
+  }
+  .hero-title em {
+    font-style: normal;
+    color: var(--magenta);
+    text-shadow:
+      -3.5px 0 var(--magenta),
+      3.5px 0 var(--cyan),
+      0 0 32px rgba(255,46,136,0.55);
+  }
+  @keyframes chroma {
+    0%, 100% { text-shadow: -3px 0 rgba(255,46,136,0.55), 3px 0 rgba(86,212,224,0.55), 0 0 28px rgba(86,212,224,0.3); }
+    50%      { text-shadow: -4px 0 rgba(255,46,136,0.6),  4px 0 rgba(86,212,224,0.6),  0 0 36px rgba(255,46,136,0.35); }
+  }
+  @keyframes glitch {
+    0%, 96%, 100% { transform: translate(0); clip-path: inset(0 0 0 0); }
+    96.5%         { transform: translate(-3px, 0); clip-path: inset(20% 0 30% 0); }
+    97%           { transform: translate(3px, 0);  clip-path: inset(45% 0 5% 0); }
+    97.5%         { transform: translate(-1px, 0); clip-path: inset(0 0 60% 0); }
+    98%           { transform: translate(0); clip-path: inset(0 0 0 0); }
+  }
+
+  .hero-subtitle {
+    margin-top: 14px;
+    max-width: 720px;
+    margin-left: auto; margin-right: auto;
+    font-family: var(--mono); font-size: 13px;
+    color: var(--mist); line-height: 1.7; letter-spacing: 0.02em;
+  }
+  .hero-subtitle em { font-style: normal; color: var(--cyan); }
+  .hero-subtitle b { font-weight: 500; color: var(--magenta); text-shadow: 0 0 6px rgba(255,46,136,0.3); }
+
+  .hero-stats {
+    margin-top: 22px;
+    display: inline-flex;
+    gap: 24px;
+    padding: 10px 20px;
+    background: var(--hull-1);
+    border: 1px solid var(--rule-2);
+    font-family: var(--mono); font-size: 10.5px;
+    color: var(--steel); letter-spacing: 0.06em;
+    clip-path: polygon(8px 0, 100% 0, 100% calc(100% - 8px), calc(100% - 8px) 100%, 0 100%, 0 8px);
+  }
+  .hero-stats .v { color: var(--frost); font-weight: 600; }
+  .hero-stats .v.cy { color: var(--cyan); text-shadow: 0 0 4px rgba(86,212,224,0.4); }
+  .hero-stats .v.m  { color: var(--magenta); text-shadow: 0 0 4px rgba(255,46,136,0.4); }
+  .hero-stats .v.p  { color: var(--plasma); text-shadow: 0 0 4px rgba(108,255,170,0.4); }
+  .hero-stats .sep  { color: var(--gunmetal); }
+
+  /* ─── FLOW STRIP ─── */
+  .flow-section {
+    max-width: 1280px;
+    margin: 0 auto;
+    padding: 32px 32px 16px;
+  }
+  .section-head {
+    display: flex; align-items: center; gap: 14px;
+    font-family: var(--display); font-size: 10px;
+    letter-spacing: 0.28em; text-transform: uppercase;
+    color: var(--steel); font-weight: 500;
+    margin-bottom: 22px;
+  }
+  .section-head .hex {
+    font-family: var(--mono); color: var(--cyan); letter-spacing: 0.05em;
+    text-shadow: 0 0 4px rgba(86,212,224,0.4);
+  }
+  .section-head .hex.m { color: var(--magenta); }
+  .section-head h2 {
+    font-family: var(--display); font-size: 14px; font-weight: 600;
+    letter-spacing: 0.18em; text-transform: uppercase;
+    color: var(--frost);
+    text-shadow: -0.5px 0 var(--magenta), 0.5px 0 var(--cyan);
+  }
+  .section-head .line { flex: 1; height: 1px; background: var(--rule-2); }
+  .section-head .meta {
+    font-family: var(--mono); font-size: 10px;
+    color: var(--mist); letter-spacing: 0.05em;
+  }
+
+  .flow {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    gap: 8px;
+    align-items: stretch;
+    position: relative;
+  }
+  .flow-step {
+    background: var(--hull-1);
+    border: 1px solid var(--rule-2);
+    padding: 12px 12px 14px;
+    position: relative;
+    text-align: left;
+    transition: all .15s;
+    clip-path: polygon(8px 0, 100% 0, 100% calc(100% - 8px), calc(100% - 8px) 100%, 0 100%, 0 8px);
+    color: var(--mist);
+  }
+  .flow-step:hover {
+    border-color: var(--cyan-dim);
+    background: var(--hull-2);
+    color: var(--frost);
+    transform: translateY(-1px);
+    box-shadow: 0 0 14px rgba(86,212,224,0.18);
+  }
+  .flow-step::before {
+    content: ""; position: absolute; top: 0; left: 0; right: 0; height: 1px;
+    background: linear-gradient(90deg, transparent, currentColor, transparent);
+    opacity: 0.4;
+  }
+  .flow-step .num {
+    font-family: var(--mono); font-size: 9px;
+    color: var(--steel); letter-spacing: 0.05em;
+  }
+  .flow-step .name {
+    margin-top: 4px;
+    font-family: var(--display); font-weight: 600; font-size: 11px;
+    letter-spacing: 0.08em; text-transform: uppercase;
+    color: var(--frost);
+    line-height: 1.25;
+  }
+  .flow-step .desc {
+    margin-top: 6px;
+    font-family: var(--mono); font-size: 9.5px;
+    color: var(--steel); letter-spacing: 0.02em;
+    line-height: 1.45;
+  }
+  .flow-step.cy { color: var(--cyan); }
+  .flow-step.cy:hover { border-color: var(--cyan); box-shadow: 0 0 18px rgba(86,212,224,0.3); }
+  .flow-step.cy .name { text-shadow: 0 0 6px rgba(86,212,224,0.25); }
+  .flow-step.m  { color: var(--magenta); }
+  .flow-step.m:hover { border-color: var(--magenta); box-shadow: 0 0 18px rgba(255,46,136,0.3); }
+  .flow-step.m .name { text-shadow: 0 0 6px rgba(255,46,136,0.25); }
+  .flow-step.am { color: var(--amber); }
+  .flow-step.am:hover { border-color: var(--amber); box-shadow: 0 0 18px rgba(255,181,71,0.3); }
+  .flow-step.p  { color: var(--plasma); }
+  .flow-step.p:hover { border-color: var(--plasma); box-shadow: 0 0 18px rgba(108,255,170,0.3); }
+  .flow-step.cr { color: var(--crimson); }
+  .flow-step.cr:hover { border-color: var(--crimson); box-shadow: 0 0 18px rgba(255,94,108,0.3); }
+
+  /* arrow connectors via background, simple visual hint */
+  .flow-step::after {
+    content: "▸";
+    position: absolute;
+    right: -12px; top: 50%;
+    transform: translateY(-50%);
+    color: var(--gunmetal);
+    font-size: 14px;
+    pointer-events: none;
+  }
+  .flow-step:last-child::after { display: none; }
+
+  /* ─── CARDS GRID ─── */
+  .cards-section {
+    max-width: 1280px;
+    margin: 0 auto;
+    padding: 16px 32px 64px;
+  }
+
+  .cards {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(360px, 1fr));
+    gap: 20px;
+  }
+
+  .card {
+    background: linear-gradient(180deg, var(--hull-2), var(--hull-1));
+    border: 1px solid var(--rule-2);
+    transition: all .2s;
+    position: relative;
+    display: block;
+    color: var(--mist);
+    overflow: hidden;
+    clip-path: polygon(14px 0, 100% 0, 100% calc(100% - 14px), calc(100% - 14px) 100%, 0 100%, 0 14px);
+  }
+  .card::before {
+    content: ""; position: absolute; top: 0; left: 0; right: 0; height: 1px;
+    background: linear-gradient(90deg, transparent, var(--rule-2), transparent);
+  }
+  .card:hover {
+    border-color: var(--cyan-dim);
+    box-shadow: 0 0 28px rgba(86,212,224,0.18);
+    transform: translateY(-2px);
+  }
+  .card.cy:hover { border-color: var(--cyan); box-shadow: 0 0 32px rgba(86,212,224,0.3); }
+  .card.cy::before { background: linear-gradient(90deg, transparent, var(--cyan-dim), transparent); }
+  .card.m:hover  { border-color: var(--magenta); box-shadow: 0 0 32px rgba(255,46,136,0.3); }
+  .card.m::before { background: linear-gradient(90deg, transparent, var(--magenta-dim), transparent); }
+  .card.am:hover { border-color: var(--amber); box-shadow: 0 0 32px rgba(255,181,71,0.3); }
+  .card.am::before { background: linear-gradient(90deg, transparent, var(--amber-dim), transparent); }
+  .card.p:hover  { border-color: var(--plasma); box-shadow: 0 0 32px rgba(108,255,170,0.3); }
+  .card.p::before { background: linear-gradient(90deg, transparent, var(--plasma-dim), transparent); }
+  .card.cr:hover { border-color: var(--crimson); box-shadow: 0 0 32px rgba(255,94,108,0.3); }
+  .card.cr::before { background: linear-gradient(90deg, transparent, var(--crimson-dim), transparent); }
+
+  /* preview region — themed mini-mockup */
+  .preview {
+    position: relative;
+    aspect-ratio: 16 / 9;
+    overflow: hidden;
+    border-bottom: 1px solid var(--rule-2);
+    background: var(--hull-0);
+  }
+  .preview::after {
+    content: "";
+    position: absolute; inset: 0;
+    background:
+      repeating-linear-gradient(0deg, rgba(0,0,0,0) 0 2px, rgba(180,220,235,0.04) 2px 3px);
+    pointer-events: none;
+  }
+
+  /* card head bar */
+  .preview .bar {
+    height: 18px;
+    background: linear-gradient(180deg, var(--hull-2), var(--hull-1));
+    border-bottom: 1px solid var(--rule-2);
+    display: flex; align-items: center; gap: 4px;
+    padding: 0 8px;
+  }
+  .preview .bar i {
+    width: 5px; height: 5px; transform: rotate(45deg);
+    background: var(--steel);
+    display: inline-block;
+  }
+  .preview .bar i.r { background: var(--crimson); }
+  .preview .bar i.a { background: var(--amber); }
+  .preview .bar i.p { background: var(--plasma); }
+
+  /* generic preview chrome */
+  .pv {
+    position: absolute;
+    inset: 18px 0 0 0;
+    overflow: hidden;
+  }
+
+  /* ─── COCKPIT preview ─── */
+  .pv.cockpit { display: grid; grid-template-columns: 60px 1fr 80px; }
+  .pv.cockpit .side {
+    background: var(--hull-1);
+    border-right: 1px solid var(--rule);
+    padding: 8px 6px;
+  }
+  .pv.cockpit .side .lbl {
+    font-family: var(--display); font-size: 7px; letter-spacing: 0.18em;
+    color: var(--steel); margin-bottom: 4px;
+  }
+  .pv.cockpit .side .row {
+    height: 14px; background: var(--hull-2);
+    margin-bottom: 4px; border: 1px solid var(--rule-2);
+    display: flex; align-items: center; padding: 0 4px; gap: 4px;
+  }
+  .pv.cockpit .side .row.act { background: var(--cyan-ink); border-color: var(--cyan-dim); }
+  .pv.cockpit .side .row .d { width: 4px; height: 4px; transform: rotate(45deg); background: var(--steel); }
+  .pv.cockpit .side .row .d.run { background: var(--plasma); box-shadow: 0 0 4px var(--plasma); }
+  .pv.cockpit .side .row .ln { flex: 1; height: 1px; background: var(--rule-2); }
+  .pv.cockpit .center {
+    padding: 8px 10px;
+    overflow: hidden;
+  }
+  .pv.cockpit .center .head {
+    font-family: var(--display); font-size: 8px; letter-spacing: 0.18em;
+    color: var(--cyan); margin-bottom: 6px;
+    text-shadow: 0 0 3px rgba(86,212,224,0.4);
+  }
+  .pv.cockpit .center .step {
+    margin-bottom: 4px;
+    padding: 4px 6px;
+    background: var(--hull-1); border: 1px solid var(--rule-2);
+    font-family: var(--mono); font-size: 7px; color: var(--mist);
+    letter-spacing: 0.04em;
+  }
+  .pv.cockpit .center .step.live { border-color: var(--amber); background: var(--amber-ink); color: var(--amber); }
+  .pv.cockpit .center .step .tok { color: var(--cyan); }
+  .pv.cockpit .center .step .add { color: var(--plasma); }
+  .pv.cockpit .insp {
+    background: var(--hull-1);
+    border-left: 1px solid var(--rule);
+    padding: 8px 6px;
+  }
+  .pv.cockpit .insp .pill {
+    height: 12px; background: var(--plasma-dim); border: 1px solid var(--plasma);
+    margin-bottom: 4px;
+  }
+  .pv.cockpit .insp .row {
+    height: 8px; background: var(--hull-2); margin-bottom: 3px;
+  }
+
+  /* ─── MAP preview ─── */
+  .pv.map {
+    background:
+      radial-gradient(ellipse 100% 70% at 50% 50%, rgba(86,212,224,0.05), transparent 70%),
+      var(--hull-0);
+  }
+  .pv.map svg {
+    position: absolute; inset: 0; width: 100%; height: 100%;
+  }
+  .pv.map .reg {
+    position: absolute;
+    background: var(--hull-1);
+    border: 1px solid var(--rule-2);
+    padding: 3px 5px;
+    font-family: var(--mono); font-size: 7px;
+    color: var(--mist); letter-spacing: 0.05em;
+  }
+  .pv.map .reg.glow { border-color: var(--plasma); color: var(--plasma); box-shadow: 0 0 6px rgba(108,255,170,0.4); }
+  .pv.map .reg.fog { opacity: 0.5; }
+  .pv.map .reg.act { border-color: var(--magenta); color: var(--magenta); box-shadow: 0 0 8px rgba(255,46,136,0.4); }
+  .pv.map .creature {
+    position: absolute;
+    width: 6px; height: 6px; transform: rotate(45deg);
+    box-shadow: 0 0 4px currentColor;
+  }
+  .pv.map .creature.boss { background: var(--magenta); color: var(--magenta); width: 8px; height: 8px; }
+  .pv.map .creature.elite { background: var(--crimson); color: var(--crimson); }
+  .pv.map .agent {
+    position: absolute;
+    width: 8px; height: 8px; transform: rotate(45deg);
+    background: var(--cyan); box-shadow: 0 0 8px var(--cyan);
+  }
+
+  /* ─── FORGE preview ─── */
+  .pv.forge { display: grid; grid-template-columns: 1fr 1fr; }
+  .pv.forge .L { padding: 8px; border-right: 1px solid var(--rule); }
+  .pv.forge .R { padding: 8px; }
+  .pv.forge .target {
+    height: 16px;
+    background: linear-gradient(90deg, var(--magenta-ink), var(--hull-2));
+    border: 1px solid var(--magenta-dim);
+    margin-bottom: 4px;
+    display: flex; align-items: center; padding: 0 4px;
+    font-family: var(--mono); font-size: 7px; color: var(--magenta);
+    letter-spacing: 0.05em;
+  }
+  .pv.forge .doc {
+    background: var(--hull-1);
+    border: 1px solid var(--cyan);
+    padding: 5px;
+    font-family: var(--mono); font-size: 7px; line-height: 1.5;
+    color: var(--mist);
+    box-shadow: 0 0 8px rgba(86,212,224,0.15);
+  }
+  .pv.forge .doc .t1 { color: var(--plasma); background: var(--plasma-dim); padding: 0 2px; border: 1px solid rgba(108,255,170,0.3); }
+  .pv.forge .doc .t2 { color: var(--cyan); background: var(--cyan-ink); padding: 0 2px; border: 1px solid var(--cyan-dim); }
+  .pv.forge .doc .t3 { color: var(--magenta); background: var(--magenta-ink); padding: 0 2px; border: 1px solid var(--magenta-dim); }
+  .pv.forge .doc .t4 { color: var(--amber); background: var(--amber-ink); padding: 0 2px; border: 1px solid rgba(255,181,71,0.3); }
+  .pv.forge .R .phase {
+    position: relative;
+    padding-left: 14px;
+    margin-bottom: 4px;
+    font-family: var(--mono); font-size: 7px; color: var(--mist);
+    letter-spacing: 0.04em;
+  }
+  .pv.forge .R .phase::before {
+    content: ""; position: absolute; left: 0; top: 50%;
+    width: 8px; height: 8px; transform: translateY(-50%) rotate(45deg);
+    background: currentColor; box-shadow: 0 0 4px currentColor;
+  }
+  .pv.forge .R .phase.p1 { color: var(--plasma); }
+  .pv.forge .R .phase.p2 { color: var(--cyan); }
+  .pv.forge .R .phase.p3 { color: var(--magenta); }
+  .pv.forge .R .phase.p4 { color: var(--amber); }
+  .pv.forge .R .phase.p5 { color: var(--frost); }
+  .pv.forge .R .phase b { color: currentColor; font-weight: 600; }
+
+  /* ─── COMBAT preview ─── */
+  .pv.combat { display: grid; grid-template-columns: 1fr 80px; }
+  .pv.combat .C { padding: 8px; }
+  .pv.combat .C .boss-name {
+    font-family: var(--display); font-weight: 700; font-size: 12px;
+    color: var(--magenta); letter-spacing: 0.04em; line-height: 1;
+    text-shadow: -1px 0 var(--magenta), 1px 0 var(--cyan), 0 0 8px rgba(255,46,136,0.5);
+    text-transform: uppercase;
+  }
+  .pv.combat .C .hp {
+    margin-top: 6px;
+    height: 5px; background: var(--hull-3); border: 1px solid var(--magenta-dim);
+  }
+  .pv.combat .C .hp i {
+    display: block; height: 100%; width: 64%;
+    background: linear-gradient(90deg, var(--crimson), var(--magenta));
+    box-shadow: 0 0 6px rgba(255,46,136,0.5);
+  }
+  .pv.combat .C .phases {
+    display: grid; grid-template-columns: repeat(5, 1fr); gap: 3px;
+    margin-top: 6px;
+  }
+  .pv.combat .C .phases .p {
+    height: 8px; background: var(--hull-2); border: 1px solid var(--rule-2);
+  }
+  .pv.combat .C .phases .p.done { background: var(--plasma-dim); border-color: var(--plasma); }
+  .pv.combat .C .phases .p.act  { background: var(--magenta-ink); border-color: var(--magenta); box-shadow: 0 0 6px rgba(255,46,136,0.4); }
+  .pv.combat .C .turns {
+    margin-top: 8px;
+    display: flex; flex-direction: column; gap: 3px;
+  }
+  .pv.combat .C .turn {
+    padding: 3px 5px;
+    background: var(--hull-1); border: 1px solid var(--rule-2);
+    font-family: var(--mono); font-size: 7px; color: var(--mist);
+    letter-spacing: 0.04em;
+  }
+  .pv.combat .C .turn.crit { border-color: var(--plasma); color: var(--plasma); }
+  .pv.combat .C .turn.live { border-color: var(--amber); color: var(--amber); background: var(--amber-ink); }
+  .pv.combat .R {
+    background: var(--hull-1);
+    border-left: 1px solid var(--rule);
+    padding: 8px 6px;
+  }
+  .pv.combat .R .hp-self {
+    height: 4px; background: var(--hull-3); border: 1px solid var(--rule-2); margin-bottom: 3px;
+  }
+  .pv.combat .R .hp-self i { display: block; height: 100%; width: 93%; background: linear-gradient(90deg, var(--plasma), var(--cyan)); }
+  .pv.combat .R .obj {
+    display: flex; gap: 3px; align-items: center;
+    margin-top: 4px;
+    font-family: var(--mono); font-size: 7px; color: var(--mist);
+  }
+  .pv.combat .R .obj .m { width: 6px; height: 6px; transform: rotate(45deg); background: var(--steel); }
+  .pv.combat .R .obj.done .m { background: var(--plasma); box-shadow: 0 0 4px var(--plasma); }
+  .pv.combat .R .obj.act .m  { background: var(--magenta); box-shadow: 0 0 4px var(--magenta); }
+
+  /* ─── VICTORY preview ─── */
+  .pv.victory {
+    background:
+      radial-gradient(ellipse 80% 60% at 50% 50%, rgba(108,255,170,0.10), transparent 60%),
+      var(--hull-0);
+    display: grid; place-items: center;
+    text-align: center;
+  }
+  .pv.victory::before {
+    content: ""; position: absolute; inset: 0;
+    background:
+      conic-gradient(from 0deg at 50% 50%,
+        transparent 0deg,
+        rgba(108,255,170,0.06) 30deg,
+        transparent 60deg,
+        rgba(86,212,224,0.05) 120deg,
+        transparent 150deg,
+        rgba(255,46,136,0.05) 240deg,
+        transparent 270deg);
+  }
+  .pv.victory .v-title {
+    font-family: var(--display); font-weight: 800; font-size: 32px;
+    color: var(--plasma); letter-spacing: 0.05em;
+    text-shadow:
+      -2px 0 var(--magenta), 2px 0 var(--cyan), 0 0 16px rgba(108,255,170,0.6);
+    line-height: 0.95; text-transform: uppercase;
+    z-index: 1; position: relative;
+  }
+  .pv.victory .v-xp {
+    margin-top: 6px;
+    font-family: var(--display); font-weight: 700; font-size: 16px;
+    color: var(--plasma); letter-spacing: 0.05em;
+    text-shadow: 0 0 8px rgba(108,255,170,0.5);
+    z-index: 1; position: relative;
+  }
+  .pv.victory .v-lvl {
+    margin-top: 6px;
+    font-family: var(--mono); font-size: 8px; color: var(--magenta);
+    letter-spacing: 0.18em; text-transform: uppercase;
+    text-shadow: 0 0 6px rgba(255,46,136,0.5);
+    z-index: 1; position: relative;
+  }
+  .pv.victory .v-lvl b { color: var(--frost); }
+
+  /* ─── DEFEAT preview ─── */
+  .pv.defeat {
+    background:
+      radial-gradient(ellipse 80% 60% at 50% 50%, rgba(255,94,108,0.10), transparent 60%),
+      var(--hull-0);
+    display: grid; place-items: center;
+    text-align: center;
+    overflow: hidden;
+  }
+  .pv.defeat::before {
+    content: "";
+    position: absolute; left: 0; right: 0; top: 0;
+    height: 4px;
+    background: repeating-linear-gradient(135deg, var(--amber) 0 8px, var(--void) 8px 16px);
+    box-shadow: 0 0 6px rgba(255,181,71,0.4);
+  }
+  .pv.defeat::after {
+    content: "";
+    position: absolute; left: 0; right: 0; bottom: 0;
+    height: 4px;
+    background: repeating-linear-gradient(135deg, var(--amber) 0 8px, var(--void) 8px 16px);
+  }
+  .pv.defeat .d-title {
+    font-family: var(--display); font-weight: 800; font-size: 32px;
+    color: var(--crimson); letter-spacing: 0.05em;
+    text-shadow:
+      -2.5px 0 var(--magenta), 2.5px 0 var(--crimson), 0 0 16px rgba(255,94,108,0.6);
+    line-height: 0.95; text-transform: uppercase;
+    z-index: 1; position: relative;
+  }
+  .pv.defeat .d-cause {
+    margin-top: 8px;
+    font-family: var(--mono); font-size: 8px;
+    color: var(--crimson); letter-spacing: 0.15em; text-transform: uppercase;
+    text-shadow: 0 0 4px rgba(255,94,108,0.5);
+    padding: 2px 8px;
+    border: 1px solid var(--crimson);
+    background: var(--crimson-dim);
+    z-index: 1;
+  }
+  .pv.defeat .d-meta {
+    margin-top: 6px;
+    font-family: var(--mono); font-size: 8px;
+    color: var(--steel); letter-spacing: 0.06em;
+    z-index: 1;
+  }
+  .pv.defeat .d-meta b { color: var(--amber); text-shadow: 0 0 4px rgba(255,181,71,0.4); }
+
+  /* ─── ROSTER preview ─── */
+  .pv.roster {
+    display: grid;
+    grid-template-columns: 88px 1fr;
+    padding: 10px;
+    gap: 10px;
+  }
+  .pv.roster .portrait {
+    aspect-ratio: 1;
+    background:
+      linear-gradient(180deg, #15091c, #060a14);
+    border: 1px solid var(--cyan);
+    display: grid; place-items: center;
+    font-family: var(--display); font-weight: 700; font-size: 48px;
+    color: var(--cyan);
+    text-shadow: -2px 0 var(--magenta), 2px 0 var(--cyan), 0 0 14px rgba(86,212,224,0.5);
+    box-shadow: 0 0 18px rgba(86,212,224,0.25), -2px 2px 0 rgba(255,46,136,0.4);
+    clip-path: polygon(15% 0, 100% 0, 100% 85%, 85% 100%, 0 100%, 0 15%);
+  }
+  .pv.roster .info { display: flex; flex-direction: column; gap: 4px; }
+  .pv.roster .name {
+    font-family: var(--display); font-weight: 600; font-size: 14px;
+    color: var(--frost); letter-spacing: 0.06em; text-transform: uppercase;
+    text-shadow: -0.5px 0 var(--magenta), 0.5px 0 var(--cyan);
+  }
+  .pv.roster .lvl {
+    font-family: var(--display); font-weight: 700; font-size: 22px;
+    color: var(--magenta); letter-spacing: 0.05em;
+    text-shadow: -1px 0 var(--cyan), 0 0 10px rgba(255,46,136,0.5);
+    line-height: 0.95;
+  }
+  .pv.roster .lvl small { font-size: 8px; color: var(--steel); letter-spacing: 0.18em; text-transform: uppercase; text-shadow: none; font-weight: 500; }
+  .pv.roster .xp-bar {
+    height: 4px; background: var(--hull-3); border: 1px solid var(--rule-2);
+    margin-top: 4px;
+  }
+  .pv.roster .xp-bar i {
+    display: block; height: 100%; width: 47%;
+    background: linear-gradient(90deg, var(--cyan), var(--magenta));
+    box-shadow: 0 0 6px rgba(86,212,224,0.6);
+  }
+  .pv.roster .stats {
+    display: grid; grid-template-columns: 1fr 1fr; gap: 3px;
+    margin-top: 4px;
+  }
+  .pv.roster .stat {
+    font-family: var(--mono); font-size: 7px;
+    color: var(--mist); letter-spacing: 0.04em;
+  }
+  .pv.roster .stat b { color: var(--plasma); font-weight: 600; }
+  .pv.roster .stat.cy b { color: var(--cyan); }
+  .pv.roster .stat.am b { color: var(--amber); }
+  .pv.roster .stat.m b  { color: var(--magenta); }
+
+  /* card body */
+  .card-body { padding: 16px 18px 18px; }
+  .card-eyebrow {
+    display: flex; align-items: center; gap: 10px;
+    font-family: var(--display); font-size: 9px;
+    letter-spacing: 0.24em; text-transform: uppercase;
+    color: var(--steel); font-weight: 500;
+  }
+  .card-eyebrow .hex { font-family: var(--mono); letter-spacing: 0.05em; color: currentColor; }
+  .card-eyebrow .step {
+    margin-left: auto; padding: 1px 7px;
+    border: 1px solid var(--rule-2);
+    font-family: var(--mono); font-size: 9px;
+    letter-spacing: 0.05em;
+    color: var(--mist);
+  }
+  .card.cy .card-eyebrow .step { color: var(--cyan); border-color: var(--cyan-dim); }
+  .card.m .card-eyebrow .step  { color: var(--magenta); border-color: var(--magenta-dim); }
+  .card.am .card-eyebrow .step { color: var(--amber); border-color: rgba(255,181,71,0.3); }
+  .card.p .card-eyebrow .step  { color: var(--plasma); border-color: rgba(108,255,170,0.3); }
+  .card.cr .card-eyebrow .step { color: var(--crimson); border-color: rgba(255,94,108,0.3); }
+
+  .card-title {
+    margin-top: 8px;
+    font-family: var(--display); font-weight: 600; font-size: 22px;
+    color: var(--frost); letter-spacing: 0.04em; text-transform: uppercase;
+    line-height: 1.05;
+    text-shadow: -0.5px 0 var(--magenta), 0.5px 0 var(--cyan);
+  }
+  .card-title em {
+    font-style: normal;
+    color: var(--cyan);
+    text-shadow: -1px 0 var(--magenta), 1px 0 var(--cyan), 0 0 12px rgba(86,212,224,0.4);
+  }
+  .card.m .card-title em  { color: var(--magenta); text-shadow: -1px 0 var(--magenta), 1px 0 var(--cyan), 0 0 12px rgba(255,46,136,0.5); }
+  .card.am .card-title em { color: var(--amber); text-shadow: -1px 0 var(--magenta), 1px 0 var(--amber), 0 0 12px rgba(255,181,71,0.5); }
+  .card.p .card-title em  { color: var(--plasma); text-shadow: -1px 0 var(--magenta), 1px 0 var(--plasma), 0 0 12px rgba(108,255,170,0.5); }
+  .card.cr .card-title em { color: var(--crimson); text-shadow: -1px 0 var(--magenta), 1px 0 var(--crimson), 0 0 12px rgba(255,94,108,0.5); }
+
+  .card-desc {
+    margin-top: 8px;
+    font-family: var(--mono); font-size: 11.5px;
+    color: var(--mist); line-height: 1.6; letter-spacing: 0.02em;
+    min-height: 56px;
+  }
+  .card-desc em { font-style: normal; color: var(--cyan); }
+  .card-desc b { font-weight: 500; color: var(--magenta); }
+
+  .card-meta {
+    margin-top: 14px;
+    padding-top: 12px;
+    border-top: 1px dashed var(--rule-2);
+    display: flex; justify-content: space-between; align-items: center;
+    font-family: var(--mono); font-size: 10px;
+    color: var(--steel); letter-spacing: 0.05em;
+  }
+  .card-meta .file { color: var(--cyan); }
+  .card-meta .open {
+    display: inline-flex; align-items: center; gap: 5px;
+    font-family: var(--display); font-weight: 600; font-size: 9.5px;
+    letter-spacing: 0.18em; text-transform: uppercase;
+    color: var(--frost);
+  }
+  .card.cy .card-meta .open { color: var(--cyan); text-shadow: 0 0 4px rgba(86,212,224,0.4); }
+  .card.m .card-meta .open  { color: var(--magenta); text-shadow: 0 0 4px rgba(255,46,136,0.4); }
+  .card.am .card-meta .open { color: var(--amber); text-shadow: 0 0 4px rgba(255,181,71,0.4); }
+  .card.p .card-meta .open  { color: var(--plasma); text-shadow: 0 0 4px rgba(108,255,170,0.4); }
+  .card.cr .card-meta .open { color: var(--crimson); text-shadow: 0 0 4px rgba(255,94,108,0.4); }
+  .card-meta .open svg { width: 10px; height: 10px; }
+
+  /* footer */
+  .footer {
+    max-width: 1280px;
+    margin: 0 auto;
+    padding: 24px 32px 40px;
+    border-top: 1px solid var(--rule);
+    text-align: center;
+    font-family: var(--mono); font-size: 10px;
+    color: var(--steel); letter-spacing: 0.05em;
+  }
+  .footer b { color: var(--cyan); }
+  .footer em { font-style: normal; color: var(--magenta); }
+</style>
+</head>
+<body>
+
+  <span class="watermark">サンドキャッスル ／ MOCKUPS ／ ７ 画面 ／ 統合プレビュー ／ 接続済</span>
+
+  <div class="layout">
+
+    <!-- titlebar -->
+    <div class="titlebar">
+      <div class="tb-left">
+        <div class="traffic"><i></i><i></i><i></i></div>
+        <div class="brand">
+          <div class="brand-mark">S</div>
+          <span class="brand-name">Sandcastle</span>
+          <span class="brand-sep">/</span>
+          <span style="font-family: var(--mono); font-size: 10.5px; color: var(--mist); padding: 2px 8px; border: 1px solid var(--rule-2); background: var(--hull-1); letter-spacing: 0.04em;">VISION DECK · v0.1</span>
+        </div>
+      </div>
+
+      <span class="nav-pill"><span class="gl"></span>7 SCREENS · GAME LOOP COMPLETE</span>
+
+      <div class="tb-right">
+        <button class="icon-btn" title="GitHub"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M9 19c-5 1.5-5-2.5-7-3M15 21v-3.5a3.4 3.4 0 0 0-1-2.6c3.4-.4 6.9-1.7 6.9-7.5A5.7 5.7 0 0 0 19.5 3a5.4 5.4 0 0 0-.1-4S18 .5 15 2.5a13 13 0 0 0-6 0c-3-2-4.4-1.5-4.4-1.5A5.4 5.4 0 0 0 4.5 5 5.7 5.7 0 0 0 3 8.4c0 5.7 3.5 7.1 6.8 7.5a3.4 3.4 0 0 0-1 2.6V22"/></svg></button>
+        <button class="icon-btn" title="Help"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="12" cy="12" r="10"/><path d="M9.1 9a3 3 0 1 1 5.8 1c0 2-3 2-3 4"/><path d="M12 17h.01"/></svg></button>
+      </div>
+    </div>
+
+    <!-- HERO -->
+    <section class="hero">
+      <div class="hero-eyebrow">
+        <span class="dot">▸</span>
+        <span>VISION DECK</span>
+        <span style="color: var(--gunmetal);">·</span>
+        <span class="id">SANDCASTLE</span>
+        <span style="color: var(--gunmetal);">·</span>
+        <span>CYBERPUNK COCKPIT</span>
+        <span class="dot">◂</span>
+      </div>
+
+      <h1 class="hero-title">SANDCASTLE <em>MOCKUPS</em></h1>
+
+      <p class="hero-subtitle">
+        Seven screens that compose the full <em>game loop</em> — from picking a boss on the dungeon map,
+        through forging a quest from your directive, fighting the agent's run as a turn-based phase battle,
+        to <b>victory or defeat</b> and the long-term roster progression. Every number, ward, and reward is
+        backed by real <em>git / CI / coverage</em> telemetry.
+      </p>
+
+      <div class="hero-stats">
+        <span><span class="v cy">7</span> SCREENS</span>
+        <span class="sep">/</span>
+        <span><span class="v m">~ 6,400</span> LOC</span>
+        <span class="sep">/</span>
+        <span><span class="v p">100 %</span> STATIC HTML</span>
+        <span class="sep">/</span>
+        <span><span class="v cy">0</span> BUILD STEP</span>
+      </div>
+    </section>
+
+    <!-- FLOW -->
+    <section class="flow-section">
+      <div class="section-head">
+        <span class="hex">0x01</span>
+        <h2>GAME LOOP</h2>
+        <span class="line"></span>
+        <span class="meta">click any step to launch</span>
+      </div>
+
+      <div class="flow">
+        <a href="cockpit.html" class="flow-step cy">
+          <div class="num">[01]</div>
+          <div class="name">Cockpit</div>
+          <div class="desc">Base ops view · live agent timeline · no-game baseline.</div>
+        </a>
+        <a href="map.html" class="flow-step m">
+          <div class="num">[02]</div>
+          <div class="name">Map</div>
+          <div class="desc">Dungeon overworld · bosses, fog, regions, agent position.</div>
+        </a>
+        <a href="quest-forge.html" class="flow-step cy">
+          <div class="num">[03]</div>
+          <div class="name">Forge</div>
+          <div class="desc">Directive → phases parser · live decompose · loadout.</div>
+        </a>
+        <a href="combat.html" class="flow-step m">
+          <div class="num">[04]</div>
+          <div class="name">Combat</div>
+          <div class="desc">Turn-based phase fight · cast / strike / boss retort.</div>
+        </a>
+        <a href="victory.html" class="flow-step p">
+          <div class="num">[05A]</div>
+          <div class="name">Victory</div>
+          <div class="desc">Boss down · level up · loot drop · merge to main.</div>
+        </a>
+        <a href="defeat.html" class="flow-step cr">
+          <div class="num">[05B]</div>
+          <div class="name">Defeat</div>
+          <div class="desc">Run failed · cause-of-death · salvage · recover or abandon.</div>
+        </a>
+        <a href="roster.html" class="flow-step am">
+          <div class="num">[06]</div>
+          <div class="name">Roster</div>
+          <div class="desc">Character sheet · stats radar · ascension tree · mission log.</div>
+        </a>
+      </div>
+    </section>
+
+    <!-- CARDS -->
+    <section class="cards-section">
+      <div class="section-head">
+        <span class="hex m">0x02</span>
+        <h2>SCREENS · DEEP DIVE</h2>
+        <span class="line"></span>
+        <span class="meta">7 / 7 mockups</span>
+      </div>
+
+      <div class="cards">
+
+        <!-- 01 COCKPIT -->
+        <a href="cockpit.html" class="card cy">
+          <div class="preview">
+            <div class="bar"><i class="r"></i><i class="a"></i><i class="p"></i></div>
+            <div class="pv cockpit">
+              <div class="side">
+                <div class="lbl">ACTIVE</div>
+                <div class="row act"><span class="d run"></span><span class="ln"></span></div>
+                <div class="row"><span class="d run"></span><span class="ln"></span></div>
+                <div class="lbl" style="margin-top: 6px;">REVIEW</div>
+                <div class="row"><span class="d"></span><span class="ln"></span></div>
+              </div>
+              <div class="center">
+                <div class="head">▸ RUN-042 · STEP 5/7</div>
+                <div class="step"><span class="tok">[02] $</span> git checkout -b…</div>
+                <div class="step"><span class="tok">[03] r</span> read refresh.ts</div>
+                <div class="step"><span class="add">[04] e</span> +14 −3 critical</div>
+                <div class="step live"><span class="tok">[05] $</span> npm test ▸ live</div>
+              </div>
+              <div class="insp">
+                <div class="pill"></div>
+                <div class="row"></div>
+                <div class="row"></div>
+                <div class="row"></div>
+              </div>
+            </div>
+          </div>
+          <div class="card-body">
+            <div class="card-eyebrow">
+              <span class="hex">0x01</span>
+              <span>BASE OPS VIEW</span>
+              <span class="step">STEP 01</span>
+            </div>
+            <h3 class="card-title">Cockpit · <em>Live Run Timeline</em></h3>
+            <p class="card-desc">
+              Three-pane mission control. Sidebar groups runs by status, center streams the active agent's
+              tool calls in real time, inspector pins diff + verification + controls.
+              <em>j / k</em> to jump runs, <b>⌘K</b> for command palette.
+            </p>
+            <div class="card-meta">
+              <span class="file">cockpit.html</span>
+              <span class="open">OPEN <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14M13 6l6 6-6 6"/></svg></span>
+            </div>
+          </div>
+        </a>
+
+        <!-- 02 MAP -->
+        <a href="map.html" class="card m">
+          <div class="preview">
+            <div class="bar"><i class="r"></i><i class="a"></i><i class="p"></i></div>
+            <div class="pv map">
+              <svg viewBox="0 0 360 200" preserveAspectRatio="none">
+                <defs>
+                  <linearGradient id="ie" x1="0" x2="1"><stop offset="0%" stop-color="#ff2e88" stop-opacity="0.6"/><stop offset="100%" stop-color="#ff2e88" stop-opacity="0.1"/></linearGradient>
+                  <linearGradient id="ce" x1="0" x2="1"><stop offset="0%" stop-color="#56d4e0" stop-opacity="0.5"/><stop offset="100%" stop-color="#56d4e0" stop-opacity="0.1"/></linearGradient>
+                </defs>
+                <path d="M 80 60 C 130 70, 170 100, 200 130" stroke="url(#ie)" stroke-width="1.5" fill="none" stroke-dasharray="3 4"/>
+                <path d="M 200 130 C 250 145, 290 130, 310 100" stroke="url(#ce)" stroke-width="1" fill="none"/>
+                <path d="M 60 130 C 90 150, 140 160, 180 170" stroke="url(#ce)" stroke-width="1" fill="none"/>
+                <path d="M 200 130 C 180 80, 130 60, 80 60" stroke="url(#ce)" stroke-width="0.7" fill="none"/>
+              </svg>
+              <span class="reg glow" style="top: 38px; left: 50px;">src/cli</span>
+              <span class="reg act" style="top: 110px; left: 170px;">src/auth</span>
+              <span class="reg" style="top: 80px; left: 280px;">src/protocol</span>
+              <span class="reg fog" style="top: 145px; left: 40px;">src/init</span>
+              <span class="creature boss" style="top: 122px; left: 198px;"></span>
+              <span class="creature elite" style="top: 122px; left: 215px;"></span>
+              <span class="agent" style="top: 130px; left: 200px;"></span>
+            </div>
+          </div>
+          <div class="card-body">
+            <div class="card-eyebrow">
+              <span class="hex">0x02</span>
+              <span>STRATEGIC LAYER</span>
+              <span class="step">STEP 02</span>
+            </div>
+            <h3 class="card-title">Map · <em>Dungeon Overworld</em></h3>
+            <p class="card-desc">
+              The codebase as a topographic dungeon. Directories are regions, import graph forms corridors,
+              issues spawn as <b>monsters</b>, tests place <em>wards</em>. Fog of war over neglected areas;
+              cleared regions glow.
+            </p>
+            <div class="card-meta">
+              <span class="file">map.html</span>
+              <span class="open">OPEN <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14M13 6l6 6-6 6"/></svg></span>
+            </div>
+          </div>
+        </a>
+
+        <!-- 03 FORGE -->
+        <a href="quest-forge.html" class="card cy">
+          <div class="preview">
+            <div class="bar"><i class="r"></i><i class="a"></i><i class="p"></i></div>
+            <div class="pv forge">
+              <div class="L">
+                <div class="target">▸ BOSS · #42 · src/auth</div>
+                <div class="doc">
+                  <span class="t1">Reproduce loop</span> · <span class="t2">diagnose race</span> · <span class="t3">patch serialize</span> callers · <span class="t4">add regression test</span> · commit changeset
+                </div>
+              </div>
+              <div class="R">
+                <div class="phase p1"><b>I</b> · reproduce · +50</div>
+                <div class="phase p2"><b>II</b> · diagnose · +75</div>
+                <div class="phase p3"><b>III</b> · patch · +150</div>
+                <div class="phase p4"><b>IV</b> · regress · +100</div>
+                <div class="phase p5"><b>V</b> · commit · +150</div>
+              </div>
+            </div>
+          </div>
+          <div class="card-body">
+            <div class="card-eyebrow">
+              <span class="hex">0x03</span>
+              <span>PLAN PARSER</span>
+              <span class="step">STEP 03</span>
+            </div>
+            <h3 class="card-title">Forge · <em>Directive → Phases</em></h3>
+            <p class="card-desc">
+              Type your plan, watch it decompose into phases live. Each verb becomes a <b>quest objective</b>
+              with its own XP, verify rule, and difficulty tag. Loadout chips equip pre-run perks against a
+              <em>2-point budget</em>.
+            </p>
+            <div class="card-meta">
+              <span class="file">quest-forge.html</span>
+              <span class="open">OPEN <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14M13 6l6 6-6 6"/></svg></span>
+            </div>
+          </div>
+        </a>
+
+        <!-- 04 COMBAT -->
+        <a href="combat.html" class="card m">
+          <div class="preview">
+            <div class="bar"><i class="r"></i><i class="a"></i><i class="p"></i></div>
+            <div class="pv combat">
+              <div class="C">
+                <div class="boss-name">REFRESH LOOP</div>
+                <div class="hp"><i></i></div>
+                <div class="phases">
+                  <span class="p done"></span>
+                  <span class="p done"></span>
+                  <span class="p act"></span>
+                  <span class="p"></span>
+                  <span class="p"></span>
+                </div>
+                <div class="turns">
+                  <div class="turn">[14] π · cast · cogitate</div>
+                  <div class="turn crit">[15] π · STRIKE · CRIT ×2 · −112</div>
+                  <div class="turn">[16] ⚠ · retort · −12</div>
+                  <div class="turn live">[17] π · shell · LIVE ▸</div>
+                </div>
+              </div>
+              <div class="R">
+                <div class="hp-self"><i></i></div>
+                <div class="obj done"><span class="m"></span>I</div>
+                <div class="obj done"><span class="m"></span>II</div>
+                <div class="obj act"><span class="m"></span>III</div>
+                <div class="obj"><span class="m"></span>IV</div>
+                <div class="obj"><span class="m"></span>V</div>
+              </div>
+            </div>
+          </div>
+          <div class="card-body">
+            <div class="card-eyebrow">
+              <span class="hex">0x04</span>
+              <span>TACTICAL LAYER</span>
+              <span class="step">STEP 04</span>
+            </div>
+            <h3 class="card-title">Combat · <em>Phase Battle</em></h3>
+            <p class="card-desc">
+              The agent's run, re-skinned as turn-based combat. <b>Cast</b> = think, <b>strike</b> = edit,
+              <b>retort</b> = boss counter (typecheck/test fails). Operator interventions
+              (<em>heal · buff · swap weapon · backup</em>) cost daily tokens.
+            </p>
+            <div class="card-meta">
+              <span class="file">combat.html</span>
+              <span class="open">OPEN <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14M13 6l6 6-6 6"/></svg></span>
+            </div>
+          </div>
+        </a>
+
+        <!-- 05A VICTORY -->
+        <a href="victory.html" class="card p">
+          <div class="preview">
+            <div class="bar"><i class="r"></i><i class="a"></i><i class="p"></i></div>
+            <div class="pv victory">
+              <div class="v-title">VICTORY</div>
+              <div class="v-xp">+ 1,331 XP</div>
+              <div class="v-lvl"><b>L08</b> → L10 · UNLOCK <b>GPT-5.5</b></div>
+            </div>
+          </div>
+          <div class="card-body">
+            <div class="card-eyebrow">
+              <span class="hex">0x05A</span>
+              <span>HERO MOMENT</span>
+              <span class="step">STEP 05A</span>
+            </div>
+            <h3 class="card-title">Victory · <em>Boss Down</em></h3>
+            <p class="card-desc">
+              Plasma rings radiate, the headline glitches into <em>VICTORY</em>, XP banner pops with the
+              flawless / risk multipliers visible. <b>Level-up</b> ribbon, ascension unlock, three loot tiles,
+              and the <em>merge-to-main</em> primary.
+            </p>
+            <div class="card-meta">
+              <span class="file">victory.html</span>
+              <span class="open">OPEN <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14M13 6l6 6-6 6"/></svg></span>
+            </div>
+          </div>
+        </a>
+
+        <!-- 05B DEFEAT -->
+        <a href="defeat.html" class="card cr">
+          <div class="preview">
+            <div class="bar"><i class="r"></i><i class="a"></i><i class="p"></i></div>
+            <div class="pv defeat">
+              <div class="d-title">DEFEAT</div>
+              <div class="d-cause">API GUARD VIOLATED</div>
+              <div class="d-meta">2/5 PHASES · STREAK BROKEN · <b>GRACE USED</b></div>
+            </div>
+          </div>
+          <div class="card-body">
+            <div class="card-eyebrow">
+              <span class="hex">0x05B</span>
+              <span>DARK MIRROR</span>
+              <span class="step">STEP 05B</span>
+            </div>
+            <h3 class="card-title">Defeat · <em>Boss Survives</em></h3>
+            <p class="card-desc">
+              Heavy CRT distortion, hazard-tape stripes, glitch shards drifting. Cause-of-death pinned,
+              boss enraged with +18% rage. Salvage: kept wards + a <em>tactic card</em> unlock. Five recovery
+              actions including <b>swap operative</b> and <b>re-engage</b>.
+            </p>
+            <div class="card-meta">
+              <span class="file">defeat.html</span>
+              <span class="open">OPEN <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14M13 6l6 6-6 6"/></svg></span>
+            </div>
+          </div>
+        </a>
+
+        <!-- 06 ROSTER -->
+        <a href="roster.html" class="card am">
+          <div class="preview">
+            <div class="bar"><i class="r"></i><i class="a"></i><i class="p"></i></div>
+            <div class="pv roster">
+              <div class="portrait">π</div>
+              <div class="info">
+                <div class="name">PI · KAGE</div>
+                <div class="lvl">08<small>LVL · ⌬ SURGEON</small></div>
+                <div class="xp-bar"><i></i></div>
+                <div class="stats">
+                  <span class="stat">PRECISION <b>94%</b></span>
+                  <span class="stat cy">VELOCITY <b>11.4m</b></span>
+                  <span class="stat am">SCOPE <b>3.8ƒ</b></span>
+                  <span class="stat m">RESILIENCE <b>81%</b></span>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="card-body">
+            <div class="card-eyebrow">
+              <span class="hex">0x06</span>
+              <span>META LAYER</span>
+              <span class="step">STEP 06</span>
+            </div>
+            <h3 class="card-title">Roster · <em>Character Sheet</em></h3>
+            <p class="card-desc">
+              Each agent is a class-typed operative. Six-axis radar of measured stats, vertical
+              <b>ascension tree</b> with real model unlocks at L10, <em>mission log</em> kill-feed,
+              inventory + badge grid.
+            </p>
+            <div class="card-meta">
+              <span class="file">roster.html</span>
+              <span class="open">OPEN <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14M13 6l6 6-6 6"/></svg></span>
+            </div>
+          </div>
+        </a>
+
+      </div>
+    </section>
+
+    <!-- footer -->
+    <div class="footer">
+      <b>SANDCASTLE / VISION DECK</b> · seven static HTML mockups · open each one directly · <em>cyberpunk cockpit aesthetic</em><br/>
+      directory: <code style="font-family: var(--mono); padding: 0 5px; background: var(--hull-2); border: 1px solid var(--rule-2); color: var(--cyan);">docs/mockups/</code>
+    </div>
+
+  </div>
+</body>
+</html>

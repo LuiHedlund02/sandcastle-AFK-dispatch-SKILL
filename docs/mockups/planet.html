@@ -1,0 +1,1093 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>SANDCASTLE :: PLANET</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --void:#03060a; --hull-0:#060a10; --hull-1:#0a1018; --hull-2:#11181f;
+    --hull-3:#1a232c; --hull-4:#243140;
+    --frost:#dceaf3; --mist:#9eb3c2; --steel:#5b6b7a; --gunmetal:#3a4754;
+    --rule:rgba(120,200,220,0.07); --rule-2:rgba(120,200,220,0.13); --rule-3:rgba(120,200,220,0.22);
+    --cyan:#56d4e0; --cyan-2:#7fe6ef; --cyan-dim:rgba(86,212,224,0.16); --cyan-ink:rgba(86,212,224,0.06);
+    --magenta:#ff2e88; --magenta-2:#ff5ca7; --magenta-dim:rgba(255,46,136,0.16); --magenta-ink:rgba(255,46,136,0.06);
+    --plasma:#6cffaa; --plasma-dim:rgba(108,255,170,0.14); --plasma-ink:rgba(108,255,170,0.06);
+    --amber:#ffb547; --amber-dim:rgba(255,181,71,0.14); --amber-ink:rgba(255,181,71,0.06);
+    --crimson:#ff5e6c; --crimson-dim:rgba(255,94,108,0.14); --slate:#6f8aa3;
+    --mono:'JetBrains Mono',ui-monospace,Menlo,Consolas,monospace;
+    --display:'Chakra Petch','Eurostile',system-ui,sans-serif;
+  }
+  *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+  html,body{height:100%;background:var(--void);color:var(--frost);font-family:var(--mono);font-size:12.5px;line-height:1.5;-webkit-font-smoothing:antialiased;overflow:hidden;font-feature-settings:"ss01","cv01","zero"}
+  button,a{font:inherit;color:inherit;background:none;border:0;cursor:pointer;text-decoration:none}
+  ::selection{background:var(--cyan-dim);color:var(--frost)}
+
+  body::before{content:"";position:fixed;inset:0;pointer-events:none;z-index:9999;opacity:0.5;
+    background:repeating-linear-gradient(0deg,rgba(0,0,0,0) 0 2px,rgba(180,220,235,0.035) 2px 3px),
+    linear-gradient(180deg,rgba(255,46,136,0.018),rgba(86,212,224,0.022) 50%,rgba(255,46,136,0.018));
+    animation:crt 5.5s steps(60) infinite}
+  @keyframes crt{0%,96%,100%{opacity:0.5}97%{opacity:0.32}97.5%{opacity:0.62}98%{opacity:0.40}}
+
+  .app{display:grid;grid-template-rows:44px 1fr;height:100vh;
+    background:radial-gradient(1100px 480px at 75% -10%,rgba(86,212,224,0.10),transparent 60%),
+    radial-gradient(900px 420px at 10% 110%,rgba(255,46,136,0.08),transparent 60%),var(--void);position:relative}
+  .app::after{content:"サンドキャッスル ／ PLANET ／ サンドキャッスル・プライム ／ ステージ III ／ 接続済";
+    position:fixed;top:50%;right:-10px;transform:rotate(-90deg) translateX(50%);transform-origin:right center;
+    font-family:var(--mono);font-size:9.5px;letter-spacing:0.7em;color:var(--magenta);
+    opacity:0.18;pointer-events:none;z-index:1;white-space:nowrap;text-shadow:0 0 6px rgba(255,46,136,0.5)}
+
+  /* ─── titlebar ─── */
+  .titlebar{display:grid;grid-template-columns:1fr auto 1fr;align-items:center;padding:0 14px;
+    border-bottom:1px solid var(--rule-2);background:linear-gradient(180deg,rgba(10,16,24,0.7),rgba(3,6,10,0.95));
+    backdrop-filter:blur(20px);position:relative;z-index:10}
+  .titlebar::after{content:"";position:absolute;bottom:-1px;left:0;right:0;height:1px;
+    background:linear-gradient(90deg,transparent 5%,var(--cyan-dim) 50%,transparent 95%)}
+  .tb-left,.tb-right{display:flex;align-items:center;gap:14px}
+  .tb-right{justify-content:flex-end}
+  .traffic{display:flex;gap:8px;padding-right:6px}
+  .traffic i{width:11px;height:11px;transform:rotate(45deg)}
+  .traffic i:nth-child(1){background:var(--crimson)}
+  .traffic i:nth-child(2){background:var(--amber)}
+  .traffic i:nth-child(3){background:var(--plasma)}
+
+  .brand{display:flex;align-items:center;gap:10px;font-size:11px;color:var(--mist);letter-spacing:0.04em}
+  .brand-mark{width:22px;height:22px;background:linear-gradient(135deg,#1a0a14,#061418);border:1px solid var(--cyan);
+    display:grid;place-items:center;font-family:var(--display);font-weight:700;font-size:12px;color:var(--cyan);
+    clip-path:polygon(20% 0,100% 0,100% 80%,80% 100%,0 100%,0 20%);
+    box-shadow:0 0 12px rgba(86,212,224,0.45),-2px 2px 0 rgba(255,46,136,0.6)}
+  .brand-name{font-family:var(--display);font-weight:600;color:var(--frost);letter-spacing:0.18em;font-size:12px;text-transform:uppercase;
+    text-shadow:-0.5px 0 var(--magenta),0.5px 0 var(--cyan)}
+  .brand-name::after{content:"／ PLANET";margin-left:8px;font-family:var(--mono);font-size:9.5px;color:var(--magenta);letter-spacing:0.15em;opacity:0.75}
+  .brand-sep{color:var(--gunmetal)}
+  .brand-ctx{font-family:var(--mono);font-size:10.5px;color:var(--mist);padding:2px 8px;border:1px solid var(--rule-2);background:var(--hull-1);letter-spacing:0.04em}
+
+  /* mode tabs */
+  .mode-switch{display:flex;padding:3px;background:var(--hull-1);border:1px solid var(--rule-2);gap:1px;
+    clip-path:polygon(8px 0,calc(100% - 8px) 0,100% 8px,100% calc(100% - 8px),calc(100% - 8px) 100%,8px 100%,0 calc(100% - 8px),0 8px)}
+  .mode{display:inline-flex;align-items:center;gap:7px;padding:5px 14px;font-family:var(--display);font-size:10.5px;font-weight:500;
+    letter-spacing:0.16em;text-transform:uppercase;color:var(--steel)}
+  .mode svg{width:13px;height:13px;opacity:.7}
+  .mode:hover{color:var(--mist)}
+  .mode.is-active{background:linear-gradient(180deg,var(--hull-3),var(--hull-2));color:var(--cyan);
+    box-shadow:inset 0 0 0 0.5px var(--cyan-dim),0 0 14px rgba(86,212,224,0.18)}
+  .mode.is-active svg{opacity:1;color:var(--cyan)}
+
+  .icon-btn{width:28px;height:28px;display:grid;place-items:center;color:var(--mist);border:1px solid transparent}
+  .icon-btn svg{width:14px;height:14px}
+  .icon-btn:hover{background:var(--hull-2);color:var(--cyan);border-color:var(--rule-2)}
+  .kbd{font-family:var(--mono);font-size:10px;color:var(--mist);padding:2px 7px;border:1px solid var(--rule-2);background:var(--hull-1);letter-spacing:0.05em}
+
+  /* ─── shell ─── */
+  .shell{display:grid;grid-template-columns:1fr 460px;overflow:hidden;min-height:0}
+
+  /* ─── L: planet stage ─── */
+  .stage{position:relative;overflow:hidden;background:
+    radial-gradient(ellipse 80% 60% at 50% 50%,rgba(86,212,224,0.04),transparent 70%),var(--hull-0)}
+  .stage::before{content:"";position:absolute;inset:0;background-image:
+    linear-gradient(rgba(120,200,220,0.04) 1px,transparent 1px),
+    linear-gradient(90deg,rgba(120,200,220,0.04) 1px,transparent 1px);
+    background-size:80px 80px;mask-image:radial-gradient(ellipse 100% 80% at 50% 50%,#000 50%,transparent 90%);pointer-events:none}
+
+  /* starfield */
+  .stars{position:absolute;inset:0;pointer-events:none}
+  .stars i{position:absolute;width:1px;height:1px;background:var(--frost);box-shadow:0 0 4px var(--frost);opacity:0.6;animation:twinkle 4s ease-in-out infinite}
+  .stars i:nth-child(2n){background:var(--cyan);box-shadow:0 0 4px var(--cyan);animation-duration:5s}
+  .stars i:nth-child(3n){background:var(--magenta);box-shadow:0 0 5px var(--magenta);animation-duration:6s}
+  .stars i:nth-child(5n){width:2px;height:2px}
+  @keyframes twinkle{0%,100%{opacity:0.7}50%{opacity:0.2}}
+
+  /* breadcrumbs */
+  .stage-head{position:absolute;top:18px;left:24px;right:24px;display:flex;justify-content:space-between;align-items:center;z-index:5;pointer-events:none}
+  .crumbs{display:flex;align-items:center;gap:10px;font-size:11px;color:var(--mist);letter-spacing:0.04em;pointer-events:auto}
+  .crumbs .hex{color:var(--cyan);font-family:var(--mono);letter-spacing:0.05em}
+  .crumbs .sep{color:var(--gunmetal)}
+  .crumbs .cur{color:var(--frost);font-family:var(--display);font-weight:600;letter-spacing:0.08em;text-transform:uppercase;
+    text-shadow:-0.5px 0 var(--magenta),0.5px 0 var(--cyan)}
+  .stage-status{display:inline-flex;align-items:center;gap:9px;font-family:var(--mono);font-size:10px;color:var(--frost);
+    padding:5px 12px;border:1px solid var(--plasma);background:var(--plasma-dim);letter-spacing:0.12em;text-transform:uppercase;
+    clip-path:polygon(8px 0,100% 0,100% calc(100% - 8px),calc(100% - 8px) 100%,0 100%,0 8px);pointer-events:auto}
+  .stage-status .dot{width:7px;height:7px;transform:rotate(45deg);background:var(--plasma);box-shadow:0 0 8px var(--plasma);animation:ping 1.4s ease-out infinite}
+  @keyframes ping{0%,100%{opacity:1}50%{opacity:0.4}}
+
+  /* ─── planet : SVG ortho-map ─── */
+  .planet-wrap{position:absolute;inset:0;display:grid;place-items:center;z-index:2}
+  .planet-svg{width:min(640px,72vh);height:min(640px,72vh);overflow:visible;filter:drop-shadow(0 0 32px rgba(86,212,224,0.18))}
+  .planet-svg .ocean{fill:url(#oceanGrad)}
+  .planet-svg .grat{fill:none;stroke:rgba(86,212,224,0.10);stroke-width:0.4}
+  .planet-svg .grat.major{stroke:rgba(86,212,224,0.16);stroke-width:0.5}
+  .planet-svg .land-settled{fill:url(#landPlasma);stroke:rgba(108,255,170,0.55);stroke-width:0.6;
+    filter:drop-shadow(0 0 6px rgba(108,255,170,0.35))}
+  .planet-svg .land-warm{fill:url(#landAmber);stroke:rgba(255,181,71,0.55);stroke-width:0.6;
+    filter:drop-shadow(0 0 6px rgba(255,181,71,0.30))}
+  .planet-svg .land-mid{fill:url(#landMid);stroke:rgba(86,212,224,0.45);stroke-width:0.5;
+    filter:drop-shadow(0 0 6px rgba(86,212,224,0.25))}
+  .planet-svg .land-boss{fill:url(#landBoss);stroke:var(--magenta);stroke-width:0.8;
+    filter:drop-shadow(0 0 9px rgba(255,46,136,0.55))}
+  .planet-svg .land-storm{fill:url(#landAmber);stroke:var(--crimson);stroke-width:0.6;stroke-dasharray:2 2}
+  .planet-svg .clouds{fill:rgba(220,234,243,0.045);stroke:rgba(220,234,243,0.10);stroke-width:0.3;
+    animation:cloud-drift 220s linear infinite}
+  @keyframes cloud-drift{from{transform:translateX(0)}to{transform:translateX(-280px)}}
+  .planet-svg .specular{fill:url(#spec)}
+  .planet-svg .terminator{fill:url(#term)}
+  .planet-svg .rim{fill:none;stroke:url(#rimGrad);stroke-width:1.2}
+  .planet-svg .atmo-outer{fill:none;stroke:rgba(86,212,224,0.10);stroke-width:6;filter:blur(6px)}
+  .planet-svg .atmo-inner{fill:none;stroke:rgba(86,212,224,0.30);stroke-width:1;filter:blur(0.6px)}
+
+  /* feature markers — small dots placed on continents */
+  .planet-svg .feature{stroke-width:1}
+  .planet-svg .feature .core{fill:var(--cyan)}
+  .planet-svg .feature.boss .core{fill:var(--magenta);animation:feat-pulse 2.4s ease-in-out infinite}
+  .planet-svg .feature.settled .core{fill:var(--plasma)}
+  .planet-svg .feature.warm .core{fill:var(--amber)}
+  .planet-svg .feature.storm .core{fill:var(--crimson);animation:feat-pulse 1.6s ease-in-out infinite}
+  .planet-svg .feature .halo{fill:none;stroke:currentColor;opacity:0.5}
+  @keyframes feat-pulse{0%,100%{r:2.5}50%{r:3.4}}
+
+  /* operative beacon — vertical glow column on surface */
+  .planet-svg .beacon-col{stroke:var(--cyan);stroke-width:1.2;
+    filter:drop-shadow(0 0 8px var(--cyan)) drop-shadow(0 0 16px rgba(86,212,224,0.6))}
+  .planet-svg .beacon-base{fill:var(--cyan);filter:drop-shadow(0 0 8px var(--cyan))}
+  .planet-svg .beacon-ring{fill:none;stroke:var(--cyan);opacity:0.5;animation:ring-out 1.6s ease-out infinite}
+  @keyframes ring-out{0%{r:2;opacity:0.7}100%{r:14;opacity:0}}
+
+  /* HUD annotation pins around the sphere */
+  .pins{position:absolute;inset:0;pointer-events:none;z-index:3}
+  .pin{position:absolute;display:flex;align-items:center;gap:8px;font-family:var(--mono);font-size:10.5px;
+    letter-spacing:0.05em;pointer-events:auto;color:var(--mist)}
+  .pin .leader{height:1px;background:linear-gradient(90deg,currentColor,transparent);width:48px;opacity:0.7;flex-shrink:0}
+  .pin.left .leader{background:linear-gradient(90deg,transparent,currentColor)}
+  .pin .plate{padding:5px 10px;border:1px solid currentColor;background:rgba(10,16,24,0.88);backdrop-filter:blur(6px);
+    clip-path:polygon(6px 0,100% 0,100% calc(100% - 6px),calc(100% - 6px) 100%,0 100%,0 6px);display:flex;align-items:center;gap:8px}
+  .pin .plate .tag{font-family:var(--display);font-size:9px;letter-spacing:0.18em;text-transform:uppercase;color:currentColor;font-weight:600;text-shadow:0 0 4px currentColor}
+  .pin .plate .name{color:var(--frost);font-family:var(--mono);font-size:10.5px;letter-spacing:0.04em}
+  .pin .plate .stat{color:var(--steel);font-size:9.5px;letter-spacing:0.05em}
+  .pin .plate .stat b{color:currentColor;font-weight:500}
+  .pin.left{flex-direction:row-reverse}
+
+  .pin.cy{color:var(--cyan)}
+  .pin.p{color:var(--plasma)}
+  .pin.am{color:var(--amber)}
+  .pin.m{color:var(--magenta)}
+  .pin.cr{color:var(--crimson)}
+
+  .pin .dot{width:6px;height:6px;transform:rotate(45deg);background:currentColor;box-shadow:0 0 6px currentColor;flex-shrink:0}
+
+  /* HUD overlays */
+  .hud{position:absolute;z-index:4;background:rgba(10,16,24,0.85);border:1px solid var(--rule-2);backdrop-filter:blur(8px);
+    font-family:var(--mono);font-size:10px;color:var(--mist);letter-spacing:0.06em;padding:8px 12px;
+    clip-path:polygon(6px 0,100% 0,100% calc(100% - 6px),calc(100% - 6px) 100%,0 100%,0 6px)}
+  .hud .k{color:var(--steel);margin-right:8px;font-size:9px;letter-spacing:0.18em;text-transform:uppercase}
+  .hud .v{color:var(--frost)}
+  .hud .v.cy{color:var(--cyan)}
+  .hud .v.p{color:var(--plasma)}
+  .hud .v.m{color:var(--magenta)}
+  .hud .v.am{color:var(--amber)}
+
+  .hud-tl{top:74px;left:24px}
+  .hud-tr{top:74px;right:24px;display:flex;flex-direction:column;gap:8px}
+  .hud-bl{bottom:18px;left:24px;display:flex;flex-direction:column;gap:8px}
+  .hud-br{bottom:18px;right:24px;display:flex;flex-direction:column;gap:6px}
+
+  /* terraform stage card */
+  .terraform{padding:14px 16px;background:linear-gradient(180deg,var(--hull-2),var(--hull-1));
+    border:1px solid var(--cyan);box-shadow:0 0 22px rgba(86,212,224,0.18);width:240px;
+    clip-path:polygon(10px 0,100% 0,100% calc(100% - 10px),calc(100% - 10px) 100%,0 100%,0 10px);position:relative}
+  .terraform::before{content:"";position:absolute;top:0;left:0;right:0;height:1px;
+    background:linear-gradient(90deg,transparent,var(--cyan),transparent)}
+  .terraform .lbl{font-family:var(--display);font-size:9px;letter-spacing:0.24em;text-transform:uppercase;color:var(--steel);font-weight:500;margin-bottom:6px}
+  .terraform .stage-num{font-family:var(--display);font-weight:800;font-size:34px;color:var(--cyan);line-height:1;letter-spacing:0.04em;
+    text-shadow:-1.5px 0 var(--magenta),1.5px 0 var(--cyan),0 0 14px rgba(86,212,224,0.5)}
+  .terraform .stage-num small{font-size:10px;color:var(--steel);letter-spacing:0.18em;text-transform:uppercase;display:block;margin-top:3px;font-weight:500;text-shadow:none}
+  .terraform-bar{margin-top:10px;height:5px;background:var(--hull-3);border:1px solid var(--rule-2);
+    clip-path:polygon(2px 0,100% 0,100% calc(100% - 2px),calc(100% - 2px) 100%,0 100%,0 2px)}
+  .terraform-bar i{display:block;height:100%;width:62%;background:linear-gradient(90deg,var(--cyan),var(--magenta));box-shadow:0 0 8px rgba(86,212,224,0.5)}
+  .terraform-meta{margin-top:6px;display:flex;justify-content:space-between;font-family:var(--mono);font-size:9px;color:var(--steel);letter-spacing:0.05em}
+  .terraform-meta .nxt{color:var(--magenta)}
+
+  /* zoom controls */
+  .zoom{display:flex;flex-direction:column;gap:4px}
+  .zoom button{width:30px;height:30px;background:rgba(10,16,24,0.85);border:1px solid var(--rule-2);color:var(--mist);
+    display:grid;place-items:center;backdrop-filter:blur(8px)}
+  .zoom button:hover{color:var(--cyan);border-color:var(--cyan-dim)}
+  .zoom button svg{width:14px;height:14px}
+
+  /* ─── R: deck panel ─── */
+  .deck{border-left:1px solid var(--rule-2);background:linear-gradient(180deg,var(--hull-1),var(--hull-0));overflow-y:auto;position:relative}
+  .deck::before{content:"";position:absolute;top:0;bottom:0;left:0;width:1px;
+    background:linear-gradient(180deg,transparent,var(--cyan-dim) 30%,var(--cyan-dim) 70%,transparent)}
+  .deck::-webkit-scrollbar{width:7px}.deck::-webkit-scrollbar-thumb{background:var(--hull-3)}
+
+  /* planet header inside deck */
+  .planet-header{padding:18px 22px 14px;border-bottom:1px solid var(--rule)}
+  .planet-eyebrow{display:flex;align-items:center;gap:10px;font-family:var(--display);font-size:9px;letter-spacing:0.24em;text-transform:uppercase;color:var(--steel);font-weight:500}
+  .planet-eyebrow .hex{font-family:var(--mono);color:var(--cyan);letter-spacing:0.05em}
+  .planet-eyebrow .line{flex:1;height:1px;background:var(--rule-2)}
+  .planet-name{margin-top:8px;font-family:var(--display);font-weight:600;font-size:24px;color:var(--frost);letter-spacing:0.04em;text-transform:uppercase;
+    text-shadow:-1px 0 var(--magenta),1px 0 var(--cyan),0 0 18px rgba(86,212,224,0.3);line-height:1.05}
+  .planet-name em{font-style:normal;color:var(--cyan);text-shadow:-1.5px 0 var(--magenta),1.5px 0 var(--cyan),0 0 22px rgba(86,212,224,0.5)}
+  .planet-tag{margin-top:6px;font-family:var(--mono);font-size:10px;color:var(--mist);letter-spacing:0.04em}
+  .planet-tag b{color:var(--cyan);font-weight:500}
+  .planet-tag em{font-style:normal;color:var(--magenta)}
+
+  /* vitals grid */
+  .vitals{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:14px;padding-top:14px;border-top:1px dashed var(--rule-2)}
+  .vital{display:flex;flex-direction:column;gap:3px}
+  .vital .k{font-family:var(--display);font-size:8.5px;letter-spacing:0.22em;text-transform:uppercase;color:var(--steel);font-weight:500}
+  .vital .v{font-family:var(--mono);font-size:11.5px;color:var(--frost);letter-spacing:0.04em;font-weight:600}
+  .vital .v.cy{color:var(--cyan);text-shadow:0 0 4px rgba(86,212,224,0.3)}
+  .vital .v.p{color:var(--plasma);text-shadow:0 0 4px rgba(108,255,170,0.3)}
+  .vital .v.am{color:var(--amber);text-shadow:0 0 4px rgba(255,181,71,0.3)}
+  .vital .v.m{color:var(--magenta);text-shadow:0 0 4px rgba(255,46,136,0.3)}
+
+  /* deck sections */
+  .section{padding:16px 22px;border-bottom:1px solid var(--rule)}
+  .section h3{font-family:var(--display);font-size:9px;letter-spacing:0.24em;text-transform:uppercase;color:var(--steel);font-weight:500;
+    display:flex;align-items:center;gap:10px;margin-bottom:12px}
+  .section h3 .hex{font-family:var(--mono);color:var(--cyan);letter-spacing:0.05em}
+  .section h3 .hex.m{color:var(--magenta)}
+  .section h3 .hex.am{color:var(--amber)}
+  .section h3 .line{flex:1;height:1px;background:var(--rule-2)}
+  .section h3 .meta{font-family:var(--mono);color:var(--mist);font-size:9px;letter-spacing:0.05em}
+
+  /* mode card — single big slot */
+  .mode-card{padding:14px 16px;background:linear-gradient(180deg,var(--amber-ink),var(--hull-2));
+    border:1px solid var(--amber);box-shadow:0 0 18px rgba(255,181,71,0.15);position:relative;
+    clip-path:polygon(10px 0,100% 0,100% calc(100% - 10px),calc(100% - 10px) 100%,0 100%,0 10px)}
+  .mode-card::before{content:"";position:absolute;top:0;left:0;right:0;height:2px;
+    background:linear-gradient(90deg,transparent,var(--amber),transparent)}
+  .mode-card .row{display:grid;grid-template-columns:38px 1fr auto;gap:12px;align-items:center}
+  .mode-card .glyph{width:36px;height:36px;background:var(--hull-3);border:1px solid var(--amber);
+    display:grid;place-items:center;color:var(--amber);font-family:var(--display);font-weight:700;font-size:18px;
+    box-shadow:0 0 10px rgba(255,181,71,0.4);clip-path:polygon(20% 0,100% 0,100% 80%,80% 100%,0 100%,0 20%);text-shadow:0 0 6px rgba(255,181,71,0.5)}
+  .mode-card .body .name{font-family:var(--display);font-weight:600;font-size:13px;color:var(--frost);letter-spacing:0.05em;text-transform:uppercase}
+  .mode-card .body .desc{margin-top:2px;font-family:var(--mono);font-size:10px;color:var(--mist);letter-spacing:0.02em}
+  .mode-card .file{margin-top:10px;padding-top:10px;border-top:1px dashed var(--rule-2);
+    font-family:var(--mono);font-size:9.5px;color:var(--steel);letter-spacing:0.04em}
+  .mode-card .file code{color:var(--amber);background:transparent}
+  .mode-card .swap{font-family:var(--display);font-size:9.5px;letter-spacing:0.18em;text-transform:uppercase;color:var(--amber);
+    padding:4px 9px;border:1px solid var(--amber);background:var(--amber-dim);
+    clip-path:polygon(6px 0,100% 0,100% calc(100% - 6px),calc(100% - 6px) 100%,0 100%,0 6px)}
+
+  /* skill / command cards row */
+  .card-row{display:flex;flex-direction:column;gap:6px}
+  .card{display:grid;grid-template-columns:30px 1fr auto;gap:11px;align-items:center;padding:9px 11px;
+    border:1px solid var(--rule-2);background:var(--hull-2);transition:all .15s;
+    clip-path:polygon(7px 0,100% 0,100% calc(100% - 7px),calc(100% - 7px) 100%,0 100%,0 7px);cursor:pointer}
+  .card:hover{border-color:currentColor}
+  .card.skill{color:var(--cyan);border-color:var(--cyan-dim);background:var(--cyan-ink)}
+  .card.skill:hover{box-shadow:0 0 12px rgba(86,212,224,0.2)}
+  .card.cmd{color:var(--magenta);border-color:var(--magenta-dim);background:var(--magenta-ink)}
+  .card.cmd:hover{box-shadow:0 0 12px rgba(255,46,136,0.2)}
+  .card.fused{position:relative}
+  .card.fused::after{content:"FUSED";position:absolute;top:-5px;right:8px;font-family:var(--mono);font-size:7.5px;letter-spacing:0.2em;
+    background:var(--void);padding:0 4px;border:1px solid currentColor;color:currentColor}
+
+  .card .ico{width:24px;height:24px;background:var(--hull-3);border:1px solid currentColor;display:grid;place-items:center;
+    font-family:var(--display);font-weight:700;font-size:12px;color:currentColor;box-shadow:0 0 6px currentColor;
+    clip-path:polygon(20% 0,100% 0,100% 80%,80% 100%,0 100%,0 20%);text-shadow:0 0 4px currentColor}
+  .card .body{min-width:0}
+  .card .name{font-family:var(--display);font-size:11px;font-weight:600;color:var(--frost);letter-spacing:0.05em;text-transform:uppercase;line-height:1.2;
+    overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .card .desc{margin-top:2px;font-family:var(--mono);font-size:9.5px;color:var(--mist);letter-spacing:0.02em;
+    overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .card.cmd .name{font-family:var(--mono);text-transform:none}
+  .card .desc code{font-family:var(--mono);padding:0 3px;background:var(--hull-3);border:1px solid var(--rule-2);color:currentColor;font-size:9px}
+  .card .meta{font-family:var(--mono);font-size:9px;color:var(--steel);letter-spacing:0.05em;padding:1px 6px;border:1px solid var(--rule-2)}
+  .card.skill .meta{color:var(--cyan);border-color:var(--cyan-dim)}
+  .card.cmd .meta{color:var(--magenta);border-color:var(--magenta-dim)}
+
+  .add-slot{display:grid;grid-template-columns:30px 1fr auto;gap:11px;align-items:center;padding:9px 11px;
+    border:1px dashed var(--rule-2);background:transparent;color:var(--steel);font-family:var(--mono);font-size:10px;letter-spacing:0.04em;
+    clip-path:polygon(7px 0,100% 0,100% calc(100% - 7px),calc(100% - 7px) 100%,0 100%,0 7px);cursor:pointer}
+  .add-slot:hover{color:var(--cyan);border-color:var(--cyan-dim);background:var(--cyan-ink)}
+  .add-slot .plus{width:24px;height:24px;border:1px dashed currentColor;display:grid;place-items:center;font-family:var(--display);font-weight:700;font-size:14px}
+
+  /* deployed operative card */
+  .ops-card{padding:12px 14px;background:linear-gradient(90deg,var(--cyan-ink),var(--hull-2));border:1px solid var(--cyan-dim);
+    display:grid;grid-template-columns:36px 1fr auto;gap:12px;align-items:center;
+    clip-path:polygon(8px 0,100% 0,100% calc(100% - 8px),calc(100% - 8px) 100%,0 100%,0 8px)}
+  .ops-card .portrait{width:32px;height:32px;background:linear-gradient(135deg,#1a0a14,#061218);border:1px solid var(--cyan);
+    display:grid;place-items:center;font-family:var(--display);font-weight:700;font-size:16px;color:var(--cyan);
+    text-shadow:-1px 0 var(--magenta),1px 0 var(--cyan);clip-path:polygon(22% 0,100% 0,100% 78%,78% 100%,0 100%,0 22%)}
+  .ops-card .body .name{font-family:var(--display);font-weight:600;font-size:12px;color:var(--frost);letter-spacing:0.06em;text-transform:uppercase}
+  .ops-card .body .meta{margin-top:2px;font-family:var(--mono);font-size:9.5px;color:var(--cyan);letter-spacing:0.05em}
+  .ops-card .lvl{font-family:var(--display);font-weight:700;font-size:18px;color:var(--magenta);
+    text-shadow:0 0 6px rgba(255,46,136,0.4),-0.5px 0 var(--cyan)}
+  .ops-card .lvl small{font-size:8px;color:var(--steel);letter-spacing:0.18em;text-transform:uppercase;display:block;text-shadow:none;font-weight:500}
+
+  /* file preview */
+  .file-preview{padding:14px 16px;background:var(--hull-1);border:1px solid var(--rule-2);
+    clip-path:polygon(8px 0,100% 0,100% calc(100% - 8px),calc(100% - 8px) 100%,0 100%,0 8px);font-family:var(--mono)}
+  .file-preview .head{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;
+    font-size:9px;letter-spacing:0.18em;text-transform:uppercase;color:var(--steel)}
+  .file-preview .head .path{color:var(--cyan);font-family:var(--mono);letter-spacing:0.04em;font-size:10px;text-transform:none}
+  .file-preview .head .save{color:var(--plasma);padding:2px 7px;border:1px solid var(--plasma);background:var(--plasma-dim);
+    text-shadow:0 0 4px rgba(108,255,170,0.4)}
+  .file-preview pre{font-family:var(--mono);font-size:10px;line-height:1.65;color:var(--mist);letter-spacing:0.01em;
+    background:var(--hull-0);padding:10px 12px;border:1px solid var(--rule-2);max-height:260px;overflow:auto;white-space:pre-wrap}
+  .file-preview pre::-webkit-scrollbar{width:6px}
+  .file-preview pre::-webkit-scrollbar-thumb{background:var(--hull-3)}
+  .file-preview .tree-line{color:var(--steel)}
+  .file-preview .h1{color:var(--magenta)}
+  .file-preview .h2{color:var(--cyan)}
+  .file-preview .li{color:var(--frost)}
+  .file-preview .com{color:var(--gunmetal)}
+</style>
+</head>
+<body>
+  <div class="app">
+    <!-- titlebar -->
+    <div class="titlebar">
+      <div class="tb-left">
+        <div class="traffic"><i></i><i></i><i></i></div>
+        <div class="brand">
+          <div class="brand-mark">S</div>
+          <span class="brand-name">Sandcastle</span>
+          <span class="brand-sep">/</span>
+          <span class="brand-ctx">SANDCASTLE-PRIME</span>
+          <span class="brand-sep">·</span>
+          <span class="brand-ctx" style="color:var(--cyan);border-color:var(--cyan-dim)">main</span>
+        </div>
+      </div>
+
+      <div class="mode-switch">
+        <button class="mode"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="12" cy="12" r="3"/><circle cx="12" cy="12" r="9"/></svg>Galaxy</button>
+        <button class="mode is-active"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="12" cy="12" r="9"/><ellipse cx="12" cy="12" rx="9" ry="3"/></svg>Planet</button>
+        <button class="mode"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M3 6l4-3 5 3 5-3 4 3v15l-4-3-5 3-5-3-4 3z"/></svg>Map</button>
+        <button class="mode"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="12" cy="12" r="3"/><circle cx="12" cy="12" r="9" stroke-dasharray="2 4"/></svg>Cockpit</button>
+      </div>
+
+      <div class="tb-right">
+        <button class="icon-btn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/></svg></button>
+        <span class="kbd">⌘K</span>
+      </div>
+    </div>
+
+    <!-- shell -->
+    <div class="shell">
+      <!-- L: planet stage -->
+      <main class="stage">
+        <!-- starfield -->
+        <div class="stars">
+          <i style="top:8%;left:14%"></i><i style="top:18%;left:72%"></i><i style="top:26%;left:38%"></i>
+          <i style="top:36%;left:88%"></i><i style="top:48%;left:8%"></i><i style="top:55%;left:62%"></i>
+          <i style="top:64%;left:24%"></i><i style="top:72%;left:48%"></i><i style="top:78%;left:82%"></i>
+          <i style="top:84%;left:14%"></i><i style="top:90%;left:54%"></i><i style="top:12%;left:55%"></i>
+          <i style="top:30%;left:18%"></i><i style="top:42%;left:76%"></i><i style="top:60%;left:90%"></i>
+        </div>
+
+        <!-- breadcrumbs -->
+        <div class="stage-head">
+          <div class="crumbs">
+            <span class="hex">0x01</span>
+            <span>SYSTEM SOL-7</span>
+            <span class="sep">/</span>
+            <span class="cur">Sandcastle Prime</span>
+            <span class="sep">·</span>
+            <span style="color:var(--cyan)">stage III · habitable</span>
+          </div>
+          <div class="stage-status">
+            <span class="dot"></span>
+            <span>1 OPERATIVE LANDED · CLEAR SKIES · T+12:04</span>
+          </div>
+        </div>
+
+        <!-- planet -->
+        <div class="planet-wrap">
+          <svg class="planet-svg" viewBox="-340 -340 680 680" xmlns="http://www.w3.org/2000/svg">
+            <defs>
+              <radialGradient id="oceanGrad" cx="38%" cy="32%" r="78%">
+                <stop offset="0%"   stop-color="#1a3a48"/>
+                <stop offset="40%"  stop-color="#0c2530"/>
+                <stop offset="80%"  stop-color="#04101a"/>
+                <stop offset="100%" stop-color="#020810"/>
+              </radialGradient>
+              <radialGradient id="spec" cx="32%" cy="26%" r="22%">
+                <stop offset="0%"   stop-color="rgba(220,234,243,0.32)"/>
+                <stop offset="60%"  stop-color="rgba(220,234,243,0.06)"/>
+                <stop offset="100%" stop-color="rgba(220,234,243,0)"/>
+              </radialGradient>
+              <radialGradient id="term" cx="100%" cy="60%" r="80%">
+                <stop offset="0%"   stop-color="rgba(0,0,0,0.7)"/>
+                <stop offset="50%"  stop-color="rgba(0,0,0,0.35)"/>
+                <stop offset="80%"  stop-color="rgba(0,0,0,0)"/>
+              </radialGradient>
+              <linearGradient id="rimGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+                <stop offset="0%"   stop-color="rgba(127,230,239,0.7)"/>
+                <stop offset="50%"  stop-color="rgba(86,212,224,0.18)"/>
+                <stop offset="100%" stop-color="rgba(86,212,224,0.05)"/>
+              </linearGradient>
+              <radialGradient id="landPlasma" cx="35%" cy="35%" r="80%">
+                <stop offset="0%"   stop-color="#1f4a3a"/>
+                <stop offset="100%" stop-color="#0a2418"/>
+              </radialGradient>
+              <radialGradient id="landAmber" cx="35%" cy="35%" r="80%">
+                <stop offset="0%"   stop-color="#3d2c14"/>
+                <stop offset="100%" stop-color="#1a1006"/>
+              </radialGradient>
+              <radialGradient id="landMid" cx="35%" cy="35%" r="80%">
+                <stop offset="0%"   stop-color="#173640"/>
+                <stop offset="100%" stop-color="#0a1c24"/>
+              </radialGradient>
+              <radialGradient id="landBoss" cx="35%" cy="35%" r="80%">
+                <stop offset="0%"   stop-color="#3a1426"/>
+                <stop offset="100%" stop-color="#1a0612"/>
+              </radialGradient>
+              <clipPath id="globe"><circle cx="0" cy="0" r="280"/></clipPath>
+              <filter id="soft"><feGaussianBlur stdDeviation="0.6"/></filter>
+            </defs>
+
+            <!-- atmosphere (outside the disk) -->
+            <circle class="atmo-outer" cx="0" cy="0" r="298"/>
+            <circle class="atmo-inner" cx="0" cy="0" r="286"/>
+
+            <!-- everything inside the globe -->
+            <g clip-path="url(#globe)">
+              <!-- ocean -->
+              <circle class="ocean" cx="0" cy="0" r="280"/>
+
+              <!-- graticule — latitude bands -->
+              <g class="grat">
+                <ellipse cx="0" cy="-180" rx="215" ry="14"/>
+                <ellipse cx="0" cy="-90"  rx="265" ry="20"/>
+                <ellipse class="major" cx="0" cy="0" rx="280" ry="26"/>
+                <ellipse cx="0" cy="90"  rx="265" ry="20"/>
+                <ellipse cx="0" cy="180" rx="215" ry="14"/>
+                <!-- meridians as ellipses -->
+                <ellipse cx="0" cy="0" rx="60"  ry="280"/>
+                <ellipse cx="0" cy="0" rx="140" ry="280"/>
+                <ellipse class="major" cx="0" cy="0" rx="220" ry="280"/>
+              </g>
+
+              <!-- continents (= repo regions) -->
+              <!-- src/cli — settled, upper-left -->
+              <path id="cont-cli" class="land-settled"
+                d="M -210 -150 C -180 -180 -120 -180 -90 -160
+                   C -70 -145 -75 -110 -110 -100
+                   C -150 -92 -190 -100 -210 -120 Z"/>
+
+              <!-- src/tools — settled, top-center -->
+              <path id="cont-tools" class="land-settled"
+                d="M -50 -195 C -10 -210 60 -200 70 -170
+                   C 80 -148 50 -135 20 -140
+                   C -10 -148 -40 -160 -50 -195 Z"/>
+
+              <!-- src/protocol — mid coverage, upper-right -->
+              <path id="cont-protocol" class="land-mid"
+                d="M 110 -120 C 145 -150 220 -130 230 -90
+                   C 232 -60 200 -40 165 -50
+                   C 130 -62 105 -90 110 -120 Z"/>
+
+              <!-- src/auth — BOSS continent, center, hostile -->
+              <path id="cont-auth" class="land-boss"
+                d="M -80 -30 C -50 -70 50 -75 90 -40
+                   C 110 -10 100 35 60 55
+                   C 20 70 -30 65 -65 40
+                   C -95 20 -100 -5 -80 -30 Z"/>
+
+              <!-- src/EnvResolver — wilderness, lower-left -->
+              <path id="cont-env" class="land-warm"
+                d="M -220 60 C -180 35 -130 50 -120 90
+                   C -110 130 -150 170 -195 165
+                   C -230 158 -245 110 -220 60 Z"/>
+
+              <!-- docs/app — mid, lower-center -->
+              <path id="cont-docs" class="land-mid"
+                d="M -40 130 C 0 110 60 120 70 160
+                   C 75 195 30 220 -20 210
+                   C -55 200 -65 165 -40 130 Z"/>
+
+              <!-- src/sandboxes — small isle, far right -->
+              <path id="cont-sand" class="land-warm"
+                d="M 175 90 C 195 75 230 85 232 115
+                   C 232 140 200 150 180 135
+                   C 165 122 162 100 175 90 Z"/>
+
+              <!-- cloud bands (subtle drift) -->
+              <g class="clouds">
+                <path d="M -310 -50 C -240 -70 -150 -55 -60 -65 C 30 -75 130 -55 230 -68 C 290 -75 360 -60 420 -70
+                         L 420 -38 C 360 -28 290 -42 230 -36 C 130 -24 30 -42 -60 -32 C -150 -22 -240 -38 -310 -28 Z"/>
+                <path d="M -310 70 C -230 50 -120 65 -20 55 C 80 48 180 65 280 55 C 340 48 400 60 420 55
+                         L 420 86 C 400 92 340 80 280 86 C 180 96 80 80 -20 88 C -120 98 -230 82 -310 100 Z"/>
+              </g>
+
+              <!-- specular highlight, fixed -->
+              <ellipse class="specular" cx="-100" cy="-110" rx="120" ry="80"/>
+
+              <!-- terminator (day/night) -->
+              <rect class="terminator" x="-280" y="-280" width="560" height="560"/>
+
+              <!-- feature markers placed on continents -->
+              <g class="feature settled" style="color:var(--plasma)">
+                <circle class="halo" cx="-150" cy="-135" r="6"/>
+                <circle class="core" cx="-150" cy="-135" r="2.6"/>
+              </g>
+              <g class="feature settled" style="color:var(--plasma)">
+                <circle class="halo" cx="10" cy="-170" r="6"/>
+                <circle class="core" cx="10" cy="-170" r="2.6"/>
+              </g>
+              <g class="feature" style="color:var(--cyan)">
+                <circle class="halo" cx="170" cy="-85" r="6"/>
+                <circle class="core" cx="170" cy="-85" r="2.6"/>
+              </g>
+              <g class="feature warm" style="color:var(--amber)">
+                <circle class="halo" cx="-170" cy="115" r="6"/>
+                <circle class="core" cx="-170" cy="115" r="2.6"/>
+              </g>
+              <g class="feature" style="color:var(--cyan)">
+                <circle class="halo" cx="20" cy="170" r="6"/>
+                <circle class="core" cx="20" cy="170" r="2.6"/>
+              </g>
+              <g class="feature warm" style="color:var(--amber)">
+                <circle class="halo" cx="200" cy="115" r="6"/>
+                <circle class="core" cx="200" cy="115" r="2.6"/>
+              </g>
+
+              <!-- BOSS marker on src/auth, with ping aura -->
+              <g class="feature boss" style="color:var(--magenta)">
+                <circle cx="10" cy="15" r="14" fill="none" stroke="var(--magenta)" stroke-opacity="0.4">
+                  <animate attributeName="r" values="6;18;6" dur="2.4s" repeatCount="indefinite"/>
+                  <animate attributeName="stroke-opacity" values="0.6;0;0.6" dur="2.4s" repeatCount="indefinite"/>
+                </circle>
+                <circle class="halo" cx="10" cy="15" r="9"/>
+                <circle class="core" cx="10" cy="15" r="3.4"/>
+              </g>
+
+              <!-- operative beacon — column rising from the surface -->
+              <g class="beacon">
+                <line class="beacon-col" x1="-30" y1="20" x2="-30" y2="-30"/>
+                <circle class="beacon-base" cx="-30" cy="20" r="3"/>
+                <circle class="beacon-ring" cx="-30" cy="20" r="3"/>
+              </g>
+            </g>
+
+            <!-- planet rim (drawn on top, outside clip) -->
+            <circle class="rim" cx="0" cy="0" r="280"/>
+          </svg>
+
+          <!-- HUD-pinned annotations with leader lines -->
+          <div class="pins">
+            <!-- left side: src/cli -->
+            <div class="pin p left" style="top:32%;left:6%">
+              <span class="dot"></span>
+              <div class="plate">
+                <span class="tag">SETTLED</span>
+                <span class="name">src/cli</span>
+                <span class="stat">cov <b>94 %</b></span>
+              </div>
+              <span class="leader"></span>
+            </div>
+
+            <!-- left side: src/EnvResolver -->
+            <div class="pin am left" style="top:60%;left:6%">
+              <span class="dot"></span>
+              <div class="plate">
+                <span class="tag">WILDERNESS</span>
+                <span class="name">src/EnvResolver</span>
+                <span class="stat">cov <b>38 %</b></span>
+              </div>
+              <span class="leader"></span>
+            </div>
+
+            <!-- right side: BOSS · src/auth -->
+            <div class="pin m" style="top:46%;right:6%">
+              <span class="leader"></span>
+              <div class="plate">
+                <span class="tag">⚠ BOSS · TIER III</span>
+                <span class="name">src/auth</span>
+                <span class="stat">HP <b>320 / 500</b></span>
+              </div>
+              <span class="dot"></span>
+            </div>
+
+            <!-- right side: src/protocol -->
+            <div class="pin cy" style="top:24%;right:6%">
+              <span class="leader"></span>
+              <div class="plate">
+                <span class="tag">CHARTED</span>
+                <span class="name">src/protocol</span>
+                <span class="stat">cov <b>76 %</b></span>
+              </div>
+              <span class="dot"></span>
+            </div>
+
+            <!-- bottom-right: operative beacon -->
+            <div class="pin cy" style="bottom:18%;right:6%">
+              <span class="leader"></span>
+              <div class="plate">
+                <span class="tag">▸ LANDED</span>
+                <span class="name">π PI · KAGE</span>
+                <span class="stat">RUN-042 · phase III</span>
+              </div>
+              <span class="dot"></span>
+            </div>
+          </div>
+        </div>
+
+        <!-- HUD top-left: terraform -->
+        <div class="terraform hud-tl" style="position:absolute">
+          <div class="lbl">▸ TERRAFORM</div>
+          <div class="stage-num">III<small>STAGE · HABITABLE</small></div>
+          <div class="terraform-bar"><i></i></div>
+          <div class="terraform-meta">
+            <span style="color:var(--cyan)">62 % to STAGE IV</span>
+            <span class="nxt">→ life-bearing</span>
+          </div>
+        </div>
+
+        <!-- HUD top-right: weather + signals -->
+        <div class="hud-tr">
+          <div class="hud"><span class="k">CLIMATE</span><span class="v p">CLEAR</span></div>
+          <div class="hud"><span class="k">CI · 30D</span><span class="v p">94 %</span></div>
+          <div class="hud"><span class="k">COVERAGE</span><span class="v cy">71 %</span></div>
+          <div class="hud"><span class="k">CHURN · 7D</span><span class="v am">WARM</span></div>
+        </div>
+
+        <!-- HUD bottom-left: legend -->
+        <div class="hud-bl">
+          <div class="hud" style="display:flex;flex-direction:column;gap:4px;padding:10px 14px">
+            <span style="font-family:var(--display);font-size:8.5px;letter-spacing:0.22em;color:var(--steel);font-weight:500;margin-bottom:4px">▸ LEGEND</span>
+            <span><span style="display:inline-block;width:8px;height:8px;background:var(--plasma);box-shadow:0 0 4px var(--plasma);transform:rotate(45deg);margin-right:6px;vertical-align:middle"></span><span class="v">Settlement · ≥ 80%</span></span>
+            <span><span style="display:inline-block;width:8px;height:8px;background:var(--amber);box-shadow:0 0 4px var(--amber);transform:rotate(45deg);margin-right:6px;vertical-align:middle"></span><span class="v">Wilderness · low cov.</span></span>
+            <span><span style="display:inline-block;width:8px;height:8px;background:var(--magenta);box-shadow:0 0 4px var(--magenta);transform:rotate(45deg);margin-right:6px;vertical-align:middle"></span><span class="v">Boss · open issue</span></span>
+            <span><span style="display:inline-block;width:8px;height:8px;background:var(--cyan);box-shadow:0 0 4px var(--cyan);transform:rotate(45deg);margin-right:6px;vertical-align:middle"></span><span class="v">Operative · landed</span></span>
+          </div>
+        </div>
+
+        <!-- HUD bottom-right: zoom -->
+        <div class="hud-br">
+          <div class="zoom">
+            <button title="Zoom in"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14M5 12h14"/></svg></button>
+            <button title="Zoom out"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14"/></svg></button>
+            <button title="Recenter"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3"/></svg></button>
+          </div>
+        </div>
+      </main>
+
+      <!-- R: deck panel -->
+      <aside class="deck">
+        <div class="planet-header">
+          <div class="planet-eyebrow"><span class="hex">0x01</span>PLANET<span class="line"></span><span class="hex">SOL-7 · IV</span></div>
+          <h1 class="planet-name">Sandcastle <em>Prime</em></h1>
+          <p class="planet-tag"><b>~/dev/sandcastle</b> · TypeScript · 87 modules · <em>312 chambers</em></p>
+
+          <div class="vitals">
+            <div class="vital"><span class="k">MASS · LOC</span><span class="v">12.4 k</span></div>
+            <div class="vital"><span class="k">AGE</span><span class="v">11 mo</span></div>
+            <div class="vital"><span class="k">COVERAGE</span><span class="v p">71 %</span></div>
+            <div class="vital"><span class="k">CI 30D</span><span class="v p">94 %</span></div>
+            <div class="vital"><span class="k">OPEN BOSSES</span><span class="v m">3</span></div>
+            <div class="vital"><span class="k">WARDS</span><span class="v cy">38</span></div>
+            <div class="vital"><span class="k">CHURN</span><span class="v am">WARM</span></div>
+            <div class="vital"><span class="k">LAST RUN</span><span class="v">T+12:04</span></div>
+          </div>
+        </div>
+
+        <!-- DEPLOYED OPERATIVES -->
+        <div class="section">
+          <h3><span class="hex">0x02</span>OPERATIVES LANDED<span class="line"></span><span class="meta">1 / 3</span></h3>
+          <div class="ops-card">
+            <div class="portrait">π</div>
+            <div class="body">
+              <div class="name">PI · KAGE</div>
+              <div class="meta">⌬ SURGEON · CL.II · RUN-042</div>
+            </div>
+            <div class="lvl">08<small>LVL</small></div>
+          </div>
+        </div>
+
+        <!-- MODE -->
+        <div class="section">
+          <h3><span class="hex am">0x03</span>MODE · LAW OF PHYSICS<span class="line"></span><span class="meta">1 SLOT</span></h3>
+          <div class="mode-card">
+            <div class="row">
+              <div class="glyph">🔪</div>
+              <div class="body">
+                <div class="name">SURGICAL</div>
+                <div class="desc">Tiny diffs · scope-locked · refuses unrelated edits.</div>
+              </div>
+              <button class="swap">SWAP</button>
+            </div>
+            <div class="file">▸ writes to <code>.sandcastle/agents.md</code></div>
+          </div>
+        </div>
+
+        <!-- SKILLS -->
+        <div class="section">
+          <h3><span class="hex">0x04</span>SKILLS · LOCAL KNOWLEDGE<span class="line"></span><span class="meta">3 / 6</span></h3>
+          <div class="card-row">
+            <div class="card skill">
+              <div class="ico">⌬</div>
+              <div class="body">
+                <div class="name">React Hooks Lore</div>
+                <div class="desc">activates on <code>*.tsx</code> · hook lints + memo guidance</div>
+              </div>
+              <span class="meta">PASSIVE</span>
+            </div>
+            <div class="card skill">
+              <div class="ico">π</div>
+              <div class="body">
+                <div class="name">Test-Driven Development</div>
+                <div class="desc">activates on new feature · failing test first</div>
+              </div>
+              <span class="meta">PASSIVE</span>
+            </div>
+            <div class="card skill fused">
+              <div class="ico">∇</div>
+              <div class="body">
+                <div class="name">Domain Glossary</div>
+                <div class="desc">always · injects project terminology &amp; ADRs</div>
+              </div>
+              <span class="meta">ALWAYS</span>
+            </div>
+            <button class="add-slot">
+              <span class="plus">+</span>
+              <span>EQUIP A SKILL · 3 slots remain</span>
+              <span style="color:var(--cyan)">▸</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- COMMANDS -->
+        <div class="section">
+          <h3><span class="hex m">0x05</span>SLASH COMMANDS · QUICKBAR<span class="line"></span><span class="meta">3 / 4</span></h3>
+          <div class="card-row">
+            <div class="card cmd">
+              <div class="ico">↵</div>
+              <div class="body">
+                <div class="name">/commit</div>
+                <div class="desc">PromptCommand · <code>Bash(git *)</code> <code>FileRead</code></div>
+              </div>
+              <span class="meta">⌘ 1</span>
+            </div>
+            <div class="card cmd">
+              <div class="ico">⚖</div>
+              <div class="body">
+                <div class="name">/review</div>
+                <div class="desc">adversarial review · staged + unstaged diff</div>
+              </div>
+              <span class="meta">⌘ 2</span>
+            </div>
+            <div class="card cmd">
+              <div class="ico">∆</div>
+              <div class="body">
+                <div class="name">/changeset</div>
+                <div class="desc">auto-write changeset entry · @changesets/cli</div>
+              </div>
+              <span class="meta">⌘ 3</span>
+            </div>
+            <button class="add-slot">
+              <span class="plus">+</span>
+              <span>EQUIP A COMMAND · 1 slot remains</span>
+              <span style="color:var(--magenta)">▸</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- FILE PREVIEW -->
+        <div class="section">
+          <h3><span class="hex">0x06</span>SOURCE OF TRUTH<span class="line"></span><span class="meta">PROVIDER-AGNOSTIC</span></h3>
+          <div class="file-preview">
+            <div class="head">
+              <span class="path">.sandcastle/</span>
+              <span class="save">▸ SYNCED</span>
+            </div>
+            <pre><span class="tree-line">.sandcastle/
+├── pet.json              <span class="com">// planet identity + terraform stage</span>
+├── agents.md             <span class="com">// MODE · "Surgical"</span>
+├── skills/
+│   ├── react-hooks.md    <span class="com">// SKILL · activates on *.tsx</span>
+│   ├── tdd.md            <span class="com">// SKILL · activates on new feature</span>
+│   └── glossary.md       <span class="com">// SKILL · always-on</span>
+└── commands/
+    ├── commit.md         <span class="com">// /commit</span>
+    ├── review.md         <span class="com">// /review</span>
+    └── changeset.md      <span class="com">// /changeset</span></span>
+
+<span class="h1"># agents.md — MODE</span>
+
+<span class="h2">## Operating mode</span>
+<span class="li">Surgical — minimal diffs, scope-locked.</span>
+<span class="li">Refuse edits outside the requested phase paths.</span>
+<span class="li">Max diff: 80 lines unless explicitly authorized.</span>
+
+<span class="h2">## Verify rules</span>
+<span class="li">- typecheck must pass before commit</span>
+<span class="li">- tests for touched files must pass</span>
+<span class="li">- no new dependencies without operator confirm</span></pre>
+          </div>
+        </div>
+      </aside>
+    </div>
+  </div>
+
+<!-- ─── INJECTED · FLEET DOCK + DEPLOY CHORD ─── -->
+<style>
+  .app { height: calc(100vh - 88px) !important; }
+  .sc-dock { position: fixed; left: 0; right: 0; bottom: 0; height: 88px; z-index: 80;
+    display: grid; grid-template-columns: auto 1fr auto; gap: 12px; align-items: center; padding: 10px 14px;
+    background: linear-gradient(180deg, rgba(10,16,24,0.95), rgba(3,6,10,0.98)); backdrop-filter: blur(20px);
+    border-top: 1px solid var(--cyan-dim); box-shadow: 0 -16px 40px rgba(0,0,0,0.6) }
+  .sc-dock::before { content: ""; position: absolute; top: 0; left: 0; right: 0; height: 1px;
+    background: linear-gradient(90deg, transparent 5%, var(--magenta) 25%, var(--cyan) 75%, transparent 95%);
+    opacity: 0.6; filter: blur(0.4px) }
+  .sc-dock-head { display: flex; flex-direction: column; justify-content: center; padding-right: 14px;
+    border-right: 1px solid var(--rule-2); min-width: 150px; cursor: pointer }
+  .sc-dock-head:hover { background: rgba(86,212,224,0.05) }
+  .sc-dock-head .lbl { font-family: var(--display); font-size: 8.5px; letter-spacing: 0.28em;
+    text-transform: uppercase; color: var(--steel); font-weight: 500 }
+  .sc-dock-head .v { font-family: var(--display); font-weight: 700; font-size: 18px; color: var(--cyan);
+    letter-spacing: 0.05em; line-height: 1; margin-top: 3px; text-shadow: 0 0 8px rgba(86,212,224,0.4) }
+  .sc-dock-head .v em { font-style: normal; color: var(--magenta); text-shadow: 0 0 6px rgba(255,46,136,0.4); font-weight: 700 }
+  .sc-dock-head .v small { font-size: 9px; color: var(--steel); letter-spacing: 0.18em; display: block;
+    margin-top: 2px; text-shadow: none; font-weight: 500 }
+  .sc-cells { display: flex; gap: 8px; overflow-x: auto; padding: 2px 0 }
+  .sc-cells::-webkit-scrollbar { height: 4px } .sc-cells::-webkit-scrollbar-thumb { background: var(--hull-3) }
+  .sc-cell { display: grid; grid-template-columns: 46px 1fr; gap: 10px; align-items: center; padding: 8px 12px;
+    background: var(--hull-2); border: 1px solid var(--rule-2); min-width: 262px; flex-shrink: 0;
+    clip-path: polygon(8px 0, 100% 0, 100% calc(100% - 8px), calc(100% - 8px) 100%, 0 100%, 0 8px);
+    transition: all .2s; cursor: pointer; position: relative; color: inherit; font-family: inherit; text-align: left }
+  .sc-cell:hover { background: var(--hull-3) }
+  .sc-cell.casting { border-color: var(--cyan); background: var(--cyan-ink); box-shadow: 0 0 16px rgba(86,212,224,0.20) }
+  .sc-cell.striking { border-color: var(--cyan); box-shadow: 0 0 18px rgba(86,212,224,0.30) }
+  .sc-cell.boss { border-color: var(--magenta); box-shadow: 0 0 18px rgba(255,46,136,0.25) }
+  .sc-cell.win-pending { border-color: var(--plasma); background: var(--plasma-ink); animation: scWin 2.4s ease-in-out infinite }
+  @keyframes scWin { 0%, 100% { box-shadow: 0 0 22px rgba(108,255,170,0.30) } 50% { box-shadow: 0 0 36px rgba(108,255,170,0.55) } }
+  .sc-cell.fail-pending { border-color: var(--crimson); background: var(--crimson-dim); animation: scFail 1.8s ease-in-out infinite }
+  @keyframes scFail { 0%, 100% { box-shadow: 0 0 18px rgba(255,94,108,0.25) } 50% { box-shadow: 0 0 32px rgba(255,94,108,0.5) } }
+  .sc-cell.is-current { outline: 1px dashed var(--cyan); outline-offset: 4px }
+  .sc-av { position: relative; width: 46px; height: 46px;
+    background: linear-gradient(135deg, #1a0a14, #061218); border: 1px solid currentColor;
+    display: grid; place-items: center; color: var(--cyan);
+    clip-path: polygon(20% 0, 100% 0, 100% 80%, 80% 100%, 0 100%, 0 20%) }
+  .sc-av .glyph { font-family: var(--display); font-weight: 700; font-size: 18px; color: currentColor;
+    text-shadow: -1px 0 var(--magenta), 1px 0 currentColor, 0 0 6px currentColor }
+  .sc-av .lvl { position: absolute; bottom: -3px; right: -3px; font-family: var(--mono); font-size: 8px;
+    color: var(--magenta); background: var(--void); padding: 1px 4px; border: 1px solid var(--magenta-dim);
+    letter-spacing: 0; text-shadow: 0 0 3px rgba(255,46,136,0.5) }
+  .sc-cell.casting .sc-av { color: var(--cyan) } .sc-cell.boss .sc-av { color: var(--magenta) }
+  .sc-cell.win-pending .sc-av { color: var(--plasma) } .sc-cell.fail-pending .sc-av { color: var(--crimson) }
+  .sc-eye { position: absolute; top: 9px; left: 50%; transform: translateX(-50%); width: 4px; height: 4px;
+    border-radius: 50%; background: var(--magenta); box-shadow: 0 0 4px var(--magenta);
+    animation: scEye 2.6s ease-in-out infinite }
+  @keyframes scEye { 0%, 100% { opacity: 1 } 50% { opacity: 0.5 } }
+  .sc-cell.casting .sc-eye { animation: scEyeCast 0.4s steps(2) infinite }
+  @keyframes scEyeCast { 0%, 100% { opacity: 1 } 50% { opacity: 0.3 } }
+  .sc-body { min-width: 0; display: flex; flex-direction: column; gap: 3px }
+  .sc-row1 { display: flex; align-items: center; gap: 6px; font-family: var(--display); font-size: 10.5px;
+    font-weight: 600; letter-spacing: 0.05em; color: var(--frost); text-transform: uppercase;
+    overflow: hidden; text-overflow: ellipsis; white-space: nowrap }
+  .sc-row1 .sep { color: var(--gunmetal); font-weight: 400 }
+  .sc-row1 .phase { color: var(--cyan); font-family: var(--mono); font-size: 9.5px; letter-spacing: 0.05em; text-transform: none }
+  .sc-cell.boss .sc-row1 .phase { color: var(--magenta) }
+  .sc-cell.win-pending .sc-row1 .phase { color: var(--plasma) }
+  .sc-cell.fail-pending .sc-row1 .phase { color: var(--crimson) }
+  .sc-row2 { display: flex; align-items: center; gap: 8px; font-family: var(--mono); font-size: 9.5px;
+    color: var(--steel); letter-spacing: 0.04em }
+  .sc-row2 .ico { font-family: var(--display); font-weight: 700; font-size: 9px; color: currentColor }
+  .sc-cell.casting .sc-row2 { color: var(--cyan) } .sc-cell.boss .sc-row2 { color: var(--magenta) }
+  .sc-cell.win-pending .sc-row2 { color: var(--plasma) }
+  .sc-prog { height: 2px; background: var(--hull-3); position: relative; margin-top: 2px }
+  .sc-prog i { display: block; height: 100%; background: linear-gradient(90deg, var(--cyan), var(--magenta));
+    box-shadow: 0 0 4px rgba(86,212,224,0.5) }
+  .sc-cell.win-pending .sc-prog i { width: 100% !important; background: linear-gradient(90deg, var(--plasma), var(--cyan)) }
+  .sc-cell.fail-pending .sc-prog i { width: 100% !important; background: linear-gradient(90deg, var(--crimson), var(--magenta)) }
+  .sc-warn { position: absolute; top: -6px; right: -6px; width: 18px; height: 18px;
+    color: var(--void); display: grid; place-items: center;
+    font-family: var(--display); font-weight: 700; font-size: 11px;
+    transform: rotate(45deg); z-index: 6 }
+  .sc-warn span { transform: rotate(-45deg); display: block }
+  .sc-warn.win { background: var(--plasma); box-shadow: 0 0 8px var(--plasma) }
+  .sc-warn.fail { background: var(--crimson); box-shadow: 0 0 8px var(--crimson) }
+  .sc-dock-right { display: flex; align-items: center; gap: 10px; padding-left: 14px; border-left: 1px solid var(--rule-2) }
+  .sc-bulk { display: inline-flex; align-items: center; gap: 6px; padding: 8px 12px;
+    font-family: var(--display); font-size: 10px; font-weight: 600;
+    letter-spacing: 0.16em; text-transform: uppercase; border: 1px solid; cursor: pointer;
+    clip-path: polygon(6px 0, 100% 0, 100% calc(100% - 6px), calc(100% - 6px) 100%, 0 100%, 0 6px);
+    transition: all .15s; background: var(--hull-3); color: var(--frost); border-color: var(--rule-2) }
+  .sc-bulk svg { width: 11px; height: 11px }
+  .sc-bulk.gated { opacity: 0.5; cursor: not-allowed; color: var(--steel) }
+  .sc-bulk.deploy { color: var(--void); background: linear-gradient(180deg, var(--magenta-2), var(--magenta));
+    border-color: var(--magenta); font-weight: 700;
+    box-shadow: 0 0 18px rgba(255,46,136,0.45), inset 0 1px 0 rgba(255,255,255,0.2); letter-spacing: 0.2em }
+  .sc-bulk.deploy:hover { box-shadow: 0 0 26px rgba(255,46,136,0.6) }
+  .sc-bulk .kc { font-family: var(--mono); font-size: 9px; padding: 1px 4px;
+    background: rgba(0,0,0,0.25); letter-spacing: 0; border-radius: 2px }
+  .sc-chord-bg { position: fixed; inset: 0; background: rgba(3,6,10,0.55); backdrop-filter: blur(8px);
+    z-index: 200; display: none; align-items: flex-start; justify-content: center; padding-top: 18vh }
+  .sc-chord-bg.is-open { display: flex }
+  .sc-chord { width: 780px; max-width: calc(100vw - 32px);
+    background: linear-gradient(180deg, var(--hull-2), var(--hull-1));
+    border: 1px solid var(--magenta);
+    box-shadow: 0 0 48px rgba(255,46,136,0.30), 0 32px 64px -16px rgba(0,0,0,0.7);
+    clip-path: polygon(16px 0, 100% 0, 100% calc(100% - 16px), calc(100% - 16px) 100%, 0 100%, 0 16px);
+    position: relative }
+  .sc-chord::before { content: ""; position: absolute; top: 0; left: 0; right: 0; height: 2px;
+    background: linear-gradient(90deg, transparent 5%, var(--magenta) 25%, var(--cyan) 75%, transparent 95%);
+    background-size: 200% 100%; animation: scHolo 3s linear infinite }
+  @keyframes scHolo { from { background-position: 0 0 } to { background-position: 200% 0 } }
+  .sc-chord-head { display: flex; align-items: center; justify-content: space-between;
+    padding: 14px 22px; border-bottom: 1px solid var(--rule) }
+  .sc-chord-head .lbl { font-family: var(--display); font-size: 11px; font-weight: 700;
+    letter-spacing: 0.28em; text-transform: uppercase; color: var(--magenta);
+    text-shadow: 0 0 6px rgba(255,46,136,0.5); display: flex; align-items: center; gap: 10px }
+  .sc-chord-head .lbl svg { width: 14px; height: 14px }
+  .sc-chord-head .esc { font-family: var(--mono); font-size: 10px; color: var(--steel); letter-spacing: 0.05em;
+    display: flex; align-items: center; gap: 6px }
+  .sc-chord-row { display: grid; grid-template-columns: auto auto auto auto auto 1fr; gap: 14px;
+    align-items: center; padding: 18px 22px 14px;
+    font-family: var(--mono); font-size: 14px; color: var(--mist); letter-spacing: 0.02em }
+  .sc-chord-row .verb { font-family: var(--display); font-weight: 700; font-size: 14px;
+    letter-spacing: 0.18em; text-transform: uppercase; color: var(--magenta);
+    text-shadow: 0 0 6px rgba(255,46,136,0.5) }
+  .sc-chord-row .conn { color: var(--steel); font-family: var(--display); font-size: 11px;
+    letter-spacing: 0.18em; text-transform: uppercase }
+  .sc-cf { display: flex; align-items: center; gap: 6px; padding: 6px 10px;
+    background: var(--hull-2); border: 1px solid var(--cyan-dim); color: var(--cyan);
+    font-family: var(--mono); font-size: 13px; letter-spacing: 0.04em;
+    clip-path: polygon(5px 0, 100% 0, 100% calc(100% - 5px), calc(100% - 5px) 100%, 0 100%, 0 5px);
+    text-shadow: 0 0 4px rgba(86,212,224,0.3) }
+  .sc-cf svg { width: 11px; height: 11px; color: var(--cyan-dim) }
+  .sc-cf.targets { background: var(--magenta-ink); border-color: var(--magenta-dim); color: var(--magenta);
+    text-shadow: 0 0 4px rgba(255,46,136,0.3) }
+  .sc-cf .chip { padding: 2px 6px; background: rgba(0,0,0,0.3); font-size: 11px; letter-spacing: 0.05em;
+    border: 1px solid currentColor; color: currentColor; border-radius: 2px }
+  .sc-chord-dir { display: grid; grid-template-columns: auto 1fr auto; gap: 14px; align-items: center;
+    padding: 12px 22px 18px; border-top: 1px dashed var(--rule-2) }
+  .sc-chord-dir .k { font-family: var(--display); font-size: 10px; font-weight: 600;
+    letter-spacing: 0.22em; text-transform: uppercase; color: var(--steel) }
+  .sc-chord-dir input { flex: 1; font-family: var(--mono); font-size: 14px; color: var(--frost);
+    letter-spacing: 0.02em; padding: 6px 0; border: 0; border-bottom: 1px solid var(--cyan-dim);
+    background: transparent; outline: 0; min-width: 0; width: 100% }
+  .sc-chord-dir input::placeholder { color: var(--steel); font-style: italic }
+  .sc-chord-dir .send { font-family: var(--display); font-size: 10px; font-weight: 700;
+    letter-spacing: 0.18em; text-transform: uppercase; color: var(--void);
+    padding: 8px 16px; background: linear-gradient(180deg, var(--magenta-2), var(--magenta));
+    border: 1px solid var(--magenta);
+    box-shadow: 0 0 18px rgba(255,46,136,0.5), inset 0 1px 0 rgba(255,255,255,0.2);
+    clip-path: polygon(6px 0, 100% 0, 100% calc(100% - 6px), calc(100% - 6px) 100%, 0 100%, 0 6px); cursor: pointer }
+  .sc-chord-dir .send .kc { font-family: var(--mono); font-size: 9px; padding: 1px 4px;
+    background: rgba(0,0,0,0.3); letter-spacing: 0; border-radius: 2px; margin-left: 6px }
+  .sc-chord-foot { display: flex; align-items: center; gap: 14px; padding: 10px 22px;
+    border-top: 1px solid var(--rule); background: var(--hull-1);
+    font-family: var(--mono); font-size: 9.5px; color: var(--steel); letter-spacing: 0.05em }
+  .sc-chord-foot .sep { color: var(--gunmetal) }
+  .sc-chord-foot .k { padding: 1px 5px; border: 1px solid var(--rule-2); color: var(--mist);
+    letter-spacing: 0; border-radius: 2px }
+</style>
+
+<div class="sc-dock">
+  <div class="sc-dock-head" onclick="document.getElementById('scChord').classList.add('is-open')">
+    <div class="lbl">FLEET</div>
+    <div class="v">3 <em>/ 5</em><small>π · BUDGET</small></div>
+  </div>
+  <div class="sc-cells">
+    <button class="sc-cell casting is-current">
+      <div class="sc-av"><span class="glyph">π</span><span class="sc-eye"></span><span class="lvl">L8</span></div>
+      <div class="sc-body">
+        <div class="sc-row1"><span>Sandcastle Prime</span><span class="sep">·</span><span class="phase">phase III · serialize</span></div>
+        <div class="sc-row2"><span class="ico">▸</span><span>RUN-042 · casting · T+12:04</span></div>
+        <div class="sc-prog"><i style="width:62%"></i></div>
+      </div>
+    </button>
+    <button class="sc-cell striking">
+      <div class="sc-av"><span class="glyph">π</span><span class="sc-eye"></span><span class="lvl">L8</span></div>
+      <div class="sc-body">
+        <div class="sc-row1"><span>Helix-IV</span><span class="sep">·</span><span class="phase">phase II · diagnose</span></div>
+        <div class="sc-row2"><span class="ico">⚔</span><span>RUN-091 · striking · T+04:11</span></div>
+        <div class="sc-prog"><i style="width:38%"></i></div>
+      </div>
+    </button>
+    <button class="sc-cell boss">
+      <div class="sc-av"><span class="glyph">π</span><span class="sc-eye"></span><span class="lvl">L8</span></div>
+      <div class="sc-body">
+        <div class="sc-row1"><span>Astral-Forge</span><span class="sep">·</span><span class="phase">⚠ boss · TIER II</span></div>
+        <div class="sc-row2"><span class="ico">∇</span><span>RUN-128 · coord w/ Helix-IV</span></div>
+        <div class="sc-prog"><i style="width:24%"></i></div>
+      </div>
+    </button>
+    <button class="sc-cell win-pending">
+      <span class="sc-warn win"><span>✓</span></span>
+      <div class="sc-av"><span class="glyph">π</span><span class="lvl">L8</span></div>
+      <div class="sc-body">
+        <div class="sc-row1"><span>Mira-Doc</span><span class="sep">·</span><span class="phase">VICTORY · awaiting merge</span></div>
+        <div class="sc-row2"><span class="ico">+ 175</span><span>XP · 5/5 phases · ~9m</span></div>
+        <div class="sc-prog"><i></i></div>
+      </div>
+    </button>
+    <button class="sc-cell fail-pending">
+      <span class="sc-warn fail"><span>!</span></span>
+      <div class="sc-av"><span class="glyph">π</span><span class="lvl">L8</span></div>
+      <div class="sc-body">
+        <div class="sc-row1"><span>Vercel-Bridge</span><span class="sep">·</span><span class="phase">DEFEAT · API guard</span></div>
+        <div class="sc-row2"><span class="ico">−40</span><span>XP · 2/5 · worktree kept</span></div>
+        <div class="sc-prog"><i></i></div>
+      </div>
+    </button>
+  </div>
+  <div class="sc-dock-right">
+    <button class="sc-bulk gated" title="Gated until all pending runs are green-verified">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12l5 5L20 7"/></svg>
+      Merge all green <span class="kc">⌘ ⇧ M</span>
+    </button>
+    <button class="sc-bulk deploy" onclick="document.getElementById('scChord').classList.add('is-open')">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 4l14 8-14 8V4z"/></svg>
+      Deploy <span class="kc">⌘ D</span>
+    </button>
+  </div>
+</div>
+
+<div class="sc-chord-bg" id="scChord" onclick="if(event.target===this)this.classList.remove('is-open')">
+  <div class="sc-chord">
+    <div class="sc-chord-head">
+      <span class="lbl">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 4l14 8-14 8V4z"/></svg>
+        DEPLOY · CHORD
+      </span>
+      <span class="esc"><span class="k">esc</span> to dismiss</span>
+    </div>
+    <div class="sc-chord-row">
+      <span class="verb">DEPLOY</span>
+      <span class="sc-cf"><span class="chip">π</span> PI · KAGE
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="m6 9 6 6 6-6"/></svg></span>
+      <span class="conn">to</span>
+      <span class="sc-cf targets"><span class="chip">3</span> Sandcastle, Helix, Forge
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="m6 9 6 6 6-6"/></svg></span>
+      <span class="conn">·</span>
+      <span style="font-family:var(--mono);font-size:11px;color:var(--steel);letter-spacing:0.05em">multi-target</span>
+    </div>
+    <div class="sc-chord-dir">
+      <span class="k">DIRECTIVE</span>
+      <input type="text" placeholder="triage open issues, fix the first high-priority one, commit…" />
+      <button class="send" onclick="document.getElementById('scChord').classList.remove('is-open')">
+        DEPLOY <span class="kc">⌘ ↵</span>
+      </button>
+    </div>
+    <div class="sc-chord-foot">
+      <span><span class="k">tab</span> next</span>
+      <span class="sep">·</span>
+      <span><span class="k">,</span> add target</span>
+      <span class="sep">·</span>
+      <span><span class="k">⌘ ↵</span> deploy all</span>
+      <span class="sep">·</span>
+      <span style="margin-left:auto;color:var(--magenta);text-shadow:0 0 4px rgba(255,46,136,0.4)">▸ Pi · Kage at 3/5 focus budget</span>
+    </div>
+  </div>
+</div>
+
+<script>
+  document.addEventListener('keydown', (e) => {
+    if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'd') {
+      e.preventDefault();
+      document.getElementById('scChord').classList.add('is-open');
+    }
+    if (e.key === 'Escape') document.getElementById('scChord').classList.remove('is-open');
+  });
+</script>
+
+</body>
+</html>

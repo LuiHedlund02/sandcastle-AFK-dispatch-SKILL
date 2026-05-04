@@ -1,0 +1,1860 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>SANDCASTLE :: COMBAT</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@300;400;500;600;700&family=JetBrains+Mono:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --void:    #03060a;
+    --hull-0:  #060a10;
+    --hull-1:  #0a1018;
+    --hull-2:  #11181f;
+    --hull-3:  #1a232c;
+    --hull-4:  #243140;
+
+    --frost:   #dceaf3;
+    --mist:    #9eb3c2;
+    --steel:   #5b6b7a;
+    --gunmetal:#3a4754;
+
+    --rule:    rgba(120, 200, 220, 0.07);
+    --rule-2:  rgba(120, 200, 220, 0.13);
+    --rule-3:  rgba(120, 200, 220, 0.22);
+
+    --cyan:    #56d4e0;
+    --cyan-2:  #7fe6ef;
+    --cyan-dim:rgba(86, 212, 224, 0.16);
+    --cyan-ink:rgba(86, 212, 224, 0.06);
+
+    --magenta:    #ff2e88;
+    --magenta-2:  #ff5ca7;
+    --magenta-dim:rgba(255, 46, 136, 0.16);
+    --magenta-ink:rgba(255, 46, 136, 0.06);
+
+    --plasma:    #6cffaa;
+    --plasma-dim:rgba(108,255,170,0.14);
+    --amber:     #ffb547;
+    --amber-dim: rgba(255,181,71,0.14);
+    --crimson:   #ff5e6c;
+    --crimson-dim:rgba(255,94,108,0.14);
+    --slate:     #6f8aa3;
+
+    --mono:    'JetBrains Mono', ui-monospace, 'SF Mono', Menlo, Consolas, monospace;
+    --display: 'Chakra Petch', 'Eurostile', system-ui, sans-serif;
+  }
+
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  html, body {
+    height: 100%;
+    background: var(--void);
+    color: var(--frost);
+    font-family: var(--mono);
+    font-size: 12.5px;
+    line-height: 1.5;
+    -webkit-font-smoothing: antialiased;
+    overflow: hidden;
+    font-feature-settings: "ss01", "cv01", "zero";
+  }
+  button { font: inherit; color: inherit; background: none; border: 0; cursor: pointer; }
+  input, textarea { font: inherit; color: inherit; background: none; border: 0; outline: 0; }
+  textarea { resize: none; }
+  ::selection { background: var(--cyan-dim); color: var(--frost); }
+
+  /* CRT overlay */
+  body::before {
+    content: "";
+    position: fixed; inset: 0;
+    pointer-events: none;
+    z-index: 9999;
+    opacity: 0.5;
+    background:
+      repeating-linear-gradient(0deg, rgba(0,0,0,0) 0 2px, rgba(180,220,235,0.035) 2px 3px),
+      linear-gradient(180deg, rgba(255,46,136,0.018), rgba(86,212,224,0.022) 50%, rgba(255,46,136,0.018));
+    animation: crt 5.5s steps(60) infinite;
+  }
+  @keyframes crt {
+    0%, 96%, 100% { opacity: 0.5; }
+    97%   { opacity: 0.32; }
+    97.5% { opacity: 0.62; }
+    98%   { opacity: 0.40; }
+  }
+
+  .app {
+    display: grid;
+    grid-template-rows: 44px 1fr;
+    height: 100vh;
+    background:
+      radial-gradient(900px 460px at 78% -12%, rgba(255,46,136,0.10), transparent 60%),
+      radial-gradient(900px 420px at 12% 118%, rgba(86,212,224,0.07), transparent 60%),
+      var(--void);
+    position: relative;
+  }
+  .app::after {
+    content: "サンドキャッスル ／ 戦闘 COMBAT ／ クエスト稼働中 ／ AGENT-π ／ 接続済";
+    position: fixed;
+    top: 50%; right: -10px;
+    transform: rotate(-90deg) translateX(50%);
+    transform-origin: right center;
+    font-family: var(--mono);
+    font-size: 9.5px; letter-spacing: 0.7em;
+    color: var(--magenta);
+    opacity: 0.18; pointer-events: none;
+    white-space: nowrap;
+    text-shadow: 0 0 6px rgba(255,46,136,0.5);
+  }
+
+  /* ─── titlebar ─── */
+  .titlebar {
+    display: grid;
+    grid-template-columns: 1fr auto 1fr;
+    align-items: center;
+    padding: 0 14px;
+    border-bottom: 1px solid var(--rule-2);
+    background: linear-gradient(180deg, rgba(10,16,24,0.7), rgba(3,6,10,0.95));
+    backdrop-filter: blur(20px);
+    position: relative;
+    z-index: 10;
+  }
+  .titlebar::after {
+    content: ""; position: absolute; bottom: -1px; left: 0; right: 0; height: 1px;
+    background: linear-gradient(90deg, transparent 5%, var(--magenta-dim) 50%, transparent 95%);
+  }
+  .tb-left, .tb-right { display: flex; align-items: center; gap: 14px; }
+  .tb-right { justify-content: flex-end; }
+  .traffic { display: flex; gap: 8px; padding-right: 6px; }
+  .traffic i { width: 11px; height: 11px; transform: rotate(45deg); }
+  .traffic i:nth-child(1) { background: var(--crimson); }
+  .traffic i:nth-child(2) { background: var(--amber); }
+  .traffic i:nth-child(3) { background: var(--plasma); }
+
+  .brand { display: flex; align-items: center; gap: 10px; font-size: 11px; color: var(--mist); letter-spacing: 0.04em; }
+  .brand-mark {
+    width: 22px; height: 22px;
+    background: linear-gradient(135deg, #1a0a14, #061418);
+    border: 1px solid var(--cyan);
+    display: grid; place-items: center;
+    font-family: var(--display); font-weight: 700; font-size: 12px;
+    color: var(--cyan);
+    clip-path: polygon(20% 0, 100% 0, 100% 80%, 80% 100%, 0 100%, 0 20%);
+    box-shadow: 0 0 12px rgba(86,212,224,0.45), -2px 2px 0 rgba(255,46,136,0.6);
+  }
+  .brand-name {
+    font-family: var(--display); font-weight: 600; color: var(--frost);
+    letter-spacing: 0.18em; font-size: 12px; text-transform: uppercase;
+    text-shadow: -0.5px 0 var(--magenta), 0.5px 0 var(--cyan);
+  }
+  .brand-name::after {
+    content: "／ 戦闘";
+    margin-left: 8px; font-family: var(--mono); font-size: 9.5px;
+    color: var(--magenta); letter-spacing: 0.15em; opacity: 0.75;
+  }
+  .brand-sep { color: var(--gunmetal); }
+  .brand-ctx {
+    font-family: var(--mono); font-size: 10.5px; color: var(--mist);
+    padding: 2px 8px; border: 1px solid var(--rule-2); background: var(--hull-1);
+    letter-spacing: 0.04em;
+  }
+
+  .mode-switch {
+    display: flex; padding: 3px;
+    background: var(--hull-1); border: 1px solid var(--rule-2); gap: 1px;
+    clip-path: polygon(8px 0, calc(100% - 8px) 0, 100% 8px, 100% calc(100% - 8px), calc(100% - 8px) 100%, 8px 100%, 0 calc(100% - 8px), 0 8px);
+  }
+  .mode {
+    display: inline-flex; align-items: center; gap: 7px;
+    padding: 5px 14px;
+    font-family: var(--display); font-size: 10.5px; font-weight: 500;
+    letter-spacing: 0.16em; text-transform: uppercase;
+    color: var(--steel); transition: color .15s, background .15s;
+  }
+  .mode svg { width: 13px; height: 13px; opacity: .7; }
+  .mode:hover { color: var(--mist); }
+  .mode.is-active {
+    background: linear-gradient(180deg, var(--hull-3), var(--hull-2));
+    color: var(--magenta);
+    box-shadow: inset 0 0 0 0.5px var(--magenta-dim), 0 0 14px rgba(255,46,136,0.18);
+    text-shadow: 0 0 6px rgba(255,46,136,0.4);
+  }
+  .mode.is-active svg { opacity: 1; color: var(--magenta); }
+
+  .icon-btn {
+    width: 28px; height: 28px; display: grid; place-items: center;
+    color: var(--mist); transition: background .15s, color .15s;
+    border: 1px solid transparent;
+  }
+  .icon-btn svg { width: 14px; height: 14px; }
+  .icon-btn:hover { background: var(--hull-2); color: var(--cyan); border-color: var(--rule-2); }
+
+  .kbd {
+    font-family: var(--mono); font-size: 10px; color: var(--mist);
+    padding: 2px 7px; border: 1px solid var(--rule-2); background: var(--hull-1);
+    letter-spacing: 0.05em;
+  }
+
+  .live-pill {
+    display: inline-flex; align-items: center; gap: 8px;
+    padding: 4px 11px;
+    font-family: var(--display); font-size: 10px; font-weight: 600;
+    letter-spacing: 0.22em; text-transform: uppercase;
+    color: var(--crimson);
+    border: 1px solid var(--crimson);
+    background: var(--crimson-dim);
+    text-shadow: 0 0 6px rgba(255,94,108,0.5);
+    clip-path: polygon(6px 0, 100% 0, 100% calc(100% - 6px), calc(100% - 6px) 100%, 0 100%, 0 6px);
+  }
+  .live-pill .ping {
+    width: 7px; height: 7px; transform: rotate(45deg);
+    background: var(--crimson); animation: ping 1.4s ease-out infinite;
+  }
+  @keyframes ping { 0%, 100% { opacity: 1; } 50% { opacity: 0.3; } }
+
+  /* ─── shell ─── */
+  .shell {
+    display: grid;
+    grid-template-columns: 320px 1fr 380px;
+    overflow: hidden;
+    min-height: 0;
+  }
+
+  /* ─── left: combatants ─── */
+  .left {
+    border-right: 1px solid var(--rule-2);
+    background: linear-gradient(180deg, var(--hull-1), var(--hull-0));
+    overflow-y: auto;
+    position: relative;
+  }
+  .left::before {
+    content: ""; position: absolute; top: 0; bottom: 0; right: 0; width: 1px;
+    background: linear-gradient(180deg, transparent, var(--cyan-dim) 30%, var(--cyan-dim) 70%, transparent);
+  }
+  .left::-webkit-scrollbar { width: 6px; }
+  .left::-webkit-scrollbar-thumb { background: var(--hull-3); }
+
+  .panel {
+    margin: 14px;
+    padding: 16px;
+    background: linear-gradient(180deg, var(--hull-2), var(--hull-1));
+    border: 1px solid var(--rule-2);
+    position: relative;
+    clip-path: polygon(12px 0, 100% 0, 100% calc(100% - 12px), calc(100% - 12px) 100%, 0 100%, 0 12px);
+  }
+  .panel::before {
+    content: ""; position: absolute; top: 0; left: 0; right: 0; height: 1px;
+    background: linear-gradient(90deg, transparent, var(--cyan-dim), transparent);
+  }
+  .panel.boss { border-color: var(--magenta); box-shadow: 0 0 22px rgba(255,46,136,0.18); }
+  .panel.boss::before { background: linear-gradient(90deg, transparent, var(--magenta), transparent); }
+
+  .panel-eyebrow {
+    display: flex; align-items: center; gap: 10px;
+    font-family: var(--display); font-size: 9px;
+    letter-spacing: 0.24em; text-transform: uppercase;
+    color: var(--steel); font-weight: 500;
+    margin-bottom: 12px;
+  }
+  .panel-eyebrow .hex { font-family: var(--mono); color: var(--cyan); letter-spacing: 0.05em; }
+  .panel-eyebrow .hex.m { color: var(--magenta); }
+  .panel-eyebrow .line { flex: 1; height: 1px; background: var(--rule-2); }
+
+  .combatant-head { display: flex; align-items: center; gap: 12px; margin-bottom: 12px; }
+  .portrait {
+    width: 48px; height: 48px;
+    background: linear-gradient(135deg, #1a0a14, #061218);
+    border: 1px solid var(--cyan);
+    display: grid; place-items: center;
+    font-family: var(--display); font-weight: 700; font-size: 22px;
+    color: var(--cyan);
+    clip-path: polygon(22% 0, 100% 0, 100% 78%, 78% 100%, 0 100%, 0 22%);
+    text-shadow: -1.5px 0 var(--magenta), 1.5px 0 var(--cyan);
+    box-shadow: 0 0 14px rgba(86,212,224,0.4);
+  }
+  .portrait.m { color: var(--magenta); border-color: var(--magenta); box-shadow: 0 0 18px rgba(255,46,136,0.5); }
+
+  .combatant-info { flex: 1; min-width: 0; }
+  .combatant-name {
+    font-family: var(--display); font-size: 14px; font-weight: 600;
+    color: var(--frost); letter-spacing: 0.08em; text-transform: uppercase;
+    text-shadow: -0.5px 0 var(--magenta), 0.5px 0 var(--cyan);
+  }
+  .combatant-class {
+    font-size: 9.5px; color: var(--cyan); letter-spacing: 0.18em;
+    text-transform: uppercase; margin-top: 2px;
+  }
+  .combatant-class.m { color: var(--magenta); }
+  .combatant-class em { font-style: normal; color: var(--magenta); margin-right: 4px; }
+
+  .combatant-lvl {
+    font-family: var(--display); font-weight: 700; font-size: 22px;
+    color: var(--cyan); line-height: 1;
+    text-shadow: 0 0 10px rgba(86,212,224,0.5);
+  }
+  .combatant-lvl.m {
+    color: var(--magenta);
+    text-shadow: 0 0 10px rgba(255,46,136,0.5), -1px 0 var(--cyan);
+  }
+  .combatant-lvl small {
+    font-family: var(--mono); font-size: 8px; display: block;
+    color: var(--steel); letter-spacing: 0.2em; text-transform: uppercase;
+    text-shadow: none; font-weight: 500;
+  }
+
+  /* HP */
+  .bar-block { margin-top: 10px; }
+  .bar-row {
+    display: flex; justify-content: space-between;
+    font-family: var(--display); font-size: 9px;
+    letter-spacing: 0.22em; text-transform: uppercase;
+    color: var(--steel); font-weight: 500;
+    margin-bottom: 4px;
+  }
+  .bar-row .v {
+    font-family: var(--mono); font-size: 10.5px;
+    letter-spacing: 0.05em; text-transform: none;
+    color: var(--frost);
+  }
+  .bar {
+    height: 7px; background: var(--hull-3);
+    border: 1px solid var(--rule-2); position: relative;
+    clip-path: polygon(3px 0, 100% 0, 100% calc(100% - 3px), calc(100% - 3px) 100%, 0 100%, 0 3px);
+  }
+  .bar i {
+    display: block; height: 100%;
+    box-shadow: 0 0 10px currentColor;
+  }
+  .bar.hp i      { background: linear-gradient(90deg, var(--plasma), var(--cyan)); color: var(--cyan); }
+  .bar.boss-hp i { background: linear-gradient(90deg, var(--crimson), var(--magenta)); color: var(--magenta); }
+  .bar.mp i      { background: linear-gradient(90deg, var(--cyan), var(--magenta)); color: var(--cyan); }
+  .bar.shield i  { background: linear-gradient(90deg, var(--slate), var(--cyan)); color: var(--cyan); opacity: 0.7; }
+
+  /* attributes */
+  .attrs { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; margin-top: 12px; }
+  .attr {
+    padding: 4px 8px;
+    font-family: var(--mono); font-size: 9.5px;
+    letter-spacing: 0.1em; text-transform: uppercase;
+    color: var(--mist);
+    border: 1px solid var(--rule-2);
+    background: var(--hull-2);
+    display: flex; align-items: center; gap: 6px;
+  }
+  .attr i {
+    width: 5px; height: 5px; transform: rotate(45deg);
+    background: currentColor; box-shadow: 0 0 4px currentColor;
+  }
+  .attr.cy { color: var(--cyan); border-color: var(--cyan-dim); }
+  .attr.am { color: var(--amber); border-color: rgba(255,181,71,0.3); }
+  .attr.cr { color: var(--crimson); border-color: rgba(255,94,108,0.3); }
+  .attr.sl { color: var(--slate); }
+
+  /* turn order */
+  .turn-list {
+    display: flex; flex-direction: column; gap: 6px;
+  }
+  .turn-row {
+    display: grid;
+    grid-template-columns: 22px 1fr auto;
+    gap: 10px; align-items: center;
+    padding: 6px 8px;
+    border: 1px solid var(--rule-2);
+    background: var(--hull-2);
+    font-family: var(--mono); font-size: 10.5px;
+    color: var(--mist); letter-spacing: 0.03em;
+  }
+  .turn-row.now { border-color: var(--magenta); background: var(--magenta-ink); color: var(--frost); box-shadow: 0 0 10px rgba(255,46,136,0.15); }
+  .turn-row.done { opacity: 0.45; }
+  .turn-row .ord {
+    font-family: var(--display); font-weight: 600; font-size: 11px;
+    color: var(--steel); letter-spacing: 0;
+  }
+  .turn-row.now .ord { color: var(--magenta); text-shadow: 0 0 6px rgba(255,46,136,0.5); }
+  .turn-row.done .ord { color: var(--gunmetal); }
+  .turn-row .who { font-family: var(--display); font-size: 10.5px; letter-spacing: 0.08em; text-transform: uppercase; }
+  .turn-row .ini {
+    font-family: var(--mono); font-size: 9.5px; color: var(--steel);
+    padding: 1px 6px; border: 1px solid var(--rule-2);
+    letter-spacing: 0.05em;
+  }
+  .turn-row.now .ini { color: var(--magenta); border-color: var(--magenta-dim); }
+
+  /* ─── center: combat log ─── */
+  .stage {
+    display: flex; flex-direction: column;
+    min-width: 0; min-height: 0;
+    position: relative;
+  }
+
+  .stage-head {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 14px 28px;
+    border-bottom: 1px solid var(--rule-2);
+    background: var(--hull-0);
+    gap: 16px;
+    position: relative;
+  }
+  .stage-head::after {
+    content: ""; position: absolute; bottom: -1px; left: 28px; right: 28px; height: 2px;
+    background: linear-gradient(90deg, var(--magenta), var(--cyan) 35%, transparent 70%);
+    opacity: 0.5; filter: blur(0.4px);
+  }
+  .crumbs {
+    display: flex; align-items: center; gap: 10px;
+    font-size: 11px; color: var(--mist); letter-spacing: 0.04em;
+    min-width: 0;
+  }
+  .crumbs .hex { color: var(--cyan); font-family: var(--mono); letter-spacing: 0.05em; }
+  .crumbs .sep { color: var(--gunmetal); }
+  .crumbs .cur {
+    color: var(--frost); font-family: var(--display); font-weight: 600;
+    letter-spacing: 0.08em; text-transform: uppercase;
+    text-shadow: -0.5px 0 var(--magenta), 0.5px 0 var(--cyan);
+  }
+  .stage-status {
+    display: inline-flex; align-items: center; gap: 9px;
+    font-family: var(--mono); font-size: 10px;
+    color: var(--frost);
+    padding: 5px 12px;
+    border: 1px solid var(--magenta);
+    background: var(--magenta-ink);
+    letter-spacing: 0.12em; text-transform: uppercase;
+    clip-path: polygon(8px 0, 100% 0, 100% calc(100% - 8px), calc(100% - 8px) 100%, 0 100%, 0 8px);
+  }
+  .stage-status .dot { width: 7px; height: 7px; transform: rotate(45deg); background: var(--magenta); box-shadow: 0 0 8px var(--magenta); animation: ping 1.4s ease-out infinite; }
+
+  /* boss strip */
+  .boss-strip {
+    padding: 18px 28px;
+    border-bottom: 1px solid var(--rule);
+    background:
+      radial-gradient(ellipse 60% 100% at 100% 50%, var(--magenta-dim), transparent 70%),
+      var(--hull-0);
+    position: relative;
+  }
+  .boss-eyebrow {
+    font-family: var(--mono); font-size: 9.5px;
+    color: var(--magenta); letter-spacing: 0.2em;
+    text-shadow: 0 0 6px rgba(255,46,136,0.5);
+  }
+  .boss-name {
+    font-family: var(--display); font-weight: 600;
+    font-size: 28px; line-height: 1.1;
+    color: var(--frost); margin-top: 4px;
+    text-transform: uppercase;
+    text-shadow:
+      -2px 0 rgba(255,46,136,0.6),
+      2px 0 rgba(86,212,224,0.6),
+      0 0 18px rgba(255,46,136,0.25);
+    animation: chroma 6s ease-in-out infinite;
+  }
+  .boss-name em {
+    font-style: normal; color: var(--magenta);
+    text-shadow: -2.5px 0 var(--magenta), 2.5px 0 var(--cyan), 0 0 22px rgba(255,46,136,0.5);
+  }
+  @keyframes chroma {
+    0%, 100% { text-shadow: -2px 0 rgba(255,46,136,0.6), 2px 0 rgba(86,212,224,0.6), 0 0 18px rgba(255,46,136,0.25); }
+    50%      { text-shadow: -2.8px 0 rgba(255,46,136,0.65), 2.8px 0 rgba(86,212,224,0.65), 0 0 24px rgba(86,212,224,0.3); }
+  }
+  .boss-hp-row {
+    margin-top: 14px;
+    display: grid; grid-template-columns: 1fr auto; gap: 14px;
+    align-items: center;
+  }
+  .boss-hp-bar {
+    height: 14px; background: var(--hull-3);
+    border: 1px solid var(--magenta-dim);
+    position: relative;
+    clip-path: polygon(5px 0, 100% 0, 100% calc(100% - 5px), calc(100% - 5px) 100%, 0 100%, 0 5px);
+  }
+  .boss-hp-bar i {
+    display: block; height: 100%;
+    background: linear-gradient(90deg, var(--crimson), var(--magenta));
+    box-shadow: 0 0 14px rgba(255,46,136,0.5);
+    width: 64%;
+    position: relative;
+  }
+  .boss-hp-bar i::after {
+    content: ""; position: absolute; right: 0; top: 0; bottom: 0; width: 4px;
+    background: var(--frost); opacity: 0.85;
+    box-shadow: 0 0 8px var(--frost);
+  }
+  .boss-hp-bar .ticks {
+    position: absolute; inset: 0;
+    display: flex;
+    pointer-events: none;
+  }
+  .boss-hp-bar .ticks span {
+    flex: 1;
+    border-right: 1px dashed rgba(0,0,0,0.5);
+  }
+  .boss-hp-bar .ticks span:last-child { border-right: 0; }
+  .boss-hp-text {
+    font-family: var(--mono); font-size: 12px;
+    color: var(--magenta); letter-spacing: 0.08em;
+    text-shadow: 0 0 6px rgba(255,46,136,0.5);
+  }
+
+  /* phases / quest objectives */
+  .phases-row {
+    display: flex; gap: 6px;
+    margin-top: 14px;
+    overflow-x: auto;
+    padding-bottom: 4px;
+  }
+  .phase {
+    flex: 1; min-width: 130px;
+    padding: 9px 12px;
+    border: 1px solid var(--rule-2);
+    background: var(--hull-2);
+    font-family: var(--mono); font-size: 10px;
+    color: var(--mist); letter-spacing: 0.02em;
+    transition: all .2s;
+    position: relative;
+    clip-path: polygon(7px 0, 100% 0, 100% calc(100% - 7px), calc(100% - 7px) 100%, 0 100%, 0 7px);
+  }
+  .phase.done {
+    border-color: var(--plasma);
+    background: var(--plasma-dim);
+    color: var(--plasma);
+  }
+  .phase.done::before {
+    content: "✓"; position: absolute; top: 8px; right: 10px;
+    color: var(--plasma); font-weight: 700;
+    text-shadow: 0 0 6px rgba(108,255,170,0.6);
+  }
+  .phase.active {
+    border-color: var(--magenta);
+    background: var(--magenta-ink);
+    box-shadow: 0 0 14px rgba(255,46,136,0.25);
+    color: var(--frost);
+    animation: phase-pulse 2.4s ease-in-out infinite;
+  }
+  @keyframes phase-pulse {
+    0%, 100% { box-shadow: 0 0 14px rgba(255,46,136,0.25); }
+    50%      { box-shadow: 0 0 22px rgba(255,46,136,0.45); }
+  }
+  .phase.locked { opacity: 0.55; }
+  .phase .num {
+    font-family: var(--display); font-weight: 700; font-size: 9.5px;
+    color: var(--cyan); letter-spacing: 0.08em;
+  }
+  .phase.active .num { color: var(--magenta); }
+  .phase.done .num { color: var(--plasma); }
+  .phase .title {
+    margin-top: 4px;
+    font-family: var(--display); font-size: 10.5px; font-weight: 600;
+    color: var(--frost); letter-spacing: 0.04em; text-transform: uppercase;
+    line-height: 1.25;
+  }
+  .phase.done .title { color: var(--plasma); }
+  .phase .xp {
+    margin-top: 6px;
+    font-family: var(--mono); font-size: 9px;
+    color: var(--steel); letter-spacing: 0.05em;
+  }
+  .phase.done .xp { color: var(--plasma); }
+  .phase.active .xp { color: var(--cyan); }
+
+  /* ─── combat log ─── */
+  .log-pane {
+    flex: 1;
+    overflow-y: auto;
+    padding: 22px 28px 16px;
+    min-height: 0;
+    position: relative;
+  }
+  .log-pane::-webkit-scrollbar { width: 7px; }
+  .log-pane::-webkit-scrollbar-thumb { background: var(--hull-3); }
+
+  .round-header {
+    max-width: 880px;
+    margin: 0 auto 18px;
+    padding: 12px 16px;
+    background:
+      linear-gradient(180deg, var(--hull-2), var(--hull-1));
+    border: 1px solid var(--rule-2);
+    font-family: var(--mono); font-size: 10.5px;
+    color: var(--mist); letter-spacing: 0.05em;
+    display: flex; gap: 14px; align-items: center;
+    position: relative;
+    clip-path: polygon(8px 0, 100% 0, 100% calc(100% - 8px), calc(100% - 8px) 100%, 0 100%, 0 8px);
+  }
+  .round-header::before {
+    content: ""; position: absolute; top: 0; left: 0; right: 0; height: 1px;
+    background: linear-gradient(90deg, transparent, var(--cyan-dim), transparent);
+  }
+  .round-header .num {
+    font-family: var(--display); font-weight: 700; font-size: 14px;
+    color: var(--cyan); letter-spacing: 0.05em;
+    text-shadow: 0 0 6px rgba(86,212,224,0.4);
+  }
+  .round-header .label {
+    font-family: var(--display); font-size: 9.5px;
+    letter-spacing: 0.22em; text-transform: uppercase;
+    color: var(--steel); font-weight: 500;
+  }
+  .round-header .phase-tag {
+    margin-left: auto;
+    font-family: var(--mono); font-size: 10px;
+    color: var(--magenta); letter-spacing: 0.06em;
+    padding: 2px 8px;
+    border: 1px solid var(--magenta-dim);
+    background: var(--magenta-ink);
+  }
+
+  .turn {
+    max-width: 880px;
+    margin: 0 auto 14px;
+    animation: rise .4s ease-out both;
+  }
+  .turn:nth-child(2)  { animation-delay: .03s; }
+  .turn:nth-child(3)  { animation-delay: .06s; }
+  .turn:nth-child(4)  { animation-delay: .09s; }
+  .turn:nth-child(5)  { animation-delay: .12s; }
+  .turn:nth-child(6)  { animation-delay: .15s; }
+  .turn:nth-child(7)  { animation-delay: .18s; }
+  @keyframes rise { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+
+  .turn-head {
+    display: flex; align-items: center; gap: 10px;
+    margin-bottom: 6px; padding-left: 4px;
+  }
+  .turn-num {
+    font-family: var(--mono); font-size: 9.5px; color: var(--steel);
+    width: 36px; letter-spacing: 0.05em;
+  }
+  .turn-actor {
+    font-family: var(--display); font-size: 10px;
+    letter-spacing: 0.22em; text-transform: uppercase;
+    color: var(--cyan); font-weight: 600;
+    text-shadow: 0 0 4px rgba(86,212,224,0.4);
+  }
+  .turn-actor.boss {
+    color: var(--magenta);
+    text-shadow: 0 0 4px rgba(255,46,136,0.4);
+  }
+  .turn-action {
+    font-family: var(--display); font-size: 10px;
+    letter-spacing: 0.16em; text-transform: uppercase;
+    color: var(--mist); font-weight: 500;
+  }
+  .turn-action em { font-style: normal; color: var(--cyan); margin-right: 4px; }
+  .turn-time {
+    margin-left: auto;
+    font-family: var(--mono); font-size: 9.5px; color: var(--steel);
+    letter-spacing: 0.05em;
+  }
+
+  .turn-card {
+    border: 1px solid var(--rule-2);
+    background: var(--hull-1);
+    overflow: hidden;
+    clip-path: polygon(8px 0, 100% 0, 100% calc(100% - 8px), calc(100% - 8px) 100%, 0 100%, 0 8px);
+  }
+  .turn-card.crit { border-color: var(--plasma); box-shadow: 0 0 18px rgba(108,255,170,0.18); }
+  .turn-card.miss { border-color: var(--amber); box-shadow: 0 0 14px rgba(255,181,71,0.12); }
+  .turn-card.boss-attack { border-color: var(--magenta); box-shadow: 0 0 18px rgba(255,46,136,0.2); }
+  .turn-card.live { border-color: var(--amber); box-shadow: 0 0 22px rgba(255,181,71,0.25); }
+
+  .turn-card-head {
+    display: flex; align-items: center; gap: 10px;
+    padding: 9px 14px;
+    border-bottom: 1px solid var(--rule);
+    background: linear-gradient(180deg, var(--hull-2), var(--hull-1));
+    font-family: var(--mono); font-size: 11px;
+    color: var(--frost); letter-spacing: 0.02em;
+  }
+  .turn-card-head .badge {
+    margin-left: auto;
+    font-family: var(--mono); font-size: 9.5px;
+    padding: 2px 8px; border: 1px solid var(--rule-2);
+    color: var(--mist); letter-spacing: 0.06em;
+    text-transform: uppercase;
+  }
+  .turn-card-head .badge.crit { color: var(--plasma); border-color: rgba(108,255,170,0.4); background: var(--plasma-dim); }
+  .turn-card-head .badge.dmg  { color: var(--magenta); border-color: var(--magenta-dim); background: var(--magenta-ink); }
+  .turn-card-head .badge.miss { color: var(--amber); border-color: rgba(255,181,71,0.3); background: var(--amber-dim); }
+  .turn-card-head .badge.cast { color: var(--cyan); border-color: var(--cyan-dim); background: var(--cyan-ink); }
+  .turn-card-head .badge.live { color: var(--amber); border-color: rgba(255,181,71,0.4); background: var(--amber-dim); }
+
+  /* think / cast */
+  .turn-cast {
+    padding: 14px 18px;
+    font-family: var(--mono); font-size: 12px;
+    line-height: 1.7; color: var(--mist);
+    border-left: 2px solid var(--cyan);
+    background: var(--cyan-ink);
+    margin: 4px 14px;
+    letter-spacing: 0.01em;
+  }
+  .turn-cast::before {
+    content: "// incantation";
+    display: block;
+    font-size: 9.5px; letter-spacing: 0.22em; text-transform: uppercase;
+    color: var(--cyan); margin-bottom: 8px;
+    font-weight: 500; opacity: 0.7;
+  }
+  .turn-cast strong { color: var(--frost); font-weight: 600; }
+
+  /* shell */
+  .shell-cmd {
+    font-family: var(--mono); font-size: 11.5px; line-height: 1.6;
+    padding: 12px 16px; color: var(--mist);
+    background: var(--hull-0);
+    white-space: pre-wrap; word-break: break-word;
+  }
+  .shell-cmd .prompt { color: var(--cyan); margin-right: 6px; font-weight: 600; }
+  .shell-cmd .ok    { color: var(--plasma); }
+  .shell-cmd .warn  { color: var(--amber); }
+  .shell-cmd .dim   { color: var(--gunmetal); }
+  .shell-cmd .crit  { color: var(--plasma); font-weight: 600; text-shadow: 0 0 6px rgba(108,255,170,0.5); }
+  .shell-cmd .dmg   { color: var(--magenta); font-weight: 600; }
+
+  /* damage strike — diff */
+  .diff {
+    font-family: var(--mono); font-size: 11.5px;
+    line-height: 1.65; padding: 10px 0 12px;
+  }
+  .diff-row { display: grid; grid-template-columns: 36px 36px 1fr; align-items: center; }
+  .diff-row .ln { text-align: right; padding: 0 8px; color: var(--gunmetal); font-size: 10.5px; user-select: none; }
+  .diff-row .code { padding: 0 14px 0 8px; color: var(--mist); white-space: pre; overflow-x: auto; }
+  .diff-row.add { background: rgba(108,255,170,0.04); }
+  .diff-row.add .code, .diff-row.add .ln-r { color: var(--plasma); }
+  .diff-row.del { background: rgba(255,94,108,0.04); }
+  .diff-row.del .code, .diff-row.del .ln-l { color: var(--crimson); }
+  .diff-row.hunk { padding: 4px 0; }
+  .diff-row.hunk .code { color: var(--cyan); opacity: 0.8; }
+
+  /* damage banner */
+  .dmg-strip {
+    display: flex; align-items: center; gap: 16px;
+    padding: 10px 16px;
+    border-top: 1px solid var(--rule);
+    background: var(--hull-2);
+    font-family: var(--mono); font-size: 11px;
+    color: var(--mist);
+  }
+  .dmg-strip .v {
+    font-family: var(--display); font-weight: 700; font-size: 15px;
+    color: var(--magenta); letter-spacing: 0.05em;
+    text-shadow: -1px 0 var(--cyan), 0 0 10px rgba(255,46,136,0.6);
+  }
+  .dmg-strip .v.crit { color: var(--plasma); text-shadow: -1px 0 var(--cyan), 0 0 10px rgba(108,255,170,0.6); font-size: 17px; }
+  .dmg-strip .lbl {
+    font-family: var(--display); font-size: 9.5px;
+    letter-spacing: 0.22em; text-transform: uppercase;
+    color: var(--steel); font-weight: 500;
+  }
+  .dmg-strip .arrow { color: var(--magenta); font-size: 14px; }
+  .dmg-strip .small { color: var(--steel); font-size: 10px; letter-spacing: 0.05em; }
+
+  /* boss attack body */
+  .boss-attack-body {
+    padding: 14px 16px;
+    font-family: var(--mono); font-size: 12px;
+    color: var(--mist); line-height: 1.65;
+    background: var(--hull-0);
+    border-left: 2px solid var(--magenta);
+    margin: 4px 14px;
+    letter-spacing: 0.01em;
+  }
+  .boss-attack-body em { font-style: normal; color: var(--magenta); text-shadow: 0 0 4px rgba(255,46,136,0.4); }
+  .boss-attack-body code {
+    font-family: var(--mono); font-size: 11.5px; padding: 1px 5px;
+    background: var(--hull-3); border: 1px solid var(--rule-2); color: var(--cyan);
+  }
+
+  .live-cursor {
+    display: inline-block;
+    width: 9px; height: 9px;
+    background: var(--amber); margin-left: 4px;
+    transform: translateY(1px) rotate(45deg);
+    animation: blink 1s steps(2) infinite;
+    box-shadow: 0 0 8px var(--amber);
+  }
+  @keyframes blink { 50% { opacity: 0.2; } }
+
+  /* PHASE COMPLETE banner */
+  .phase-complete {
+    max-width: 880px;
+    margin: 16px auto 22px;
+    padding: 14px 20px;
+    background: linear-gradient(90deg, var(--plasma-dim), var(--cyan-ink), var(--magenta-ink));
+    border: 1px solid var(--plasma);
+    box-shadow: 0 0 22px rgba(108,255,170,0.18);
+    display: flex; align-items: center; justify-content: space-between; gap: 16px;
+    clip-path: polygon(12px 0, 100% 0, 100% calc(100% - 12px), calc(100% - 12px) 100%, 0 100%, 0 12px);
+    position: relative;
+  }
+  .phase-complete::before {
+    content: ""; position: absolute; top: 0; left: 0; right: 0; height: 2px;
+    background: linear-gradient(90deg, transparent, var(--plasma), transparent);
+    animation: holo 3s linear infinite;
+  }
+  @keyframes holo {
+    from { background-position: 0 0; }
+    to   { background-position: 200% 0; }
+  }
+  .pc-left {
+    display: flex; align-items: center; gap: 14px;
+  }
+  .pc-glyph {
+    width: 32px; height: 32px;
+    background: var(--plasma); transform: rotate(45deg);
+    box-shadow: 0 0 12px var(--plasma);
+    display: grid; place-items: center;
+  }
+  .pc-glyph::after {
+    content: "✓";
+    transform: rotate(-45deg);
+    color: var(--void);
+    font-weight: 700; font-size: 14px;
+  }
+  .pc-text {
+    font-family: var(--display); font-weight: 600; font-size: 15px;
+    color: var(--frost); letter-spacing: 0.12em; text-transform: uppercase;
+    text-shadow: -1px 0 var(--magenta), 1px 0 var(--cyan);
+  }
+  .pc-text em { font-style: normal; color: var(--plasma); text-shadow: 0 0 8px rgba(108,255,170,0.5); }
+  .pc-rewards {
+    display: flex; gap: 12px;
+    font-family: var(--mono); font-size: 11px; letter-spacing: 0.05em;
+  }
+  .pc-rewards .r { color: var(--plasma); text-shadow: 0 0 6px rgba(108,255,170,0.4); }
+  .pc-rewards .r.cy { color: var(--cyan); text-shadow: 0 0 6px rgba(86,212,224,0.4); }
+  .pc-rewards .r.m  { color: var(--magenta); text-shadow: 0 0 6px rgba(255,46,136,0.4); }
+  .pc-meta { font-family: var(--mono); font-size: 9.5px; color: var(--steel); letter-spacing: 0.05em; }
+
+  /* COMMAND BAR */
+  .cmd-wrap {
+    padding: 0 28px 22px;
+    background: linear-gradient(180deg, transparent, var(--void) 30%);
+  }
+  .cmd {
+    max-width: 880px;
+    margin: 0 auto;
+    background: linear-gradient(180deg, var(--hull-2), var(--hull-1));
+    border: 1px solid var(--magenta);
+    box-shadow: 0 0 28px rgba(255,46,136,0.18);
+    position: relative;
+    clip-path: polygon(14px 0, 100% 0, 100% calc(100% - 14px), calc(100% - 14px) 100%, 0 100%, 0 14px);
+  }
+  .cmd::before {
+    content: ""; position: absolute; inset: 0 0 auto 0; height: 2px;
+    background: linear-gradient(90deg, transparent 0%, var(--magenta) 25%, var(--cyan) 50%, var(--magenta) 75%, transparent 100%);
+    background-size: 200% 100%;
+    animation: holo 4s linear infinite;
+  }
+  .cmd-head {
+    display: flex; align-items: center; gap: 12px;
+    padding: 11px 16px 8px;
+    font-family: var(--display); font-size: 10px;
+    letter-spacing: 0.24em; text-transform: uppercase;
+    color: var(--magenta); font-weight: 500;
+  }
+  .cmd-head .spacer { flex: 1; height: 1px; background: var(--rule-2); margin: 0 4px; }
+  .cmd-head svg { width: 12px; height: 12px; }
+
+  .cmd-actions {
+    display: grid; grid-template-columns: repeat(4, 1fr);
+    gap: 8px; padding: 10px 14px;
+  }
+  .cmd-btn {
+    display: flex; flex-direction: column; align-items: flex-start;
+    gap: 4px;
+    padding: 10px 12px;
+    border: 1px solid var(--rule-2);
+    background: var(--hull-2); color: var(--mist);
+    transition: all .15s; cursor: pointer;
+    clip-path: polygon(7px 0, 100% 0, 100% calc(100% - 7px), calc(100% - 7px) 100%, 0 100%, 0 7px);
+    text-align: left;
+  }
+  .cmd-btn:hover { border-color: var(--cyan-dim); background: var(--hull-3); color: var(--frost); }
+  .cmd-btn .name {
+    font-family: var(--display); font-weight: 600; font-size: 10.5px;
+    letter-spacing: 0.12em; text-transform: uppercase; color: var(--frost);
+    display: flex; align-items: center; gap: 6px;
+  }
+  .cmd-btn .glyph {
+    width: 18px; height: 18px;
+    transform: rotate(45deg);
+    background: var(--cyan); box-shadow: 0 0 6px var(--cyan-dim);
+  }
+  .cmd-btn .glyph.m { background: var(--magenta); box-shadow: 0 0 6px var(--magenta-dim); }
+  .cmd-btn .glyph.p { background: var(--plasma); box-shadow: 0 0 6px var(--plasma-dim); }
+  .cmd-btn .glyph.a { background: var(--amber); box-shadow: 0 0 6px var(--amber-dim); }
+  .cmd-btn .desc {
+    font-family: var(--mono); font-size: 9.5px;
+    color: var(--steel); letter-spacing: 0.02em;
+    line-height: 1.4;
+  }
+  .cmd-btn .cost {
+    font-family: var(--mono); font-size: 9px;
+    color: var(--magenta); letter-spacing: 0.05em;
+    margin-top: 2px;
+    text-shadow: 0 0 4px rgba(255,46,136,0.4);
+  }
+
+  .cmd-foot {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 9px 14px;
+    border-top: 1px solid var(--rule);
+    background: var(--hull-1);
+    gap: 10px;
+    font-family: var(--mono); font-size: 9.5px;
+    color: var(--steel); letter-spacing: 0.05em;
+  }
+  .cmd-foot .resources { display: flex; gap: 14px; }
+  .cmd-foot .res {
+    display: flex; align-items: center; gap: 6px;
+    color: var(--mist);
+  }
+  .cmd-foot .res .gl { width: 7px; height: 7px; transform: rotate(45deg); }
+  .cmd-foot .res .gl.cy { background: var(--cyan); box-shadow: 0 0 4px var(--cyan); }
+  .cmd-foot .res .gl.m  { background: var(--magenta); box-shadow: 0 0 4px var(--magenta); }
+  .cmd-foot .res .gl.a  { background: var(--amber); box-shadow: 0 0 4px var(--amber); }
+
+  /* ─── right rail: quest scroll ─── */
+  .right {
+    border-left: 1px solid var(--rule-2);
+    background: linear-gradient(180deg, var(--hull-1), var(--hull-0));
+    overflow-y: auto;
+    position: relative;
+  }
+  .right::before {
+    content: ""; position: absolute; top: 0; bottom: 0; left: 0; width: 1px;
+    background: linear-gradient(180deg, transparent, var(--magenta-dim) 30%, var(--magenta-dim) 70%, transparent);
+  }
+  .right::-webkit-scrollbar { width: 7px; }
+  .right::-webkit-scrollbar-thumb { background: var(--hull-3); }
+
+  /* quest scroll */
+  .quest {
+    margin: 14px;
+    background:
+      linear-gradient(180deg, var(--hull-2), var(--hull-1)),
+      radial-gradient(ellipse 80% 100% at 50% 0%, var(--magenta-dim), transparent 70%);
+    border: 1px solid var(--magenta);
+    box-shadow: 0 0 22px rgba(255,46,136,0.18);
+    position: relative;
+    clip-path: polygon(14px 0, 100% 0, 100% calc(100% - 14px), calc(100% - 14px) 100%, 0 100%, 0 14px);
+  }
+  .quest::before {
+    content: ""; position: absolute; top: 0; left: 0; right: 0; height: 2px;
+    background: linear-gradient(90deg, transparent, var(--magenta), transparent);
+  }
+  .quest-head {
+    padding: 16px 18px 10px;
+    border-bottom: 1px dashed var(--rule-2);
+  }
+  .quest-eyebrow {
+    display: flex; align-items: center; gap: 10px;
+    font-family: var(--display); font-size: 9px;
+    letter-spacing: 0.24em; text-transform: uppercase;
+    color: var(--steel); font-weight: 500;
+  }
+  .quest-eyebrow .hex {
+    font-family: var(--mono); color: var(--magenta); letter-spacing: 0.05em;
+    text-shadow: 0 0 4px rgba(255,46,136,0.4);
+  }
+  .quest-eyebrow .line { flex: 1; height: 1px; background: var(--rule-2); }
+  .quest-name {
+    margin-top: 8px;
+    font-family: var(--display); font-weight: 600; font-size: 17px;
+    color: var(--frost); letter-spacing: 0.04em;
+    text-transform: uppercase;
+    text-shadow: -1px 0 var(--magenta), 1px 0 var(--cyan);
+    line-height: 1.2;
+  }
+  .quest-name em { font-style: normal; color: var(--magenta); text-shadow: -1.5px 0 var(--magenta), 1.5px 0 var(--cyan); }
+  .quest-brief {
+    margin-top: 8px;
+    font-family: var(--mono); font-size: 11px; line-height: 1.6;
+    color: var(--mist); letter-spacing: 0.02em;
+    padding-left: 10px;
+    border-left: 1px solid var(--magenta-dim);
+  }
+  .quest-brief code { font-family: var(--mono); padding: 1px 5px; background: var(--hull-3); border: 1px solid var(--rule-2); color: var(--cyan); }
+
+  /* objectives */
+  .objectives { padding: 12px 16px 16px; }
+  .objectives h4 {
+    font-family: var(--display); font-size: 9.5px; letter-spacing: 0.22em;
+    text-transform: uppercase; color: var(--steel); font-weight: 500;
+    margin-bottom: 10px;
+    display: flex; align-items: center; gap: 8px;
+  }
+  .objectives h4 .hex { font-family: var(--mono); color: var(--cyan); letter-spacing: 0.05em; }
+  .objectives h4 .line { flex: 1; height: 1px; background: var(--rule-2); }
+  .obj {
+    display: grid;
+    grid-template-columns: 28px 1fr;
+    gap: 10px;
+    align-items: flex-start;
+    padding: 9px 10px;
+    margin-bottom: 5px;
+    border: 1px solid var(--rule-2);
+    background: var(--hull-2);
+    transition: all .15s;
+    clip-path: polygon(7px 0, 100% 0, 100% calc(100% - 7px), calc(100% - 7px) 100%, 0 100%, 0 7px);
+  }
+  .obj.done {
+    border-color: var(--plasma);
+    background: var(--plasma-dim);
+  }
+  .obj.active {
+    border-color: var(--magenta);
+    background: var(--magenta-ink);
+    box-shadow: 0 0 12px rgba(255,46,136,0.2);
+  }
+  .obj .marker {
+    width: 22px; height: 22px;
+    border: 1px solid var(--rule-2);
+    background: var(--hull-3);
+    color: var(--steel);
+    display: grid; place-items: center;
+    font-family: var(--display); font-weight: 700; font-size: 10px;
+    clip-path: polygon(20% 0, 100% 0, 100% 80%, 80% 100%, 0 100%, 0 20%);
+  }
+  .obj.done .marker {
+    background: var(--plasma); color: var(--void);
+    border-color: var(--plasma);
+    box-shadow: 0 0 8px rgba(108,255,170,0.5);
+  }
+  .obj.active .marker {
+    background: var(--magenta); color: var(--void);
+    border-color: var(--magenta);
+    box-shadow: 0 0 10px rgba(255,46,136,0.6);
+    animation: ping 1.4s ease-out infinite;
+  }
+  .obj-body { min-width: 0; }
+  .obj-title {
+    font-family: var(--display); font-size: 11px; font-weight: 600;
+    color: var(--frost); letter-spacing: 0.04em; text-transform: uppercase;
+    line-height: 1.3;
+  }
+  .obj.done .obj-title { color: var(--plasma); }
+  .obj-meta {
+    margin-top: 4px;
+    display: flex; gap: 10px;
+    font-family: var(--mono); font-size: 9.5px;
+    color: var(--steel); letter-spacing: 0.04em;
+  }
+  .obj-meta .xp { color: var(--cyan); }
+  .obj.done .obj-meta .xp { color: var(--plasma); }
+  .obj.active .obj-meta .xp { color: var(--magenta); }
+  .obj-meta .verify { color: var(--steel); }
+  .obj-meta .verify code {
+    font-family: var(--mono); padding: 0 4px; background: var(--hull-3);
+    border: 1px solid var(--rule-2); color: var(--mist);
+  }
+
+  /* original plan section */
+  .plan-section {
+    margin: 0 14px 14px;
+    padding: 14px 16px;
+    background: var(--hull-1);
+    border: 1px solid var(--rule-2);
+    clip-path: polygon(10px 0, 100% 0, 100% calc(100% - 10px), calc(100% - 10px) 100%, 0 100%, 0 10px);
+  }
+  .plan-section h4 {
+    font-family: var(--display); font-size: 9.5px; letter-spacing: 0.22em;
+    text-transform: uppercase; color: var(--steel); font-weight: 500;
+    margin-bottom: 10px;
+    display: flex; align-items: center; gap: 8px;
+  }
+  .plan-section h4 .hex { font-family: var(--mono); color: var(--cyan); letter-spacing: 0.05em; }
+  .plan-section h4 .line { flex: 1; height: 1px; background: var(--rule-2); }
+
+  .plan-quote {
+    font-family: var(--mono); font-size: 11px;
+    line-height: 1.65; color: var(--mist);
+    letter-spacing: 0.01em;
+    padding: 10px 12px;
+    background: var(--hull-2);
+    border-left: 2px solid var(--cyan);
+    position: relative;
+  }
+  .plan-quote::before {
+    content: "// user · 14:18 UTC";
+    display: block;
+    font-family: var(--mono); font-size: 9px;
+    color: var(--cyan); letter-spacing: 0.12em;
+    text-transform: uppercase;
+    margin-bottom: 6px;
+    opacity: 0.7;
+  }
+  .plan-quote em { font-style: normal; color: var(--cyan); }
+  .plan-quote strong { color: var(--magenta); font-weight: 600; }
+
+  /* totals strip */
+  .totals {
+    margin: 0 14px 22px;
+    padding: 12px 16px;
+    background: var(--hull-1);
+    border: 1px solid var(--rule-2);
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+    clip-path: polygon(10px 0, 100% 0, 100% calc(100% - 10px), calc(100% - 10px) 100%, 0 100%, 0 10px);
+  }
+  .totals .t {
+    display: flex; flex-direction: column; gap: 2px;
+  }
+  .totals .lbl {
+    font-family: var(--display); font-size: 8.5px;
+    letter-spacing: 0.22em; text-transform: uppercase;
+    color: var(--steel); font-weight: 500;
+  }
+  .totals .v {
+    font-family: var(--display); font-weight: 700; font-size: 18px;
+    color: var(--cyan); letter-spacing: 0.04em;
+    text-shadow: 0 0 8px rgba(86,212,224,0.4);
+  }
+  .totals .v.m { color: var(--magenta); text-shadow: 0 0 8px rgba(255,46,136,0.4); }
+</style>
+</head>
+<body>
+  <div class="app">
+
+    <!-- titlebar -->
+    <div class="titlebar">
+      <div class="tb-left">
+        <div class="traffic"><i></i><i></i><i></i></div>
+        <div class="brand">
+          <div class="brand-mark">S</div>
+          <span class="brand-name">Sandcastle</span>
+          <span class="brand-sep">/</span>
+          <span class="brand-ctx">SANDCASTLE</span>
+          <span class="brand-sep">·</span>
+          <span class="brand-ctx" style="color: var(--magenta); border-color: var(--magenta-dim);">main</span>
+        </div>
+      </div>
+
+      <div class="mode-switch">
+        <button class="mode">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="12" cy="12" r="3"/><circle cx="12" cy="12" r="9" stroke-dasharray="2 4"/></svg>
+          Cockpit
+        </button>
+        <button class="mode">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M3 6l4-3 5 3 5-3 4 3v15l-4-3-5 3-5-3-4 3z"/></svg>
+          Map
+        </button>
+        <button class="mode">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="12" cy="8" r="4"/><path d="M4 21c0-4 4-7 8-7s8 3 8 7"/></svg>
+          Roster
+        </button>
+        <button class="mode is-active">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M5 4l14 8-14 8V4z"/><path d="M14 6l5 6-5 6"/></svg>
+          Combat
+        </button>
+      </div>
+
+      <div class="tb-right">
+        <span class="live-pill"><span class="ping"></span>LIVE · ROUND 5</span>
+        <button class="icon-btn" title="Pause"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M6 4h4v16H6zM14 4h4v16h-4z"/></svg></button>
+        <button class="icon-btn" title="Volume"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M3 10v4h4l5 4V6L7 10H3z"/><path d="M16 8a5 5 0 0 1 0 8"/></svg></button>
+      </div>
+    </div>
+
+    <!-- shell -->
+    <div class="shell">
+
+      <!-- ─── LEFT: combatants & turn order ─── -->
+      <aside class="left">
+
+        <!-- player -->
+        <div class="panel">
+          <div class="panel-eyebrow"><span class="hex">0x01</span>OPERATIVE<span class="line"></span><span class="hex">π-04A</span></div>
+          <div class="combatant-head">
+            <div class="portrait">π</div>
+            <div class="combatant-info">
+              <div class="combatant-name">PI · KAGE</div>
+              <div class="combatant-class"><em>⌬</em>SURGEON · CL.II</div>
+            </div>
+            <div class="combatant-lvl">08<small>LVL</small></div>
+          </div>
+
+          <div class="bar-block">
+            <div class="bar-row"><span>HP</span><span class="v">820 / 880</span></div>
+            <div class="bar hp"><i style="width: 93%;"></i></div>
+          </div>
+          <div class="bar-block">
+            <div class="bar-row"><span>FOCUS · CONTEXT</span><span class="v">14.2k / 32k</span></div>
+            <div class="bar mp"><i style="width: 44%;"></i></div>
+          </div>
+          <div class="bar-block">
+            <div class="bar-row"><span>SHIELD · TYPECHECK</span><span class="v">CLEAN</span></div>
+            <div class="bar shield"><i style="width: 100%;"></i></div>
+          </div>
+
+          <div class="attrs">
+            <div class="attr cy"><i></i>FIRST STRIKE</div>
+            <div class="attr cy"><i></i>DEEP THINK</div>
+          </div>
+        </div>
+
+        <!-- boss -->
+        <div class="panel boss">
+          <div class="panel-eyebrow"><span class="hex m">0x02</span>BOSS<span class="line"></span><span class="hex m">＃４２</span></div>
+          <div class="combatant-head">
+            <div class="portrait m">⚠</div>
+            <div class="combatant-info">
+              <div class="combatant-name">REFRESH LOOP</div>
+              <div class="combatant-class m"><em>⚔</em>BOSS · TIER III</div>
+            </div>
+            <div class="combatant-lvl m">12<small>LVL</small></div>
+          </div>
+
+          <div class="bar-block">
+            <div class="bar-row"><span style="color: var(--magenta);">HP</span><span class="v" style="color: var(--magenta);">320 / 500</span></div>
+            <div class="bar boss-hp"><i style="width: 64%;"></i></div>
+          </div>
+          <div class="bar-block">
+            <div class="bar-row"><span>RAGE</span><span class="v">38 %</span></div>
+            <div class="bar shield"><i style="width: 38%; background: linear-gradient(90deg, var(--amber), var(--crimson));"></i></div>
+          </div>
+
+          <div class="attrs">
+            <div class="attr cr"><i></i>ARMORED</div>
+            <div class="attr am"><i></i>EVASIVE</div>
+            <div class="attr sl"><i></i>RACE-COND</div>
+            <div class="attr cr"><i></i>HIGH-RISK</div>
+          </div>
+        </div>
+
+        <!-- turn order -->
+        <div class="panel">
+          <div class="panel-eyebrow"><span class="hex">0x03</span>INITIATIVE<span class="line"></span></div>
+
+          <div class="turn-list">
+            <div class="turn-row done"><span class="ord">04</span><span class="who">π Pi</span><span class="ini">CRIT</span></div>
+            <div class="turn-row done"><span class="ord">05</span><span class="who">Boss</span><span class="ini">−12 hp</span></div>
+            <div class="turn-row now"><span class="ord">06</span><span class="who">π Pi</span><span class="ini">CASTING</span></div>
+            <div class="turn-row"><span class="ord">07</span><span class="who">Boss</span><span class="ini">qd</span></div>
+            <div class="turn-row"><span class="ord">08</span><span class="who">π Pi</span><span class="ini">qd</span></div>
+            <div class="turn-row"><span class="ord">09</span><span class="who">Boss</span><span class="ini">enrage</span></div>
+          </div>
+        </div>
+
+      </aside>
+
+      <!-- ─── CENTER: combat log ─── -->
+      <main class="stage">
+
+        <div class="stage-head">
+          <div class="crumbs">
+            <span class="hex">0x01</span>
+            <span>BOSS FIGHT</span>
+            <span class="sep">/</span>
+            <span>src/auth</span>
+            <span class="sep">/</span>
+            <span class="cur">RUN-042 · ROUND 5</span>
+          </div>
+          <div class="stage-status">
+            <span class="dot"></span>
+            <span>ENGAGED · PHASE 03 / 05 · T+12:04</span>
+          </div>
+        </div>
+
+        <!-- boss strip -->
+        <div class="boss-strip">
+          <div class="boss-eyebrow">BOSS · TIER III · ＃４２ · src/auth/refresh.ts:47</div>
+          <h1 class="boss-name">The Auth <em>Refresh</em> Loop</h1>
+
+          <div class="boss-hp-row">
+            <div class="boss-hp-bar">
+              <i></i>
+              <div class="ticks"><span></span><span></span><span></span><span></span><span></span></div>
+            </div>
+            <div class="boss-hp-text">HP 320 / 500</div>
+          </div>
+
+          <!-- phases (== quest objectives in macro view) -->
+          <div class="phases-row">
+            <div class="phase done">
+              <div class="num">PHASE I</div>
+              <div class="title">Reproduce</div>
+              <div class="xp">+ 50 xp</div>
+            </div>
+            <div class="phase done">
+              <div class="num">PHASE II</div>
+              <div class="title">Diagnose Race</div>
+              <div class="xp">+ 75 xp</div>
+            </div>
+            <div class="phase active">
+              <div class="num">PHASE III</div>
+              <div class="title">Patch · Serialize</div>
+              <div class="xp">+150 xp</div>
+            </div>
+            <div class="phase locked">
+              <div class="num">PHASE IV</div>
+              <div class="title">Regression Test</div>
+              <div class="xp">+100 xp</div>
+            </div>
+            <div class="phase locked">
+              <div class="num">PHASE V</div>
+              <div class="title">Commit · API Stable</div>
+              <div class="xp">+150 xp</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- combat log -->
+        <div class="log-pane">
+
+          <div class="round-header">
+            <span class="num">R.04</span>
+            <span class="label">ROUND FOUR</span>
+            <span style="color: var(--steel);">·</span>
+            <span style="color: var(--mist);">π Pi opens with Scout, locates boss origin, lands first strike.</span>
+            <span class="phase-tag">PHASE III · ENTERED</span>
+          </div>
+
+          <!-- turn 1: cast -->
+          <div class="turn">
+            <div class="turn-head">
+              <span class="turn-num">[14]</span>
+              <span class="turn-actor">π PI</span>
+              <span class="turn-action"><em>cast</em>cogitate</span>
+              <span class="turn-time">T+10:18 · 1.2s</span>
+            </div>
+            <div class="turn-card">
+              <div class="turn-card-head">
+                <span>Reasoning · serialize concurrent refresh</span>
+                <span class="badge cast">+CAST</span>
+              </div>
+              <div class="turn-cast">
+                The boss spawns whenever <strong>refreshToken()</strong> is invoked concurrently — two callers race for the same expired token, both fail, retry fires again. Counter: serialize through a single in-flight promise. Public API surface preserved.
+              </div>
+            </div>
+          </div>
+
+          <!-- turn 2: edit · CRIT -->
+          <div class="turn">
+            <div class="turn-head">
+              <span class="turn-num">[15]</span>
+              <span class="turn-actor">π PI</span>
+              <span class="turn-action"><em>strike</em>edit</span>
+              <span class="turn-time">T+11:42 · 2.1s</span>
+            </div>
+            <div class="turn-card crit">
+              <div class="turn-card-head">
+                <span>src/auth/refresh.ts · L42–46</span>
+                <span class="badge crit">CRITICAL · ×2</span>
+              </div>
+              <div class="diff">
+                <div class="diff-row hunk"><span class="ln"></span><span class="ln"></span><span class="code">@@ -42,8 +42,19 @@ refresh()</span></div>
+                <div class="diff-row"><span class="ln ln-l">42</span><span class="ln ln-r">42</span><span class="code">  if (session.expiresAt > Date.now()) return session;</span></div>
+                <div class="diff-row del"><span class="ln ln-l">43</span><span class="ln"></span><span class="code">-  return refreshToken(session);</span></div>
+                <div class="diff-row add"><span class="ln"></span><span class="ln ln-r">43</span><span class="code">+  if (inflight.has(session.id)) return inflight.get(session.id)!;</span></div>
+                <div class="diff-row add"><span class="ln"></span><span class="ln ln-r">44</span><span class="code">+  const promise = refreshToken(session).finally(() => inflight.delete(session.id));</span></div>
+                <div class="diff-row add"><span class="ln"></span><span class="ln ln-r">45</span><span class="code">+  inflight.set(session.id, promise);</span></div>
+                <div class="diff-row add"><span class="ln"></span><span class="ln ln-r">46</span><span class="code">+  return promise;</span></div>
+              </div>
+              <div class="dmg-strip">
+                <span class="lbl">DAMAGE</span>
+                <span class="v crit">−112 HP</span>
+                <span class="arrow">→</span>
+                <span class="small">First-strike perk · ×2 multiplier · 4 lines · armor pierced</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- turn 3: boss counter -->
+          <div class="turn">
+            <div class="turn-head">
+              <span class="turn-num">[16]</span>
+              <span class="turn-actor boss">⚠ REFRESH LOOP</span>
+              <span class="turn-action"><em>retort</em>typecheck</span>
+              <span class="turn-time">T+12:00 · 0.4s</span>
+            </div>
+            <div class="turn-card boss-attack">
+              <div class="turn-card-head">
+                <span style="color: var(--magenta);">Counter-attack · type signature mismatch</span>
+                <span class="badge dmg">−12 HP</span>
+              </div>
+              <div class="boss-attack-body">
+                <em>RACE-COND</em> retaliates: <code>Promise&lt;Session&gt;</code> in <code>inflight.get()</code> may return <code>undefined</code> — π takes a glancing hit. <em>Focus drained −0.4k.</em>
+              </div>
+            </div>
+          </div>
+
+          <!-- PHASE COMPLETE: PHASE II -->
+          <div class="phase-complete">
+            <div class="pc-left">
+              <div class="pc-glyph"></div>
+              <div class="pc-text">PHASE <em>II</em> · DIAGNOSE RACE · CLEARED</div>
+            </div>
+            <div class="pc-rewards">
+              <span class="r">+ 75 XP</span>
+              <span class="r cy">+ 1 INSIGHT</span>
+              <span class="r m">▸ PHASE III</span>
+            </div>
+          </div>
+
+          <!-- ROUND 5 -->
+          <div class="round-header">
+            <span class="num">R.05</span>
+            <span class="label">ROUND FIVE</span>
+            <span style="color: var(--steel);">·</span>
+            <span style="color: var(--mist);">π Pi advances into Phase III · Patch & Serialize.</span>
+            <span class="phase-tag">PHASE III · ACTIVE</span>
+          </div>
+
+          <!-- turn 5a: bash test (LIVE) -->
+          <div class="turn">
+            <div class="turn-head">
+              <span class="turn-num">[17]</span>
+              <span class="turn-actor">π PI</span>
+              <span class="turn-action"><em>strike</em>shell · streaming<span class="live-cursor"></span></span>
+              <span class="turn-time">LIVE</span>
+            </div>
+            <div class="turn-card live">
+              <div class="turn-card-head">
+                <span>npm test -- src/auth/refresh.test.ts</span>
+                <span class="badge live">CASTING</span>
+              </div>
+              <div class="shell-cmd"><span class="prompt">›</span>npm test -- src/auth/refresh.test.ts
+
+> sandcastle@0.0.42 test
+> vitest run src/auth/refresh.test.ts
+
+<span class="dim"> RUN  v1.6.0 ~/dev/sandcastle</span>
+
+ ✓ src/auth/refresh.test.ts <span class="ok">(8)</span>
+   ✓ refreshes expired tokens
+   ✓ <span class="crit">deduplicates concurrent refreshes  ← CRIT · phase III obj 1</span>
+   ✓ propagates network errors
+   ✓ rotates session id on rotate
+   <span class="warn">▸ stream: parallel refresh from 50 callers…</span><span class="live-cursor"></span>
+              </div>
+            </div>
+          </div>
+
+        </div>
+
+        <!-- COMMAND BAR — operator interventions -->
+        <div class="cmd-wrap">
+          <div class="cmd">
+            <div class="cmd-head">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
+              OPERATOR INTERVENTIONS
+              <span class="spacer"></span>
+              <span class="kbd">3 / 3 TODAY</span>
+            </div>
+
+            <div class="cmd-actions">
+              <button class="cmd-btn">
+                <span class="name"><span class="glyph p"></span>HEAL</span>
+                <span class="desc">+8k context budget. Restore focus.</span>
+                <span class="cost">1 TOKEN</span>
+              </button>
+              <button class="cmd-btn">
+                <span class="name"><span class="glyph"></span>BUFF</span>
+                <span class="desc">Extended thinking on next turn.</span>
+                <span class="cost">1 TOKEN</span>
+              </button>
+              <button class="cmd-btn">
+                <span class="name"><span class="glyph m"></span>SWAP WEAPON</span>
+                <span class="desc">Swap model · gpt-5.5 → opus-4-7.</span>
+                <span class="cost">2 TOKEN</span>
+              </button>
+              <button class="cmd-btn">
+                <span class="name"><span class="glyph a"></span>CALL BACKUP</span>
+                <span class="desc">Spawn Scout subagent. Investigate-only.</span>
+                <span class="cost">1 TOKEN</span>
+              </button>
+            </div>
+
+            <div class="cmd-foot">
+              <span class="resources">
+                <span class="res"><span class="gl cy"></span>FOCUS 14.2k</span>
+                <span class="res"><span class="gl m"></span>RAGE +38%</span>
+                <span class="res"><span class="gl a"></span>3 INTERVENTIONS LEFT</span>
+              </span>
+              <span><span class="kbd">H</span> HEAL  <span class="kbd">B</span> BUFF  <span class="kbd">⇧ A</span> ABORT</span>
+            </div>
+          </div>
+        </div>
+      </main>
+
+      <!-- ─── RIGHT: quest scroll ─── -->
+      <aside class="right">
+
+        <div class="quest">
+          <div class="quest-head">
+            <div class="quest-eyebrow">
+              <span class="hex">QUEST · SIDE-A · TIER-III</span>
+              <span class="line"></span>
+              <span class="hex">#42</span>
+            </div>
+            <h2 class="quest-name">Slay the Auth <em>Refresh</em> Loop</h2>
+            <p class="quest-brief">
+              Concurrent callers in <code>src/auth/refresh.ts</code> race for an expired session token. Forge a serialization
+              ward, cover with a regression test, and seal the boss without breaking the public API contract.
+            </p>
+          </div>
+
+          <div class="objectives">
+            <h4><span class="hex">0x01</span>OBJECTIVES<span class="line"></span></h4>
+
+            <div class="obj done">
+              <span class="marker">I</span>
+              <div class="obj-body">
+                <div class="obj-title">Reproduce the loop</div>
+                <div class="obj-meta">
+                  <span class="xp">+ 50 XP</span>
+                  <span class="verify">verify · <code>refresh.test.ts:loop</code></span>
+                </div>
+              </div>
+            </div>
+
+            <div class="obj done">
+              <span class="marker">II</span>
+              <div class="obj-body">
+                <div class="obj-title">Diagnose race condition</div>
+                <div class="obj-meta">
+                  <span class="xp">+ 75 XP</span>
+                  <span class="verify">verify · root-cause noted</span>
+                </div>
+              </div>
+            </div>
+
+            <div class="obj active">
+              <span class="marker">III</span>
+              <div class="obj-body">
+                <div class="obj-title">Patch · serialize callers</div>
+                <div class="obj-meta">
+                  <span class="xp">+ 150 XP</span>
+                  <span class="verify">verify · <code>typecheck</code> + <code>tests:concurrent</code></span>
+                </div>
+              </div>
+            </div>
+
+            <div class="obj">
+              <span class="marker">IV</span>
+              <div class="obj-body">
+                <div class="obj-title">Add regression test</div>
+                <div class="obj-meta">
+                  <span class="xp">+ 100 XP</span>
+                  <span class="verify">verify · 50-caller stream</span>
+                </div>
+              </div>
+            </div>
+
+            <div class="obj">
+              <span class="marker">V</span>
+              <div class="obj-body">
+                <div class="obj-title">Commit · keep public API stable</div>
+                <div class="obj-meta">
+                  <span class="xp">+ 150 XP</span>
+                  <span class="verify">verify · no <code>BREAKING</code> in changeset</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- original plan -->
+        <div class="plan-section">
+          <h4><span class="hex">0x02</span>ORIGINAL DIRECTIVE<span class="line"></span></h4>
+          <div class="plan-quote">
+            "<em>Fix the failing auth refresh loop</em>, keep the public API stable,
+            <strong>add a regression test</strong>, and <strong>commit</strong> the result."
+          </div>
+        </div>
+
+        <!-- totals -->
+        <div class="totals">
+          <div class="t">
+            <span class="lbl">XP EARNED</span>
+            <span class="v">+ 125</span>
+          </div>
+          <div class="t">
+            <span class="lbl">XP REMAINING</span>
+            <span class="v m">+ 400</span>
+          </div>
+          <div class="t">
+            <span class="lbl">QUEST PROGRESS</span>
+            <span class="v">2 / 5</span>
+          </div>
+          <div class="t">
+            <span class="lbl">PROJECTED LOOT</span>
+            <span class="v m">CHROME ◊</span>
+          </div>
+        </div>
+
+      </aside>
+    </div>
+  </div>
+
+<!-- ─── INJECTED · FLEET DOCK + DEPLOY CHORD ─── -->
+<style>
+  .app { height: calc(100vh - 88px) !important; }
+  .sc-dock { position: fixed; left: 0; right: 0; bottom: 0; height: 88px; z-index: 80;
+    display: grid; grid-template-columns: auto 1fr auto; gap: 12px; align-items: center; padding: 10px 14px;
+    background: linear-gradient(180deg, rgba(10,16,24,0.95), rgba(3,6,10,0.98)); backdrop-filter: blur(20px);
+    border-top: 1px solid var(--cyan-dim); box-shadow: 0 -16px 40px rgba(0,0,0,0.6) }
+  .sc-dock::before { content: ""; position: absolute; top: 0; left: 0; right: 0; height: 1px;
+    background: linear-gradient(90deg, transparent 5%, var(--magenta) 25%, var(--cyan) 75%, transparent 95%);
+    opacity: 0.6; filter: blur(0.4px) }
+  .sc-dock-head { display: flex; flex-direction: column; justify-content: center; padding-right: 14px;
+    border-right: 1px solid var(--rule-2); min-width: 150px; cursor: pointer }
+  .sc-dock-head:hover { background: rgba(86,212,224,0.05) }
+  .sc-dock-head .lbl { font-family: var(--display); font-size: 8.5px; letter-spacing: 0.28em;
+    text-transform: uppercase; color: var(--steel); font-weight: 500 }
+  .sc-dock-head .v { font-family: var(--display); font-weight: 700; font-size: 18px; color: var(--cyan);
+    letter-spacing: 0.05em; line-height: 1; margin-top: 3px; text-shadow: 0 0 8px rgba(86,212,224,0.4) }
+  .sc-dock-head .v em { font-style: normal; color: var(--magenta); text-shadow: 0 0 6px rgba(255,46,136,0.4); font-weight: 700 }
+  .sc-dock-head .v small { font-size: 9px; color: var(--steel); letter-spacing: 0.18em; display: block;
+    margin-top: 2px; text-shadow: none; font-weight: 500 }
+  .sc-cells { display: flex; gap: 8px; overflow-x: auto; padding: 2px 0 }
+  .sc-cells::-webkit-scrollbar { height: 4px } .sc-cells::-webkit-scrollbar-thumb { background: var(--hull-3) }
+  .sc-cell { display: grid; grid-template-columns: 46px 1fr; gap: 10px; align-items: center; padding: 8px 12px;
+    background: var(--hull-2); border: 1px solid var(--rule-2); min-width: 262px; flex-shrink: 0;
+    clip-path: polygon(8px 0, 100% 0, 100% calc(100% - 8px), calc(100% - 8px) 100%, 0 100%, 0 8px);
+    transition: all .2s; cursor: pointer; position: relative; color: inherit; font-family: inherit; text-align: left }
+  .sc-cell:hover { background: var(--hull-3) }
+  .sc-cell.casting { border-color: var(--cyan); background: var(--cyan-ink); box-shadow: 0 0 16px rgba(86,212,224,0.20) }
+  .sc-cell.striking { border-color: var(--cyan); box-shadow: 0 0 18px rgba(86,212,224,0.30) }
+  .sc-cell.boss { border-color: var(--magenta); box-shadow: 0 0 18px rgba(255,46,136,0.25) }
+  .sc-cell.win-pending { border-color: var(--plasma); background: var(--plasma-ink); animation: scWin 2.4s ease-in-out infinite }
+  @keyframes scWin { 0%, 100% { box-shadow: 0 0 22px rgba(108,255,170,0.30) } 50% { box-shadow: 0 0 36px rgba(108,255,170,0.55) } }
+  .sc-cell.fail-pending { border-color: var(--crimson); background: var(--crimson-dim); animation: scFail 1.8s ease-in-out infinite }
+  @keyframes scFail { 0%, 100% { box-shadow: 0 0 18px rgba(255,94,108,0.25) } 50% { box-shadow: 0 0 32px rgba(255,94,108,0.5) } }
+  .sc-cell.is-current { outline: 1px dashed var(--cyan); outline-offset: 4px }
+  .sc-av { position: relative; width: 46px; height: 46px;
+    background: linear-gradient(135deg, #1a0a14, #061218); border: 1px solid currentColor;
+    display: grid; place-items: center; color: var(--cyan);
+    clip-path: polygon(20% 0, 100% 0, 100% 80%, 80% 100%, 0 100%, 0 20%) }
+  .sc-av .glyph { font-family: var(--display); font-weight: 700; font-size: 18px; color: currentColor;
+    text-shadow: -1px 0 var(--magenta), 1px 0 currentColor, 0 0 6px currentColor }
+  .sc-av .lvl { position: absolute; bottom: -3px; right: -3px; font-family: var(--mono); font-size: 8px;
+    color: var(--magenta); background: var(--void); padding: 1px 4px; border: 1px solid var(--magenta-dim);
+    letter-spacing: 0; text-shadow: 0 0 3px rgba(255,46,136,0.5) }
+  .sc-cell.casting .sc-av { color: var(--cyan) } .sc-cell.boss .sc-av { color: var(--magenta) }
+  .sc-cell.win-pending .sc-av { color: var(--plasma) } .sc-cell.fail-pending .sc-av { color: var(--crimson) }
+  .sc-eye { position: absolute; top: 9px; left: 50%; transform: translateX(-50%); width: 4px; height: 4px;
+    border-radius: 50%; background: var(--magenta); box-shadow: 0 0 4px var(--magenta);
+    animation: scEye 2.6s ease-in-out infinite }
+  @keyframes scEye { 0%, 100% { opacity: 1 } 50% { opacity: 0.5 } }
+  .sc-cell.casting .sc-eye { animation: scEyeCast 0.4s steps(2) infinite }
+  @keyframes scEyeCast { 0%, 100% { opacity: 1 } 50% { opacity: 0.3 } }
+  .sc-body { min-width: 0; display: flex; flex-direction: column; gap: 3px }
+  .sc-row1 { display: flex; align-items: center; gap: 6px; font-family: var(--display); font-size: 10.5px;
+    font-weight: 600; letter-spacing: 0.05em; color: var(--frost); text-transform: uppercase;
+    overflow: hidden; text-overflow: ellipsis; white-space: nowrap }
+  .sc-row1 .sep { color: var(--gunmetal); font-weight: 400 }
+  .sc-row1 .phase { color: var(--cyan); font-family: var(--mono); font-size: 9.5px; letter-spacing: 0.05em; text-transform: none }
+  .sc-cell.boss .sc-row1 .phase { color: var(--magenta) }
+  .sc-cell.win-pending .sc-row1 .phase { color: var(--plasma) }
+  .sc-cell.fail-pending .sc-row1 .phase { color: var(--crimson) }
+  .sc-row2 { display: flex; align-items: center; gap: 8px; font-family: var(--mono); font-size: 9.5px;
+    color: var(--steel); letter-spacing: 0.04em }
+  .sc-row2 .ico { font-family: var(--display); font-weight: 700; font-size: 9px; color: currentColor }
+  .sc-cell.casting .sc-row2 { color: var(--cyan) } .sc-cell.boss .sc-row2 { color: var(--magenta) }
+  .sc-cell.win-pending .sc-row2 { color: var(--plasma) }
+  .sc-prog { height: 2px; background: var(--hull-3); position: relative; margin-top: 2px }
+  .sc-prog i { display: block; height: 100%; background: linear-gradient(90deg, var(--cyan), var(--magenta));
+    box-shadow: 0 0 4px rgba(86,212,224,0.5) }
+  .sc-cell.win-pending .sc-prog i { width: 100% !important; background: linear-gradient(90deg, var(--plasma), var(--cyan)) }
+  .sc-cell.fail-pending .sc-prog i { width: 100% !important; background: linear-gradient(90deg, var(--crimson), var(--magenta)) }
+  .sc-warn { position: absolute; top: -6px; right: -6px; width: 18px; height: 18px;
+    color: var(--void); display: grid; place-items: center;
+    font-family: var(--display); font-weight: 700; font-size: 11px;
+    transform: rotate(45deg); z-index: 6 }
+  .sc-warn span { transform: rotate(-45deg); display: block }
+  .sc-warn.win { background: var(--plasma); box-shadow: 0 0 8px var(--plasma) }
+  .sc-warn.fail { background: var(--crimson); box-shadow: 0 0 8px var(--crimson) }
+  .sc-dock-right { display: flex; align-items: center; gap: 10px; padding-left: 14px; border-left: 1px solid var(--rule-2) }
+  .sc-bulk { display: inline-flex; align-items: center; gap: 6px; padding: 8px 12px;
+    font-family: var(--display); font-size: 10px; font-weight: 600;
+    letter-spacing: 0.16em; text-transform: uppercase; border: 1px solid; cursor: pointer;
+    clip-path: polygon(6px 0, 100% 0, 100% calc(100% - 6px), calc(100% - 6px) 100%, 0 100%, 0 6px);
+    transition: all .15s; background: var(--hull-3); color: var(--frost); border-color: var(--rule-2) }
+  .sc-bulk svg { width: 11px; height: 11px }
+  .sc-bulk.gated { opacity: 0.5; cursor: not-allowed; color: var(--steel) }
+  .sc-bulk.deploy { color: var(--void); background: linear-gradient(180deg, var(--magenta-2), var(--magenta));
+    border-color: var(--magenta); font-weight: 700;
+    box-shadow: 0 0 18px rgba(255,46,136,0.45), inset 0 1px 0 rgba(255,255,255,0.2); letter-spacing: 0.2em }
+  .sc-bulk.deploy:hover { box-shadow: 0 0 26px rgba(255,46,136,0.6) }
+  .sc-bulk .kc { font-family: var(--mono); font-size: 9px; padding: 1px 4px;
+    background: rgba(0,0,0,0.25); letter-spacing: 0; border-radius: 2px }
+  .sc-chord-bg { position: fixed; inset: 0; background: rgba(3,6,10,0.55); backdrop-filter: blur(8px);
+    z-index: 200; display: none; align-items: flex-start; justify-content: center; padding-top: 18vh }
+  .sc-chord-bg.is-open { display: flex }
+  .sc-chord { width: 780px; max-width: calc(100vw - 32px);
+    background: linear-gradient(180deg, var(--hull-2), var(--hull-1));
+    border: 1px solid var(--magenta);
+    box-shadow: 0 0 48px rgba(255,46,136,0.30), 0 32px 64px -16px rgba(0,0,0,0.7);
+    clip-path: polygon(16px 0, 100% 0, 100% calc(100% - 16px), calc(100% - 16px) 100%, 0 100%, 0 16px);
+    position: relative }
+  .sc-chord::before { content: ""; position: absolute; top: 0; left: 0; right: 0; height: 2px;
+    background: linear-gradient(90deg, transparent 5%, var(--magenta) 25%, var(--cyan) 75%, transparent 95%);
+    background-size: 200% 100%; animation: scHolo 3s linear infinite }
+  @keyframes scHolo { from { background-position: 0 0 } to { background-position: 200% 0 } }
+  .sc-chord-head { display: flex; align-items: center; justify-content: space-between;
+    padding: 14px 22px; border-bottom: 1px solid var(--rule) }
+  .sc-chord-head .lbl { font-family: var(--display); font-size: 11px; font-weight: 700;
+    letter-spacing: 0.28em; text-transform: uppercase; color: var(--magenta);
+    text-shadow: 0 0 6px rgba(255,46,136,0.5); display: flex; align-items: center; gap: 10px }
+  .sc-chord-head .lbl svg { width: 14px; height: 14px }
+  .sc-chord-head .esc { font-family: var(--mono); font-size: 10px; color: var(--steel); letter-spacing: 0.05em;
+    display: flex; align-items: center; gap: 6px }
+  .sc-chord-row { display: grid; grid-template-columns: auto auto auto auto auto 1fr; gap: 14px;
+    align-items: center; padding: 18px 22px 14px;
+    font-family: var(--mono); font-size: 14px; color: var(--mist); letter-spacing: 0.02em }
+  .sc-chord-row .verb { font-family: var(--display); font-weight: 700; font-size: 14px;
+    letter-spacing: 0.18em; text-transform: uppercase; color: var(--magenta);
+    text-shadow: 0 0 6px rgba(255,46,136,0.5) }
+  .sc-chord-row .conn { color: var(--steel); font-family: var(--display); font-size: 11px;
+    letter-spacing: 0.18em; text-transform: uppercase }
+  .sc-cf { display: flex; align-items: center; gap: 6px; padding: 6px 10px;
+    background: var(--hull-2); border: 1px solid var(--cyan-dim); color: var(--cyan);
+    font-family: var(--mono); font-size: 13px; letter-spacing: 0.04em;
+    clip-path: polygon(5px 0, 100% 0, 100% calc(100% - 5px), calc(100% - 5px) 100%, 0 100%, 0 5px);
+    text-shadow: 0 0 4px rgba(86,212,224,0.3) }
+  .sc-cf svg { width: 11px; height: 11px; color: var(--cyan-dim) }
+  .sc-cf.targets { background: var(--magenta-ink); border-color: var(--magenta-dim); color: var(--magenta);
+    text-shadow: 0 0 4px rgba(255,46,136,0.3) }
+  .sc-cf .chip { padding: 2px 6px; background: rgba(0,0,0,0.3); font-size: 11px; letter-spacing: 0.05em;
+    border: 1px solid currentColor; color: currentColor; border-radius: 2px }
+  .sc-chord-dir { display: grid; grid-template-columns: auto 1fr auto; gap: 14px; align-items: center;
+    padding: 12px 22px 18px; border-top: 1px dashed var(--rule-2) }
+  .sc-chord-dir .k { font-family: var(--display); font-size: 10px; font-weight: 600;
+    letter-spacing: 0.22em; text-transform: uppercase; color: var(--steel) }
+  .sc-chord-dir input { flex: 1; font-family: var(--mono); font-size: 14px; color: var(--frost);
+    letter-spacing: 0.02em; padding: 6px 0; border: 0; border-bottom: 1px solid var(--cyan-dim);
+    background: transparent; outline: 0; min-width: 0; width: 100% }
+  .sc-chord-dir input::placeholder { color: var(--steel); font-style: italic }
+  .sc-chord-dir .send { font-family: var(--display); font-size: 10px; font-weight: 700;
+    letter-spacing: 0.18em; text-transform: uppercase; color: var(--void);
+    padding: 8px 16px; background: linear-gradient(180deg, var(--magenta-2), var(--magenta));
+    border: 1px solid var(--magenta);
+    box-shadow: 0 0 18px rgba(255,46,136,0.5), inset 0 1px 0 rgba(255,255,255,0.2);
+    clip-path: polygon(6px 0, 100% 0, 100% calc(100% - 6px), calc(100% - 6px) 100%, 0 100%, 0 6px); cursor: pointer }
+  .sc-chord-dir .send .kc { font-family: var(--mono); font-size: 9px; padding: 1px 4px;
+    background: rgba(0,0,0,0.3); letter-spacing: 0; border-radius: 2px; margin-left: 6px }
+  .sc-chord-foot { display: flex; align-items: center; gap: 14px; padding: 10px 22px;
+    border-top: 1px solid var(--rule); background: var(--hull-1);
+    font-family: var(--mono); font-size: 9.5px; color: var(--steel); letter-spacing: 0.05em }
+  .sc-chord-foot .sep { color: var(--gunmetal) }
+  .sc-chord-foot .k { padding: 1px 5px; border: 1px solid var(--rule-2); color: var(--mist);
+    letter-spacing: 0; border-radius: 2px }
+</style>
+
+<div class="sc-dock">
+  <div class="sc-dock-head" onclick="document.getElementById('scChord').classList.add('is-open')">
+    <div class="lbl">FLEET</div>
+    <div class="v">3 <em>/ 5</em><small>π · BUDGET</small></div>
+  </div>
+  <div class="sc-cells">
+    <button class="sc-cell casting is-current">
+      <div class="sc-av"><span class="glyph">π</span><span class="sc-eye"></span><span class="lvl">L8</span></div>
+      <div class="sc-body">
+        <div class="sc-row1"><span>Sandcastle Prime</span><span class="sep">·</span><span class="phase">phase III · serialize</span></div>
+        <div class="sc-row2"><span class="ico">▸</span><span>RUN-042 · casting · T+12:04</span></div>
+        <div class="sc-prog"><i style="width:62%"></i></div>
+      </div>
+    </button>
+    <button class="sc-cell striking">
+      <div class="sc-av"><span class="glyph">π</span><span class="sc-eye"></span><span class="lvl">L8</span></div>
+      <div class="sc-body">
+        <div class="sc-row1"><span>Helix-IV</span><span class="sep">·</span><span class="phase">phase II · diagnose</span></div>
+        <div class="sc-row2"><span class="ico">⚔</span><span>RUN-091 · striking · T+04:11</span></div>
+        <div class="sc-prog"><i style="width:38%"></i></div>
+      </div>
+    </button>
+    <button class="sc-cell boss">
+      <div class="sc-av"><span class="glyph">π</span><span class="sc-eye"></span><span class="lvl">L8</span></div>
+      <div class="sc-body">
+        <div class="sc-row1"><span>Astral-Forge</span><span class="sep">·</span><span class="phase">⚠ boss · TIER II</span></div>
+        <div class="sc-row2"><span class="ico">∇</span><span>RUN-128 · coord w/ Helix-IV</span></div>
+        <div class="sc-prog"><i style="width:24%"></i></div>
+      </div>
+    </button>
+    <button class="sc-cell win-pending">
+      <span class="sc-warn win"><span>✓</span></span>
+      <div class="sc-av"><span class="glyph">π</span><span class="lvl">L8</span></div>
+      <div class="sc-body">
+        <div class="sc-row1"><span>Mira-Doc</span><span class="sep">·</span><span class="phase">VICTORY · awaiting merge</span></div>
+        <div class="sc-row2"><span class="ico">+ 175</span><span>XP · 5/5 phases · ~9m</span></div>
+        <div class="sc-prog"><i></i></div>
+      </div>
+    </button>
+    <button class="sc-cell fail-pending">
+      <span class="sc-warn fail"><span>!</span></span>
+      <div class="sc-av"><span class="glyph">π</span><span class="lvl">L8</span></div>
+      <div class="sc-body">
+        <div class="sc-row1"><span>Vercel-Bridge</span><span class="sep">·</span><span class="phase">DEFEAT · API guard</span></div>
+        <div class="sc-row2"><span class="ico">−40</span><span>XP · 2/5 · worktree kept</span></div>
+        <div class="sc-prog"><i></i></div>
+      </div>
+    </button>
+  </div>
+  <div class="sc-dock-right">
+    <button class="sc-bulk gated" title="Gated until all pending runs are green-verified">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12l5 5L20 7"/></svg>
+      Merge all green <span class="kc">⌘ ⇧ M</span>
+    </button>
+    <button class="sc-bulk deploy" onclick="document.getElementById('scChord').classList.add('is-open')">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 4l14 8-14 8V4z"/></svg>
+      Deploy <span class="kc">⌘ D</span>
+    </button>
+  </div>
+</div>
+
+<div class="sc-chord-bg" id="scChord" onclick="if(event.target===this)this.classList.remove('is-open')">
+  <div class="sc-chord">
+    <div class="sc-chord-head">
+      <span class="lbl">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 4l14 8-14 8V4z"/></svg>
+        DEPLOY · CHORD
+      </span>
+      <span class="esc"><span class="k">esc</span> to dismiss</span>
+    </div>
+    <div class="sc-chord-row">
+      <span class="verb">DEPLOY</span>
+      <span class="sc-cf"><span class="chip">π</span> PI · KAGE
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="m6 9 6 6 6-6"/></svg></span>
+      <span class="conn">to</span>
+      <span class="sc-cf targets"><span class="chip">3</span> Sandcastle, Helix, Forge
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="m6 9 6 6 6-6"/></svg></span>
+      <span class="conn">·</span>
+      <span style="font-family:var(--mono);font-size:11px;color:var(--steel);letter-spacing:0.05em">multi-target</span>
+    </div>
+    <div class="sc-chord-dir">
+      <span class="k">DIRECTIVE</span>
+      <input type="text" placeholder="triage open issues, fix the first high-priority one, commit…" />
+      <button class="send" onclick="document.getElementById('scChord').classList.remove('is-open')">
+        DEPLOY <span class="kc">⌘ ↵</span>
+      </button>
+    </div>
+    <div class="sc-chord-foot">
+      <span><span class="k">tab</span> next</span>
+      <span class="sep">·</span>
+      <span><span class="k">,</span> add target</span>
+      <span class="sep">·</span>
+      <span><span class="k">⌘ ↵</span> deploy all</span>
+      <span class="sep">·</span>
+      <span style="margin-left:auto;color:var(--magenta);text-shadow:0 0 4px rgba(255,46,136,0.4)">▸ Pi · Kage at 3/5 focus budget</span>
+    </div>
+  </div>
+</div>
+
+<script>
+  document.addEventListener('keydown', (e) => {
+    if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'd') {
+      e.preventDefault();
+      document.getElementById('scChord').classList.add('is-open');
+    }
+    if (e.key === 'Escape') document.getElementById('scChord').classList.remove('is-open');
+  });
+</script>
+
+</body>
+</html>

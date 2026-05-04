@@ -1,0 +1,649 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>SANDCASTLE :: GALAXY</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --void:#03060a; --hull-0:#060a10; --hull-1:#0a1018; --hull-2:#11181f;
+    --hull-3:#1a232c; --hull-4:#243140;
+    --frost:#dceaf3; --mist:#9eb3c2; --steel:#5b6b7a; --gunmetal:#3a4754;
+    --rule:rgba(120,200,220,0.07); --rule-2:rgba(120,200,220,0.13); --rule-3:rgba(120,200,220,0.22);
+    --cyan:#56d4e0; --cyan-2:#7fe6ef; --cyan-dim:rgba(86,212,224,0.16); --cyan-ink:rgba(86,212,224,0.06);
+    --magenta:#ff2e88; --magenta-2:#ff5ca7; --magenta-dim:rgba(255,46,136,0.16); --magenta-ink:rgba(255,46,136,0.06);
+    --plasma:#6cffaa; --plasma-dim:rgba(108,255,170,0.14); --plasma-ink:rgba(108,255,170,0.06);
+    --amber:#ffb547; --amber-dim:rgba(255,181,71,0.14);
+    --crimson:#ff5e6c; --crimson-dim:rgba(255,94,108,0.14); --slate:#6f8aa3;
+    --mono:'JetBrains Mono',ui-monospace,Menlo,Consolas,monospace;
+    --display:'Chakra Petch','Eurostile',system-ui,sans-serif;
+  }
+  *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+  html,body{height:100%;background:var(--void);color:var(--frost);font-family:var(--mono);font-size:12.5px;line-height:1.5;-webkit-font-smoothing:antialiased;overflow:hidden;font-feature-settings:"ss01","cv01","zero"}
+  button,a{font:inherit;color:inherit;background:none;border:0;cursor:pointer;text-decoration:none}
+  ::selection{background:var(--cyan-dim);color:var(--frost)}
+
+  body::before{content:"";position:fixed;inset:0;pointer-events:none;z-index:9999;opacity:0.5;
+    background:repeating-linear-gradient(0deg,rgba(0,0,0,0) 0 2px,rgba(180,220,235,0.035) 2px 3px),
+    linear-gradient(180deg,rgba(255,46,136,0.018),rgba(86,212,224,0.022) 50%,rgba(255,46,136,0.018));
+    animation:crt 5.5s steps(60) infinite}
+  @keyframes crt{0%,96%,100%{opacity:0.5}97%{opacity:0.32}97.5%{opacity:0.62}98%{opacity:0.40}}
+
+  .app{display:grid;grid-template-rows:44px 1fr;height:100vh;
+    background:radial-gradient(1400px 700px at 50% 50%,rgba(86,212,224,0.10),transparent 65%),
+    radial-gradient(900px 500px at 12% 110%,rgba(255,46,136,0.07),transparent 60%),
+    radial-gradient(900px 500px at 88% -10%,rgba(108,255,170,0.05),transparent 60%),var(--void);position:relative}
+  .app::after{content:"サンドキャッスル ／ GALAXY ／ システム SOL-7 ／ ６ プラネット ／ 接続済";
+    position:fixed;top:50%;right:-10px;transform:rotate(-90deg) translateX(50%);transform-origin:right center;
+    font-family:var(--mono);font-size:9.5px;letter-spacing:0.7em;color:var(--magenta);
+    opacity:0.18;pointer-events:none;z-index:1;white-space:nowrap;text-shadow:0 0 6px rgba(255,46,136,0.5)}
+
+  /* ─── titlebar ─── */
+  .titlebar{display:grid;grid-template-columns:1fr auto 1fr;align-items:center;padding:0 14px;
+    border-bottom:1px solid var(--rule-2);background:linear-gradient(180deg,rgba(10,16,24,0.7),rgba(3,6,10,0.95));
+    backdrop-filter:blur(20px);position:relative;z-index:10}
+  .titlebar::after{content:"";position:absolute;bottom:-1px;left:0;right:0;height:1px;
+    background:linear-gradient(90deg,transparent 5%,var(--cyan-dim) 50%,transparent 95%)}
+  .tb-left,.tb-right{display:flex;align-items:center;gap:14px}
+  .tb-right{justify-content:flex-end}
+  .traffic{display:flex;gap:8px;padding-right:6px}
+  .traffic i{width:11px;height:11px;transform:rotate(45deg)}
+  .traffic i:nth-child(1){background:var(--crimson)}
+  .traffic i:nth-child(2){background:var(--amber)}
+  .traffic i:nth-child(3){background:var(--plasma)}
+
+  .brand{display:flex;align-items:center;gap:10px;font-size:11px;color:var(--mist);letter-spacing:0.04em}
+  .brand-mark{width:22px;height:22px;background:linear-gradient(135deg,#1a0a14,#061418);border:1px solid var(--cyan);
+    display:grid;place-items:center;font-family:var(--display);font-weight:700;font-size:12px;color:var(--cyan);
+    clip-path:polygon(20% 0,100% 0,100% 80%,80% 100%,0 100%,0 20%);
+    box-shadow:0 0 12px rgba(86,212,224,0.45),-2px 2px 0 rgba(255,46,136,0.6)}
+  .brand-name{font-family:var(--display);font-weight:600;color:var(--frost);letter-spacing:0.18em;font-size:12px;text-transform:uppercase;
+    text-shadow:-0.5px 0 var(--magenta),0.5px 0 var(--cyan)}
+  .brand-name::after{content:"／ GALAXY";margin-left:8px;font-family:var(--mono);font-size:9.5px;color:var(--magenta);letter-spacing:0.15em;opacity:0.75}
+  .brand-sep{color:var(--gunmetal)}
+  .brand-ctx{font-family:var(--mono);font-size:10.5px;color:var(--mist);padding:2px 8px;border:1px solid var(--rule-2);background:var(--hull-1);letter-spacing:0.04em}
+
+  .mode-switch{display:flex;padding:3px;background:var(--hull-1);border:1px solid var(--rule-2);gap:1px;
+    clip-path:polygon(8px 0,calc(100% - 8px) 0,100% 8px,100% calc(100% - 8px),calc(100% - 8px) 100%,8px 100%,0 calc(100% - 8px),0 8px)}
+  .mode{display:inline-flex;align-items:center;gap:7px;padding:5px 14px;font-family:var(--display);font-size:10.5px;font-weight:500;
+    letter-spacing:0.16em;text-transform:uppercase;color:var(--steel)}
+  .mode svg{width:13px;height:13px;opacity:.7}
+  .mode:hover{color:var(--mist)}
+  .mode.is-active{background:linear-gradient(180deg,var(--hull-3),var(--hull-2));color:var(--cyan);
+    box-shadow:inset 0 0 0 0.5px var(--cyan-dim),0 0 14px rgba(86,212,224,0.18)}
+  .mode.is-active svg{opacity:1;color:var(--cyan)}
+
+  .icon-btn{width:28px;height:28px;display:grid;place-items:center;color:var(--mist);border:1px solid transparent}
+  .icon-btn svg{width:14px;height:14px}
+  .icon-btn:hover{background:var(--hull-2);color:var(--cyan);border-color:var(--rule-2)}
+  .kbd{font-family:var(--mono);font-size:10px;color:var(--mist);padding:2px 7px;border:1px solid var(--rule-2);background:var(--hull-1);letter-spacing:0.05em}
+
+  .search{display:flex;align-items:center;gap:8px;padding:5px 10px;background:var(--hull-1);border:1px solid var(--rule-2);
+    width:280px;color:var(--mist);clip-path:polygon(6px 0,100% 0,100% calc(100% - 6px),calc(100% - 6px) 100%,0 100%,0 6px)}
+  .search svg{width:13px;height:13px;color:var(--cyan)}
+  .search input{flex:1;font-size:11.5px;color:var(--frost);background:none;border:0;outline:0}
+  .search input::placeholder{color:var(--steel)}
+
+  /* ─── shell ─── */
+  .shell{display:grid;grid-template-columns:280px 1fr 320px;overflow:hidden;min-height:0}
+
+  /* ─── L: scope toggle + filters ─── */
+  .rail-l{border-right:1px solid var(--rule-2);background:linear-gradient(180deg,var(--hull-1),var(--hull-0));
+    overflow-y:auto;position:relative}
+  .rail-l::before{content:"";position:absolute;top:0;bottom:0;right:0;width:1px;
+    background:linear-gradient(180deg,transparent,var(--cyan-dim) 30%,var(--cyan-dim) 70%,transparent)}
+  .rail-l::-webkit-scrollbar{width:6px}.rail-l::-webkit-scrollbar-thumb{background:var(--hull-3)}
+
+  .scope-toggle{margin:14px;padding:3px;background:var(--hull-1);border:1px solid var(--rule-2);
+    display:grid;grid-template-columns:repeat(4,1fr);gap:1px;
+    clip-path:polygon(8px 0,calc(100% - 8px) 0,100% 8px,100% calc(100% - 8px),calc(100% - 8px) 100%,8px 100%,0 calc(100% - 8px),0 8px)}
+  .scope-toggle button{padding:6px 4px;font-family:var(--display);font-size:9px;font-weight:600;letter-spacing:0.18em;text-transform:uppercase;color:var(--steel)}
+  .scope-toggle button:hover{color:var(--mist)}
+  .scope-toggle button.is-active{background:linear-gradient(180deg,var(--hull-3),var(--hull-2));color:var(--magenta);
+    text-shadow:0 0 6px rgba(255,46,136,0.5);box-shadow:inset 0 0 0 0.5px var(--magenta-dim)}
+
+  .rail-section{padding:14px 16px;border-top:1px solid var(--rule)}
+  .rail-section h3{font-family:var(--display);font-size:9px;letter-spacing:0.24em;text-transform:uppercase;color:var(--steel);font-weight:500;
+    display:flex;align-items:center;gap:8px;margin-bottom:12px}
+  .rail-section h3 .hex{font-family:var(--mono);color:var(--cyan);letter-spacing:0.05em}
+  .rail-section h3 .line{flex:1;height:1px;background:var(--rule-2)}
+
+  /* user fleet (operatives) */
+  .ops-row{display:grid;grid-template-columns:30px 1fr auto;gap:10px;align-items:center;padding:7px 10px;margin-bottom:4px;
+    border:1px solid var(--rule-2);background:var(--hull-2);
+    clip-path:polygon(7px 0,100% 0,100% calc(100% - 7px),calc(100% - 7px) 100%,0 100%,0 7px)}
+  .ops-row.deployed{border-color:var(--cyan-dim);background:var(--cyan-ink)}
+  .ops-row.transit{border-color:var(--amber);background:var(--amber-dim)}
+  .ops-row .av{width:22px;height:22px;background:linear-gradient(135deg,#1a0a14,#061218);border:1px solid currentColor;
+    display:grid;place-items:center;font-family:var(--display);font-weight:700;font-size:11px;
+    clip-path:polygon(20% 0,100% 0,100% 80%,80% 100%,0 100%,0 20%);text-shadow:-0.5px 0 var(--magenta),0.5px 0 currentColor}
+  .ops-row.deployed .av{color:var(--cyan)}
+  .ops-row.transit .av{color:var(--amber)}
+  .ops-row.idle .av{color:var(--steel);border-color:var(--rule-2)}
+  .ops-row .body{min-width:0}
+  .ops-row .name{font-family:var(--display);font-size:10.5px;font-weight:600;color:var(--frost);letter-spacing:0.06em;text-transform:uppercase;line-height:1.2;
+    overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .ops-row .where{margin-top:1px;font-family:var(--mono);font-size:9px;color:var(--steel);letter-spacing:0.03em;
+    overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .ops-row.deployed .where{color:var(--cyan)}
+  .ops-row.transit .where{color:var(--amber)}
+  .ops-row .lvl{font-family:var(--display);font-weight:700;font-size:13px;letter-spacing:0;color:var(--magenta);
+    text-shadow:0 0 4px rgba(255,46,136,0.4)}
+
+  /* climate filters */
+  .filter{display:flex;align-items:center;justify-content:space-between;padding:6px 10px;margin-bottom:4px;
+    border:1px solid var(--rule-2);background:var(--hull-1);font-family:var(--mono);font-size:10px;color:var(--mist);letter-spacing:0.03em;cursor:pointer}
+  .filter:hover{border-color:var(--cyan-dim);color:var(--cyan)}
+  .filter.is-on{background:var(--cyan-ink);border-color:var(--cyan-dim);color:var(--cyan)}
+  .filter .count{font-size:9px;color:var(--steel);letter-spacing:0.05em}
+  .filter.is-on .count{color:var(--cyan)}
+
+  .filter .gl{width:8px;height:8px;transform:rotate(45deg);display:inline-block;margin-right:6px;vertical-align:middle}
+  .filter .gl.p{background:var(--plasma);box-shadow:0 0 4px var(--plasma)}
+  .filter .gl.am{background:var(--amber);box-shadow:0 0 4px var(--amber)}
+  .filter .gl.cr{background:var(--crimson);box-shadow:0 0 4px var(--crimson)}
+  .filter .gl.cy{background:var(--cyan);box-shadow:0 0 4px var(--cyan)}
+  .filter .gl.dim{background:var(--steel)}
+
+  /* ─── center: galaxy ─── */
+  .galaxy{position:relative;overflow:hidden;background:var(--hull-0)}
+  .galaxy::before{content:"";position:absolute;inset:0;background-image:
+    radial-gradient(circle 1px at 14% 18%,rgba(220,234,243,0.6),transparent 1px),
+    radial-gradient(circle 1px at 32% 8%,rgba(220,234,243,0.5),transparent 1px),
+    radial-gradient(circle 1px at 58% 22%,rgba(86,212,224,0.6),transparent 1px),
+    radial-gradient(circle 1px at 76% 12%,rgba(220,234,243,0.5),transparent 1px),
+    radial-gradient(circle 1px at 88% 28%,rgba(255,46,136,0.5),transparent 1px),
+    radial-gradient(circle 1px at 12% 36%,rgba(220,234,243,0.4),transparent 1px),
+    radial-gradient(circle 1px at 26% 52%,rgba(220,234,243,0.5),transparent 1px),
+    radial-gradient(circle 1px at 48% 60%,rgba(108,255,170,0.5),transparent 1px),
+    radial-gradient(circle 1px at 64% 70%,rgba(220,234,243,0.5),transparent 1px),
+    radial-gradient(circle 1px at 80% 80%,rgba(86,212,224,0.5),transparent 1px),
+    radial-gradient(circle 1px at 92% 50%,rgba(220,234,243,0.5),transparent 1px),
+    radial-gradient(circle 1px at 8% 78%,rgba(255,46,136,0.4),transparent 1px),
+    radial-gradient(circle 1px at 38% 88%,rgba(220,234,243,0.5),transparent 1px),
+    radial-gradient(circle 2px at 70% 40%,rgba(220,234,243,0.7),transparent 2px),
+    radial-gradient(circle 2px at 22% 70%,rgba(86,212,224,0.6),transparent 2px);
+    background-repeat:no-repeat}
+  /* faint orbital rings */
+  .galaxy::after{content:"";position:absolute;top:50%;left:50%;width:1100px;height:1100px;
+    transform:translate(-50%,-50%);border-radius:50%;
+    border:1px solid var(--rule);
+    box-shadow:
+      0 0 0 80px transparent, 0 0 0 81px var(--rule),
+      0 0 0 240px transparent, 0 0 0 241px var(--rule),
+      0 0 0 360px transparent, 0 0 0 361px var(--rule),
+      inset 0 0 0 200px transparent, inset 0 0 0 201px var(--rule);
+    pointer-events:none;opacity:0.5}
+
+  /* sun in the center */
+  .sun{position:absolute;top:50%;left:50%;width:60px;height:60px;border-radius:50%;
+    transform:translate(-50%,-50%);
+    background:radial-gradient(circle,#fff7d4 0%,#ffb547 40%,#a85a18 80%,transparent 100%);
+    box-shadow:0 0 60px rgba(255,181,71,0.7),0 0 140px rgba(255,181,71,0.35),0 0 220px rgba(255,46,136,0.15);
+    z-index:2}
+  .sun-label{position:absolute;top:calc(50% + 38px);left:50%;transform:translateX(-50%);
+    font-family:var(--mono);font-size:9px;letter-spacing:0.18em;color:var(--amber);text-transform:uppercase;
+    text-shadow:0 0 6px rgba(255,181,71,0.5);z-index:2;pointer-events:none}
+
+  /* breadcrumb top + status */
+  .galaxy-head{position:absolute;top:18px;left:24px;right:24px;display:flex;justify-content:space-between;align-items:center;z-index:5;pointer-events:none}
+  .crumbs{display:flex;align-items:center;gap:10px;font-size:11px;color:var(--mist);letter-spacing:0.04em;pointer-events:auto}
+  .crumbs .hex{color:var(--cyan);font-family:var(--mono);letter-spacing:0.05em}
+  .crumbs .sep{color:var(--gunmetal)}
+  .crumbs .cur{color:var(--frost);font-family:var(--display);font-weight:600;letter-spacing:0.08em;text-transform:uppercase;
+    text-shadow:-0.5px 0 var(--magenta),0.5px 0 var(--cyan)}
+  .galaxy-status{display:inline-flex;align-items:center;gap:9px;font-family:var(--mono);font-size:10px;color:var(--frost);
+    padding:5px 12px;border:1px solid var(--cyan);background:var(--cyan-ink);letter-spacing:0.12em;text-transform:uppercase;
+    clip-path:polygon(8px 0,100% 0,100% calc(100% - 8px),calc(100% - 8px) 100%,0 100%,0 8px);pointer-events:auto}
+  .galaxy-status .dot{width:7px;height:7px;transform:rotate(45deg);background:var(--cyan);box-shadow:0 0 8px var(--cyan);animation:ping 1.4s ease-out infinite}
+  @keyframes ping{0%,100%{opacity:1}50%{opacity:0.4}}
+
+  /* a planet on the canvas */
+  .pl{position:absolute;cursor:pointer;transition:transform .2s;z-index:3}
+  .pl:hover{transform:scale(1.08);z-index:4}
+  .pl .body{border-radius:50%;position:relative;animation:rotate 60s linear infinite}
+  @keyframes rotate{from{transform:rotate(0deg)}to{transform:rotate(360deg)}}
+  .pl .body::before{content:"";position:absolute;inset:-12px;border-radius:50%;pointer-events:none}
+  .pl .label{position:absolute;top:calc(100% + 8px);left:50%;transform:translateX(-50%);font-family:var(--display);font-size:10px;
+    font-weight:600;letter-spacing:0.1em;text-transform:uppercase;color:var(--frost);white-space:nowrap;text-shadow:-0.5px 0 var(--magenta),0.5px 0 var(--cyan)}
+  .pl .stage-tag{position:absolute;top:calc(100% + 24px);left:50%;transform:translateX(-50%);font-family:var(--mono);font-size:9px;
+    color:var(--steel);letter-spacing:0.06em;white-space:nowrap}
+  .pl .stage-tag b{color:currentColor;font-weight:500}
+
+  /* climate variants */
+  .pl.clear .body{
+    background:radial-gradient(circle at 32% 28%,#1d3d4a 0%,#0a1f28 40%,#03070a 75%,transparent 100%),
+      radial-gradient(circle at 70% 75%,rgba(86,212,224,0.18) 0%,transparent 40%),
+      radial-gradient(circle at 50% 50%,#0e2530 0%,#06141c 100%);
+    box-shadow:inset -10px -10px 22px rgba(0,0,0,0.6),inset 8px 8px 18px rgba(86,212,224,0.10),0 0 24px rgba(86,212,224,0.18)}
+  .pl.clear .body::before{box-shadow:0 0 0 2px rgba(86,212,224,0.18) inset,0 0 24px rgba(86,212,224,0.20)}
+  .pl.clear .stage-tag b{color:var(--plasma);text-shadow:0 0 4px rgba(108,255,170,0.4)}
+
+  .pl.warm .body{
+    background:radial-gradient(circle at 32% 28%,#3d2f18 0%,#241a0c 40%,#06030a 75%,transparent 100%),
+      radial-gradient(circle at 70% 65%,rgba(255,181,71,0.18) 0%,transparent 40%),
+      radial-gradient(circle at 50% 50%,#2a1d10 0%,#1c1108 100%);
+    box-shadow:inset -10px -10px 22px rgba(0,0,0,0.6),inset 6px 6px 16px rgba(255,181,71,0.10),0 0 22px rgba(255,181,71,0.20)}
+  .pl.warm .body::before{box-shadow:0 0 0 2px rgba(255,181,71,0.18) inset,0 0 24px rgba(255,181,71,0.20)}
+  .pl.warm .stage-tag b{color:var(--amber);text-shadow:0 0 4px rgba(255,181,71,0.4)}
+
+  .pl.storm .body{
+    background:radial-gradient(circle at 32% 28%,#3a1419 0%,#240a10 40%,#06030a 75%,transparent 100%),
+      radial-gradient(circle at 70% 60%,rgba(255,94,108,0.20) 0%,transparent 40%),
+      radial-gradient(circle at 50% 50%,#2a0e14 0%,#1c0710 100%);
+    box-shadow:inset -10px -10px 22px rgba(0,0,0,0.65),inset 6px 6px 16px rgba(255,94,108,0.12),0 0 28px rgba(255,94,108,0.30)}
+  .pl.storm .body::before{box-shadow:0 0 0 2px rgba(255,94,108,0.25) inset,0 0 30px rgba(255,94,108,0.30)}
+  .pl.storm .stage-tag b{color:var(--crimson);text-shadow:0 0 4px rgba(255,94,108,0.5)}
+  .pl.storm .body{animation:rotate 60s linear infinite,storm-pulse 2.4s ease-in-out infinite}
+  @keyframes storm-pulse{0%,100%{filter:brightness(1)}50%{filter:brightness(1.3)}}
+
+  .pl.idle .body{
+    background:radial-gradient(circle at 32% 28%,#202830 0%,#0e1218 40%,#03060a 75%,transparent 100%),
+      radial-gradient(circle at 50% 50%,#161c22 0%,#0a0e14 100%);
+    box-shadow:inset -8px -8px 18px rgba(0,0,0,0.7),0 0 12px rgba(120,140,160,0.10);filter:saturate(0.5)}
+  .pl.idle .body::before{box-shadow:0 0 0 1px rgba(120,140,160,0.12) inset}
+  .pl.idle .stage-tag b{color:var(--steel)}
+
+  .pl.live .body{
+    background:radial-gradient(circle at 32% 28%,#15333d 0%,#0a1f28 40%,#03070a 75%,transparent 100%),
+      radial-gradient(circle at 70% 65%,rgba(108,255,170,0.20) 0%,transparent 40%),
+      radial-gradient(circle at 30% 70%,rgba(255,46,136,0.15) 0%,transparent 35%),
+      radial-gradient(circle at 50% 50%,#0e2228 0%,#061218 100%);
+    box-shadow:inset -10px -10px 22px rgba(0,0,0,0.6),inset 8px 8px 18px rgba(108,255,170,0.12),0 0 30px rgba(108,255,170,0.30),0 0 60px rgba(86,212,224,0.20)}
+  .pl.live .body::before{box-shadow:0 0 0 2px rgba(108,255,170,0.20) inset,0 0 28px rgba(108,255,170,0.25)}
+  .pl.live .stage-tag b{color:var(--plasma);text-shadow:0 0 4px rgba(108,255,170,0.5)}
+  .pl.live .label::after{content:" · LIVE";color:var(--plasma);text-shadow:0 0 6px rgba(108,255,170,0.5);font-family:var(--mono);font-size:9px;letter-spacing:0.18em;margin-left:4px}
+
+  /* operative spark on planet */
+  .pl .ops{position:absolute;width:8px;height:8px;background:var(--cyan);transform:rotate(45deg);
+    box-shadow:0 0 12px var(--cyan),0 0 24px rgba(86,212,224,0.4);z-index:5;
+    top:30%;left:62%}
+  .pl .ops::before{content:"";position:absolute;inset:-5px;border:1px solid var(--cyan);opacity:0.6;animation:ping 1.4s ease-out infinite}
+  .pl.live .ops{background:var(--magenta);box-shadow:0 0 12px var(--magenta),0 0 24px rgba(255,46,136,0.4)}
+  .pl.live .ops::before{border-color:var(--magenta)}
+
+  /* selected ring */
+  .pl.selected::after{content:"";position:absolute;top:-10px;left:-10px;right:-10px;bottom:-10px;border-radius:50%;
+    border:1px dashed var(--magenta);box-shadow:0 0 14px rgba(255,46,136,0.4);animation:rotate 18s linear infinite}
+
+  /* operative in transit */
+  .transit-spark{position:absolute;width:8px;height:8px;transform:rotate(45deg);background:var(--amber);
+    box-shadow:0 0 14px var(--amber),0 0 28px rgba(255,181,71,0.4);z-index:6}
+  .transit-spark::after{content:"";position:absolute;width:60px;height:1px;
+    background:linear-gradient(90deg,transparent,var(--amber));top:50%;right:100%;transform:rotate(-25deg);transform-origin:right center}
+  .transit-spark .label{position:absolute;top:calc(100% + 4px);left:50%;transform:translateX(-50%) rotate(-45deg);
+    font-family:var(--mono);font-size:9px;color:var(--amber);letter-spacing:0.05em;white-space:nowrap;text-shadow:0 0 4px rgba(255,181,71,0.6)}
+
+  /* HUD bottom-right zoom */
+  .zoom{position:absolute;bottom:18px;right:18px;display:flex;flex-direction:column;gap:4px;z-index:10}
+  .zoom button{width:30px;height:30px;background:rgba(10,16,24,0.85);border:1px solid var(--rule-2);color:var(--mist);
+    display:grid;place-items:center;backdrop-filter:blur(8px)}
+  .zoom button:hover{color:var(--cyan);border-color:var(--cyan-dim)}
+  .zoom button svg{width:14px;height:14px}
+
+  /* HUD top-right system telemetry */
+  .telem{position:absolute;top:74px;right:24px;display:flex;flex-direction:column;gap:6px;z-index:5}
+  .telem .row{padding:6px 12px;background:rgba(10,16,24,0.85);border:1px solid var(--rule-2);backdrop-filter:blur(8px);
+    font-family:var(--mono);font-size:10px;color:var(--mist);letter-spacing:0.06em;
+    clip-path:polygon(6px 0,100% 0,100% calc(100% - 6px),calc(100% - 6px) 100%,0 100%,0 6px);
+    display:grid;grid-template-columns:auto auto;gap:10px}
+  .telem .row .k{color:var(--steel);font-size:9px;letter-spacing:0.18em;text-transform:uppercase}
+  .telem .row .v{color:var(--frost)}
+  .telem .row .v.cy{color:var(--cyan)}
+  .telem .row .v.p{color:var(--plasma)}
+  .telem .row .v.m{color:var(--magenta)}
+  .telem .row .v.am{color:var(--amber)}
+  .telem .row .v.cr{color:var(--crimson)}
+
+  /* ─── R: selected planet detail ─── */
+  .rail-r{border-left:1px solid var(--rule-2);background:linear-gradient(180deg,var(--hull-1),var(--hull-0));
+    overflow-y:auto;position:relative}
+  .rail-r::before{content:"";position:absolute;top:0;bottom:0;left:0;width:1px;
+    background:linear-gradient(180deg,transparent,var(--magenta-dim) 30%,var(--magenta-dim) 70%,transparent)}
+  .rail-r::-webkit-scrollbar{width:7px}.rail-r::-webkit-scrollbar-thumb{background:var(--hull-3)}
+
+  .sel-head{padding:18px 22px;border-bottom:1px solid var(--rule)}
+  .sel-eyebrow{display:flex;align-items:center;gap:10px;font-family:var(--display);font-size:9px;letter-spacing:0.24em;text-transform:uppercase;color:var(--steel);font-weight:500}
+  .sel-eyebrow .hex{font-family:var(--mono);color:var(--magenta);letter-spacing:0.05em}
+  .sel-eyebrow .line{flex:1;height:1px;background:linear-gradient(90deg,var(--rule-2),transparent)}
+  .sel-name{margin-top:8px;font-family:var(--display);font-weight:600;font-size:22px;color:var(--frost);letter-spacing:0.05em;text-transform:uppercase;
+    text-shadow:-1px 0 var(--magenta),1px 0 var(--cyan)}
+  .sel-name em{font-style:normal;color:var(--magenta);text-shadow:-1.5px 0 var(--magenta),1.5px 0 var(--cyan),0 0 14px rgba(255,46,136,0.4)}
+  .sel-stage{margin-top:4px;font-family:var(--mono);font-size:10px;color:var(--cyan);letter-spacing:0.08em;text-transform:uppercase}
+
+  .sel-vitals{display:grid;grid-template-columns:1fr 1fr;gap:10px 14px;margin-top:14px;padding-top:14px;border-top:1px dashed var(--rule-2)}
+  .sel-vitals .k{font-family:var(--display);font-size:8.5px;letter-spacing:0.22em;text-transform:uppercase;color:var(--steel);font-weight:500;margin-bottom:2px}
+  .sel-vitals .v{font-family:var(--mono);font-size:11.5px;color:var(--frost);letter-spacing:0.04em;font-weight:600}
+  .sel-vitals .v.cy{color:var(--cyan)}
+  .sel-vitals .v.p{color:var(--plasma)}
+  .sel-vitals .v.am{color:var(--amber)}
+  .sel-vitals .v.m{color:var(--magenta)}
+
+  .sel-section{padding:16px 22px;border-bottom:1px solid var(--rule)}
+  .sel-section h4{font-family:var(--display);font-size:9px;letter-spacing:0.22em;text-transform:uppercase;color:var(--steel);font-weight:500;
+    display:flex;align-items:center;gap:10px;margin-bottom:10px}
+  .sel-section h4 .hex{font-family:var(--mono);color:var(--cyan);letter-spacing:0.05em}
+  .sel-section h4 .line{flex:1;height:1px;background:var(--rule-2)}
+
+  .deployed{display:flex;flex-direction:column;gap:6px}
+  .dep{display:grid;grid-template-columns:28px 1fr auto;gap:10px;align-items:center;padding:7px 10px;
+    border:1px solid var(--cyan-dim);background:var(--cyan-ink);
+    clip-path:polygon(7px 0,100% 0,100% calc(100% - 7px),calc(100% - 7px) 100%,0 100%,0 7px)}
+  .dep .av{width:24px;height:24px;background:linear-gradient(135deg,#1a0a14,#061218);border:1px solid var(--cyan);
+    display:grid;place-items:center;font-family:var(--display);font-weight:700;font-size:12px;color:var(--cyan);
+    text-shadow:-0.5px 0 var(--magenta),0.5px 0 var(--cyan);clip-path:polygon(20% 0,100% 0,100% 80%,80% 100%,0 100%,0 20%)}
+  .dep .name{font-family:var(--display);font-size:10.5px;font-weight:600;color:var(--frost);letter-spacing:0.06em;text-transform:uppercase;line-height:1.2}
+  .dep .meta{margin-top:1px;font-family:var(--mono);font-size:9px;color:var(--cyan);letter-spacing:0.04em}
+  .dep .lvl{font-family:var(--display);font-weight:700;font-size:14px;color:var(--magenta);letter-spacing:0;text-shadow:0 0 4px rgba(255,46,136,0.4)}
+
+  /* deploy operative button */
+  .actions{padding:16px 22px 22px;display:flex;flex-direction:column;gap:8px}
+  .btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;padding:11px 16px;
+    font-family:var(--display);font-size:11px;font-weight:500;letter-spacing:0.16em;text-transform:uppercase;
+    border:1px solid var(--rule-2);background:var(--hull-3);color:var(--frost);transition:all .15s;
+    clip-path:polygon(8px 0,100% 0,100% calc(100% - 8px),calc(100% - 8px) 100%,0 100%,0 8px)}
+  .btn:hover{background:var(--hull-4)}
+  .btn svg{width:12px;height:12px}
+  .btn-deploy{background:linear-gradient(180deg,var(--cyan-2),var(--cyan));color:var(--void);border-color:var(--cyan);font-weight:700;
+    box-shadow:0 0 20px rgba(86,212,224,0.45),inset 0 1px 0 rgba(255,255,255,0.2);letter-spacing:0.18em}
+  .btn-deploy:hover{background:linear-gradient(180deg,#9eeff7,var(--cyan-2));box-shadow:0 0 30px rgba(86,212,224,0.6),inset 0 1px 0 rgba(255,255,255,0.3)}
+  .btn-land{background:linear-gradient(180deg,var(--magenta-2),var(--magenta));color:var(--void);border-color:var(--magenta);font-weight:700;
+    box-shadow:0 0 20px rgba(255,46,136,0.45),inset 0 1px 0 rgba(255,255,255,0.2);letter-spacing:0.18em}
+  .btn-land:hover{background:linear-gradient(180deg,#ff7eb6,var(--magenta-2));box-shadow:0 0 30px rgba(255,46,136,0.6)}
+
+  /* boss list */
+  .boss{display:grid;grid-template-columns:18px 1fr auto;gap:10px;align-items:center;padding:6px 8px;
+    font-family:var(--mono);font-size:10px;color:var(--mist);letter-spacing:0.03em;
+    border-bottom:1px dashed var(--rule)}
+  .boss:last-child{border-bottom:0}
+  .boss .gl{width:8px;height:8px;transform:rotate(45deg);background:var(--magenta);box-shadow:0 0 4px var(--magenta)}
+  .boss .gl.cr{background:var(--crimson);box-shadow:0 0 4px var(--crimson)}
+  .boss .name{color:var(--frost);font-weight:500}
+  .boss .reg{color:var(--cyan);font-size:9px}
+  .boss .stat{color:var(--steel);font-size:9px;letter-spacing:0.05em}
+</style>
+</head>
+<body>
+  <div class="app">
+    <!-- titlebar -->
+    <div class="titlebar">
+      <div class="tb-left">
+        <div class="traffic"><i></i><i></i><i></i></div>
+        <div class="brand">
+          <div class="brand-mark">S</div>
+          <span class="brand-name">Sandcastle</span>
+          <span class="brand-sep">/</span>
+          <span class="brand-ctx" style="color:var(--amber);border-color:rgba(255,181,71,0.3)">SOL-7</span>
+          <span class="brand-sep">·</span>
+          <span class="brand-ctx">6 PLANETS</span>
+        </div>
+      </div>
+
+      <div class="mode-switch">
+        <button class="mode is-active"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="12" cy="12" r="3"/><circle cx="12" cy="12" r="9"/></svg>Galaxy</button>
+        <button class="mode"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="12" cy="12" r="9"/><ellipse cx="12" cy="12" rx="9" ry="3"/></svg>Planet</button>
+        <button class="mode"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M3 6l4-3 5 3 5-3 4 3v15l-4-3-5 3-5-3-4 3z"/></svg>Map</button>
+        <button class="mode"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="12" cy="12" r="3"/><circle cx="12" cy="12" r="9" stroke-dasharray="2 4"/></svg>Cockpit</button>
+      </div>
+
+      <div class="tb-right">
+        <div class="search">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/></svg>
+          <input placeholder="QUERY · planet, repo, operative…" />
+          <span class="kbd">⌘K</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- shell -->
+    <div class="shell">
+
+      <!-- L: scope + fleet + filters -->
+      <aside class="rail-l">
+        <div class="scope-toggle">
+          <button class="is-active">Galaxy</button>
+          <button>System</button>
+          <button>Planet</button>
+          <button>Region</button>
+        </div>
+
+        <div class="rail-section">
+          <h3><span class="hex">0x01</span>YOUR FLEET<span class="line"></span></h3>
+
+          <div class="ops-row deployed">
+            <div class="av">π</div>
+            <div class="body">
+              <div class="name">PI · KAGE</div>
+              <div class="where">▸ Sandcastle Prime</div>
+            </div>
+            <div class="lvl">08</div>
+          </div>
+
+          <div class="ops-row deployed">
+            <div class="av" style="color:var(--plasma);border-color:var(--plasma);text-shadow:-1px 0 var(--magenta),1px 0 var(--plasma)">▣</div>
+            <div class="body">
+              <div class="name">CLAUDE · WRAITH</div>
+              <div class="where">▸ Helix-IV</div>
+            </div>
+            <div class="lvl">11</div>
+          </div>
+
+          <div class="ops-row transit">
+            <div class="av" style="color:var(--magenta);border-color:var(--magenta);text-shadow:-1px 0 var(--magenta),1px 0 var(--cyan)">C</div>
+            <div class="body">
+              <div class="name">CODEX · RŌNIN</div>
+              <div class="where">▸ in transit · ETA 4s</div>
+            </div>
+            <div class="lvl">06</div>
+          </div>
+
+          <div class="ops-row idle">
+            <div class="av">◊</div>
+            <div class="body">
+              <div class="name">SCOUT · NULL</div>
+              <div class="where">▸ docked · ready</div>
+            </div>
+            <div class="lvl" style="color:var(--steel);text-shadow:none">03</div>
+          </div>
+        </div>
+
+        <div class="rail-section">
+          <h3><span class="hex">0x02</span>CLIMATE FILTERS<span class="line"></span></h3>
+          <div class="filter is-on"><span><span class="gl p"></span>CLEAR</span><span class="count">2 planets</span></div>
+          <div class="filter is-on"><span><span class="gl am"></span>WARM</span><span class="count">1</span></div>
+          <div class="filter is-on"><span><span class="gl cr"></span>STORM</span><span class="count">1</span></div>
+          <div class="filter is-on"><span><span class="gl cy"></span>LIVE</span><span class="count">1</span></div>
+          <div class="filter is-on"><span><span class="gl dim"></span>IDLE</span><span class="count">1</span></div>
+        </div>
+
+        <div class="rail-section">
+          <h3><span class="hex">0x03</span>SYSTEM<span class="line"></span></h3>
+          <div class="filter"><span>Sol-7</span><span class="count">6 planets</span></div>
+          <div class="filter"><span>Acme-Corp</span><span class="count">22 planets</span></div>
+          <div class="filter"><span>Public archive</span><span class="count">∞</span></div>
+        </div>
+      </aside>
+
+      <!-- center: galaxy -->
+      <main class="galaxy">
+        <!-- breadcrumb / status -->
+        <div class="galaxy-head">
+          <div class="crumbs">
+            <span class="hex">0x01</span>
+            <span>GALAXY</span>
+            <span class="sep">/</span>
+            <span class="cur">System Sol-7</span>
+            <span class="sep">·</span>
+            <span style="color:var(--cyan)">6 planets · 4 fleet · 1 in transit</span>
+          </div>
+          <div class="galaxy-status">
+            <span class="dot"></span>
+            <span>2 LIVE RUNS · 1 STORM · 1 BOSS WAKING</span>
+          </div>
+        </div>
+
+        <!-- system telemetry -->
+        <div class="telem">
+          <div class="row"><span class="k">SYSTEM</span><span class="v">SOL-7</span></div>
+          <div class="row"><span class="k">PLANETS</span><span class="v cy">6</span></div>
+          <div class="row"><span class="k">LIVE</span><span class="v p">2</span></div>
+          <div class="row"><span class="k">STORM</span><span class="v cr">1</span></div>
+          <div class="row"><span class="k">FLEET</span><span class="v m">4</span></div>
+          <div class="row"><span class="k">XP TODAY</span><span class="v am">+ 1,331</span></div>
+        </div>
+
+        <!-- the sun -->
+        <div class="sun"></div>
+        <div class="sun-label">SOL-7 · USER ANCHOR</div>
+
+        <!-- planets -->
+        <!-- live + selected -->
+        <div class="pl live selected" style="top:48%;left:62%">
+          <div class="body" style="width:84px;height:84px"></div>
+          <div class="ops" title="Pi · Kage landed"></div>
+          <div class="label">Sandcastle Prime</div>
+          <div class="stage-tag">stage III · <b>habitable</b></div>
+        </div>
+
+        <!-- clear -->
+        <div class="pl clear" style="top:30%;left:34%">
+          <div class="body" style="width:64px;height:64px"></div>
+          <div class="label">Helix-IV</div>
+          <div class="stage-tag">stage IV · <b>life-bearing</b></div>
+        </div>
+
+        <!-- clear small -->
+        <div class="pl clear" style="top:64%;left:25%">
+          <div class="body" style="width:48px;height:48px"></div>
+          <div class="label">Mira-Doc</div>
+          <div class="stage-tag">stage II · <b>atmosphere</b></div>
+        </div>
+
+        <!-- warm -->
+        <div class="pl warm" style="top:22%;left:74%">
+          <div class="body" style="width:54px;height:54px"></div>
+          <div class="label">Astral-Forge</div>
+          <div class="stage-tag">stage III · <b>warm</b></div>
+        </div>
+
+        <!-- storm -->
+        <div class="pl storm" style="top:72%;left:78%">
+          <div class="body" style="width:60px;height:60px"></div>
+          <div class="label">Vercel-Bridge</div>
+          <div class="stage-tag">stage II · <b>STORM</b></div>
+        </div>
+
+        <!-- idle -->
+        <div class="pl idle" style="top:80%;left:48%">
+          <div class="body" style="width:42px;height:42px"></div>
+          <div class="label">Old-Spec</div>
+          <div class="stage-tag">stage I · <b>dormant</b></div>
+        </div>
+
+        <!-- transit operative -->
+        <div class="transit-spark" style="top:38%;left:52%">
+          <span class="label">CODEX · RŌNIN ▸ Sandcastle Prime</span>
+        </div>
+
+        <!-- zoom -->
+        <div class="zoom">
+          <button title="Zoom in"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14M5 12h14"/></svg></button>
+          <button title="Zoom out"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14"/></svg></button>
+          <button title="Recenter"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3"/></svg></button>
+        </div>
+      </main>
+
+      <!-- R: selected planet detail -->
+      <aside class="rail-r">
+        <div class="sel-head">
+          <div class="sel-eyebrow"><span class="hex">SELECTED ▸ PLANET</span><span class="line"></span><span class="hex">SOL-7 · IV</span></div>
+          <h2 class="sel-name">Sandcastle <em>Prime</em></h2>
+          <div class="sel-stage">▸ STAGE III · HABITABLE · CLEAR SKIES</div>
+
+          <div class="sel-vitals">
+            <div><div class="k">MASS · LOC</div><div class="v">12.4 k</div></div>
+            <div><div class="k">AGE</div><div class="v">11 mo</div></div>
+            <div><div class="k">COVERAGE</div><div class="v p">71 %</div></div>
+            <div><div class="k">CI 30D</div><div class="v p">94 %</div></div>
+            <div><div class="k">BOSSES</div><div class="v m">3</div></div>
+            <div><div class="k">WARDS</div><div class="v cy">38</div></div>
+          </div>
+        </div>
+
+        <div class="sel-section">
+          <h4><span class="hex">0x02</span>OPERATIVES LANDED<span class="line"></span></h4>
+          <div class="deployed">
+            <div class="dep">
+              <div class="av">π</div>
+              <div class="body">
+                <div class="name">PI · KAGE</div>
+                <div class="meta">⌬ SURGEON · RUN-042 · phase III</div>
+              </div>
+              <div class="lvl">08</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="sel-section">
+          <h4><span class="hex">0x03</span>HOSTILES<span class="line"></span><span style="font-family:var(--mono);font-size:9px;color:var(--magenta);letter-spacing:0.05em">3 ACTIVE</span></h4>
+          <div class="boss">
+            <span class="gl"></span>
+            <div>
+              <div class="name">Auth Refresh Loop</div>
+              <div class="reg">src/auth · TIER III</div>
+            </div>
+            <span class="stat">HP 320/500</span>
+          </div>
+          <div class="boss">
+            <span class="gl"></span>
+            <div>
+              <div class="name">Worktree Locks</div>
+              <div class="reg">src/sandboxes · TIER II</div>
+            </div>
+            <span class="stat">HP 380/500</span>
+          </div>
+          <div class="boss">
+            <span class="gl cr"></span>
+            <div>
+              <div class="name">Vercel Sandbox Env</div>
+              <div class="reg">src/sandboxes · BLOCKED</div>
+            </div>
+            <span class="stat">PAUSED</span>
+          </div>
+        </div>
+
+        <div class="sel-section">
+          <h4><span class="hex">0x04</span>DECK<span class="line"></span></h4>
+          <div style="display:flex;gap:6px;flex-wrap:wrap">
+            <span style="font-family:var(--mono);font-size:9.5px;color:var(--amber);padding:3px 8px;border:1px solid var(--amber);background:var(--amber-dim);letter-spacing:0.05em;clip-path:polygon(5px 0,100% 0,100% calc(100% - 5px),calc(100% - 5px) 100%,0 100%,0 5px)">🔪 Surgical</span>
+            <span style="font-family:var(--mono);font-size:9.5px;color:var(--cyan);padding:3px 8px;border:1px solid var(--cyan-dim);background:var(--cyan-ink);letter-spacing:0.05em;clip-path:polygon(5px 0,100% 0,100% calc(100% - 5px),calc(100% - 5px) 100%,0 100%,0 5px)">⌬ Hooks</span>
+            <span style="font-family:var(--mono);font-size:9.5px;color:var(--cyan);padding:3px 8px;border:1px solid var(--cyan-dim);background:var(--cyan-ink);letter-spacing:0.05em;clip-path:polygon(5px 0,100% 0,100% calc(100% - 5px),calc(100% - 5px) 100%,0 100%,0 5px)">π TDD</span>
+            <span style="font-family:var(--mono);font-size:9.5px;color:var(--cyan);padding:3px 8px;border:1px solid var(--cyan-dim);background:var(--cyan-ink);letter-spacing:0.05em;clip-path:polygon(5px 0,100% 0,100% calc(100% - 5px),calc(100% - 5px) 100%,0 100%,0 5px)">∇ Glossary</span>
+            <span style="font-family:var(--mono);font-size:9.5px;color:var(--magenta);padding:3px 8px;border:1px solid var(--magenta-dim);background:var(--magenta-ink);letter-spacing:0.05em;clip-path:polygon(5px 0,100% 0,100% calc(100% - 5px),calc(100% - 5px) 100%,0 100%,0 5px)">/commit</span>
+            <span style="font-family:var(--mono);font-size:9.5px;color:var(--magenta);padding:3px 8px;border:1px solid var(--magenta-dim);background:var(--magenta-ink);letter-spacing:0.05em;clip-path:polygon(5px 0,100% 0,100% calc(100% - 5px),calc(100% - 5px) 100%,0 100%,0 5px)">/review</span>
+            <span style="font-family:var(--mono);font-size:9.5px;color:var(--magenta);padding:3px 8px;border:1px solid var(--magenta-dim);background:var(--magenta-ink);letter-spacing:0.05em;clip-path:polygon(5px 0,100% 0,100% calc(100% - 5px),calc(100% - 5px) 100%,0 100%,0 5px)">/changeset</span>
+          </div>
+        </div>
+
+        <div class="actions">
+          <button class="btn btn-land">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><ellipse cx="12" cy="12" rx="9" ry="3"/></svg>
+            Open Planet
+          </button>
+          <button class="btn btn-deploy">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 4l14 8-14 8V4z"/></svg>
+            Deploy Operative
+          </button>
+          <button class="btn">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M3 12a9 9 0 1 0 9-9"/><path d="M3 4v5h5"/></svg>
+            Recall Fleet
+          </button>
+        </div>
+      </aside>
+    </div>
+  </div>
+</body>
+</html>
