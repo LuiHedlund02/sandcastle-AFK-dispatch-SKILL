@@ -1,15 +1,17 @@
 import { createBrowserRouter } from "react-router-dom";
-import { AppChrome } from "./AppChrome";
-import { IndexRoute } from "./routes/index";
-import { CockpitRoute } from "./routes/runs.$runId.cockpit";
-import { CombatRoute } from "./routes/runs.$runId.combat";
-import { VictoryRoute } from "./routes/runs.$runId.victory";
-import { DefeatRoute } from "./routes/runs.$runId.defeat";
-import { FleetRoute } from "./routes/fleet";
-import { PlanetRoute } from "./routes/planet.$planetId";
-import { QuestForgeRoute } from "./routes/quest-forge";
-import { RosterRoute } from "./routes/roster";
-import { OperativeRoute } from "./routes/operatives.$operativeId";
+import {
+  AppChrome,
+  CockpitRoute,
+  CombatRoute,
+  DefeatRoute,
+  FleetRoute,
+  IndexRoute,
+  OperativeRoute,
+  PlanetRoute,
+  QuestForgeRoute,
+  RosterRoute,
+  VictoryRoute,
+} from "@sandcastle/screens";
 
 export const router = createBrowserRouter([
   {

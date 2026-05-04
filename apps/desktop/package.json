@@ -10,6 +10,7 @@
   },
   "dependencies": {
     "@sandcastle/protocol": "*",
+    "@sandcastle/screens": "*",
     "@sandcastle/transport": "*",
     "@sandcastle/ui": "*",
     "@tanstack/react-query": "5.90.20",
