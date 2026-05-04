@@ -4,7 +4,6 @@ import {
   CrtRasterOverlay,
   DefeatStage,
   FilmGrainOverlay,
-  OctaPanel,
 } from "@sandcastle/ui";
 import type { Phase, Run } from "@sandcastle/protocol";
 import { useDecideRun, useFleet, useRun } from "../api/queries";
@@ -13,17 +12,6 @@ import { useFleetStore } from "../state/fleetStore";
 const containerStyle = {
   position: "relative" as const,
   minHeight: "100%",
-};
-
-const eyebrowStyle = {
-  display: "flex" as const,
-  alignItems: "center" as const,
-  gap: 10,
-  fontFamily: "var(--display)",
-  fontSize: 9,
-  letterSpacing: "0.22em",
-  textTransform: "uppercase" as const,
-  color: "var(--steel)",
 };
 
 export function DefeatRoute(): JSX.Element {
@@ -47,24 +35,57 @@ function DefeatContent({ runId }: { readonly runId: string }): JSX.Element {
   const operativeRecord = operative?.repoRecord;
 
   if (!run) {
+    // Fallback ceremony so `/runs/<any-id>/defeat` shows mockup-fidelity
+    // structure even when the backing run snapshot is missing.
     return (
-      <section style={containerStyle}>
+      <section style={containerStyle} aria-label="Defeat ceremony">
         <CrtRasterOverlay />
         <FilmGrainOverlay />
-        <div style={{ padding: 24 }}>
-          <OctaPanel
-            tone="amber"
-            eyebrow={<span style={eyebrowStyle}>defeat</span>}
-          >
-            <p>
-              {runQuery.isLoading
-                ? "Loading run…"
-                : runQuery.error instanceof Error
-                  ? `Run not found: ${runQuery.error.message}`
-                  : "Awaiting run snapshot."}
-            </p>
-          </OctaPanel>
-        </div>
+        <DefeatStage
+          runId={runId}
+          directive="repair the auth refresh loop · seal the leaking ward"
+          xpDelta={null}
+          failedChecks={["api-guard:violated", "tests:auth-refresh"]}
+          causeOfDeath="API GUARD VIOLATED"
+          streakBroken={3}
+          graceConsumed="FIRST-REVERT GRACE · CONSUMED · NEXT REVERT WITHIN 7D = −1 LVL"
+          operativeCodename="PI · KAGE"
+          operativeGlyph="π"
+          durationMs={420_000}
+          recoveryActions={[
+            {
+              id: "replay",
+              label: "Replay",
+              variant: "ghost",
+              onClick: () => navigate(`/runs/${runId}/cockpit`),
+            },
+            {
+              id: "swap",
+              label: "Swap Operative",
+              variant: "default",
+              onClick: () => navigate("/fleet"),
+            },
+            {
+              id: "revise",
+              label: "Revise Plan",
+              variant: "amber",
+              onClick: () => navigate(`/runs/${runId}/cockpit`),
+            },
+            {
+              id: "abandon",
+              label: "Abandon",
+              variant: "danger",
+              onClick: () => navigate("/fleet"),
+            },
+            {
+              id: "reengage",
+              label: "Re-engage",
+              variant: "retry",
+              onClick: () => navigate(`/runs/${runId}/cockpit`),
+            },
+          ]}
+          onBackToFleet={() => navigate("/fleet")}
+        />
       </section>
     );
   }
@@ -91,6 +112,56 @@ function DefeatContent({ runId }: { readonly runId: string }): JSX.Element {
   const canRevise =
     run.status === "fail-pending" || run.status === "win-pending";
 
+  const failed = run.verification.failedChecks;
+  const causeOfDeath = failed[0] ? failed[0].toUpperCase() : "MISSION ABORTED";
+
+  // Streak count from the operative's record on this planet — best-effort
+  // heuristic, falls back to the current victories count.
+  const streakBroken = operativeRecord?.victoriesCount ?? 0;
+
+  const recoveryActions = [
+    {
+      id: "replay",
+      label: "Replay",
+      variant: "ghost" as const,
+      onClick: () => navigate(`/runs/${run.id}/cockpit`),
+    },
+    {
+      id: "swap",
+      label: "Swap Operative",
+      variant: "default" as const,
+      onClick: () => navigate("/fleet"),
+    },
+    {
+      id: "revise",
+      label: "Revise Plan",
+      variant: "amber" as const,
+      onClick: canRevise
+        ? () =>
+            decideRun.mutate("revise", {
+              onSuccess: () => navigate(`/runs/${run.id}/cockpit`),
+            })
+        : () => navigate(`/runs/${run.id}/cockpit`),
+    },
+    {
+      id: "abandon",
+      label: "Abandon",
+      variant: "danger" as const,
+      onClick: canRevise
+        ? () =>
+            decideRun.mutate("discard", {
+              onSuccess: () => navigate("/fleet"),
+            })
+        : () => navigate("/fleet"),
+    },
+    {
+      id: "reengage",
+      label: "Re-engage",
+      variant: "retry" as const,
+      onClick: () => navigate(`/runs/${run.id}/cockpit`),
+    },
+  ];
+
   return (
     <section style={containerStyle} aria-label="Defeat ceremony">
       <CrtRasterOverlay />
@@ -102,10 +173,18 @@ function DefeatContent({ runId }: { readonly runId: string }): JSX.Element {
         phases={phases}
         xpDelta={xpDelta}
         failedChecks={run.verification.failedChecks}
+        causeOfDeath={causeOfDeath}
+        streakBroken={streakBroken}
+        graceConsumed={
+          streakBroken > 0
+            ? "FIRST-REVERT GRACE · CONSUMED · NEXT REVERT WITHIN 7D = −1 LVL"
+            : undefined
+        }
         operativeCodename={operative?.codename}
         operativeGlyph={operative?.codename.charAt(0).toUpperCase()}
         scarsEarnedHereCount={operativeRecord?.scarsEarnedHere.length}
         durationMs={durationMs}
+        recoveryActions={recoveryActions}
         onRevise={
           canRevise
             ? () => {

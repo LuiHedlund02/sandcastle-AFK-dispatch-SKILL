@@ -1,12 +1,31 @@
 import type { CSSProperties, JSX, ReactNode } from "react";
 import { useEffect, useState } from "react";
-import { ChromaticHeadline } from "../fx/ChromaticHeadline.js";
 import { OctaPanel } from "../layout/OctaPanel.js";
 import { OperativePortrait } from "../operative/OperativePortrait.js";
 import { PlanetSvgRenderer } from "../planet/PlanetSvgRenderer.js";
 import type { Phase, Planet } from "@sandcastle/protocol";
 import { ConfettiSpray } from "./ConfettiSpray.js";
 import { XpDeltaBadge } from "./XpDeltaBadge.js";
+import styles from "./VictoryStage.module.css";
+
+/** Single drop in the loot grid. */
+export interface VictoryLoot {
+  readonly id: string;
+  readonly rarity: "epic" | "rare" | "common";
+  readonly name: string;
+  readonly description?: string;
+  readonly icon?: string;
+}
+
+/** Level-up ribbon payload. */
+export interface VictoryLevelDelta {
+  readonly from: number;
+  readonly to: number;
+  /** Optional ascension unlock string, e.g. "Premium Model · GPT-5.5". */
+  readonly unlock?: string;
+  /** Optional unlock glyph (defaults to "◆"). */
+  readonly unlockGlyph?: string;
+}
 
 export interface VictoryStageProps {
   readonly runId: string;
@@ -24,6 +43,12 @@ export interface VictoryStageProps {
   readonly mergeSha?: string | null;
   /** Wall-clock duration in ms (or null). */
   readonly durationMs?: number | null;
+  /** Level-up ribbon. Hidden when omitted. */
+  readonly levelDelta?: VictoryLevelDelta;
+  /** Loot drops rendered in the right rail. */
+  readonly loot?: readonly VictoryLoot[];
+  /** "Merge to main" handler. When provided, surfaced as the prominent action. */
+  readonly onMergeToMain?: () => void;
   /** "Open cockpit" / "Back to fleet" handlers. Wired by the consumer. */
   readonly onBackToFleet?: () => void;
   readonly onOpenCockpit?: () => void;
@@ -72,11 +97,6 @@ const eyebrowStyle: CSSProperties = {
   letterSpacing: "0.22em",
   textTransform: "uppercase",
   color: "var(--sc-steel, #5b6b7a)",
-};
-
-const headlineWrap: CSSProperties = {
-  fontSize: "clamp(40px, 6vw, 72px)",
-  lineHeight: 0.95,
 };
 
 const subtitleStyle: CSSProperties = {
@@ -146,6 +166,7 @@ const actionsStyle: CSSProperties = {
   display: "flex",
   flexWrap: "wrap",
   gap: 12,
+  alignItems: "center",
   marginTop: 4,
 };
 
@@ -213,6 +234,9 @@ export function VictoryStage({
   operativeGlyph,
   mergeSha,
   durationMs,
+  levelDelta,
+  loot,
+  onMergeToMain,
   onBackToFleet,
   onOpenCockpit,
   reducedMotion: forced,
@@ -223,8 +247,29 @@ export function VictoryStage({
   const verifiedCount = phaseList.filter((p) => p.status === "verified").length;
   const total = phaseList.length;
 
+  // Animated XP counter — 0 → xpDelta over ~700ms with ease-out.
+  const targetXp =
+    typeof xpDelta === "number" && Number.isFinite(xpDelta) && xpDelta > 0
+      ? xpDelta
+      : null;
+  const animatedXp = useXpCountUp(targetXp, reducedMotion);
+  const displayedXp =
+    targetXp == null ? xpDelta : reducedMotion ? targetXp : animatedXp;
+
   return (
-    <section style={stageStyle} aria-labelledby={`victory-${runId}`}>
+    <section
+      className={styles.stage}
+      style={stageStyle}
+      aria-labelledby={`victory-${runId}`}
+    >
+      {!reducedMotion ? (
+        <div className={styles.rings} aria-hidden="true">
+          <div className={styles.ring} />
+          <div className={styles.ring} />
+          <div className={styles.ring} />
+        </div>
+      ) : null}
+
       <OctaPanel
         tone="plasma"
         className=""
@@ -253,11 +298,13 @@ export function VictoryStage({
             />
 
             <div style={heroTextStyle}>
-              <div id={`victory-${runId}`} style={headlineWrap}>
-                <ChromaticHeadline as="h1" glitch={!reducedMotion}>
-                  VICTORY
-                </ChromaticHeadline>
-              </div>
+              <h1
+                id={`victory-${runId}`}
+                className={styles.heroTitle}
+                style={reducedMotion ? { animation: "none" } : undefined}
+              >
+                <em>VICTORY</em>
+              </h1>
               <div style={subtitleStyle} title={directive}>
                 {truncate(directive, 110)}
               </div>
@@ -293,7 +340,7 @@ export function VictoryStage({
                 </div>
               ) : null}
               <XpDeltaBadge
-                xpDelta={xpDelta}
+                xpDelta={displayedXp}
                 size="lg"
                 reducedMotion={reducedMotion}
               />
@@ -301,6 +348,85 @@ export function VictoryStage({
           </div>
         </div>
       </OctaPanel>
+
+      {levelDelta ? (
+        <div className={styles.levelup} aria-label="level up">
+          <div className={styles.levelupHead}>
+            <span className={styles.levelupLabel}>▸ LEVEL UP</span>
+            <span className={styles.levelupRanks}>
+              <span className={styles.levelupFrom}>
+                L{pad2(levelDelta.from)}
+              </span>
+              <span className={styles.levelupArrow}>→</span>
+              <span className={styles.levelupTo}>L{pad2(levelDelta.to)}</span>
+            </span>
+          </div>
+          {levelDelta.unlock ? (
+            <div className={styles.unlock}>
+              <div className={styles.unlockGlyph} aria-hidden="true">
+                {levelDelta.unlockGlyph ?? "◆"}
+              </div>
+              <div>
+                <div className={styles.unlockLbl}>▸ ASCENSION UNLOCKED</div>
+                <div className={styles.unlockName}>{levelDelta.unlock}</div>
+              </div>
+            </div>
+          ) : null}
+        </div>
+      ) : null}
+
+      {loot && loot.length > 0 ? (
+        <OctaPanel
+          tone="magenta"
+          eyebrow={
+            <span style={eyebrowStyle}>
+              <span style={{ color: "var(--sc-magenta, #ff2e88)" }}>0x03</span>
+              LOOT DROPS
+              <span
+                style={{
+                  flex: 1,
+                  height: 1,
+                  background: "var(--sc-rule-2, rgba(120,200,220,0.13))",
+                }}
+              />
+              <span style={{ color: "var(--sc-magenta, #ff2e88)" }}>
+                {loot.length} DROPS
+              </span>
+            </span>
+          }
+        >
+          <div className={styles.lootGrid} role="list" aria-label="loot drops">
+            {loot.map((item) => {
+              const rarityClass =
+                item.rarity === "epic"
+                  ? styles.lootEpic
+                  : item.rarity === "rare"
+                    ? styles.lootRare
+                    : styles.lootCommon;
+              return (
+                <div
+                  key={item.id}
+                  role="listitem"
+                  className={`${styles.lootTile} ${rarityClass}`}
+                >
+                  <div className={styles.lootIcon} aria-hidden="true">
+                    {item.icon ?? rarityGlyph(item.rarity)}
+                  </div>
+                  <div>
+                    <div className={styles.lootName}>{item.name}</div>
+                    {item.description ? (
+                      <div className={styles.lootDesc}>{item.description}</div>
+                    ) : null}
+                  </div>
+                  <span className={styles.lootRarity}>
+                    {item.rarity.toUpperCase()}
+                  </span>
+                </div>
+              );
+            })}
+          </div>
+        </OctaPanel>
+      ) : null}
 
       {phaseList.length > 0 ? (
         <OctaPanel
@@ -337,6 +463,15 @@ export function VictoryStage({
       ) : null}
 
       <div style={actionsStyle}>
+        {onMergeToMain ? (
+          <button
+            type="button"
+            className={styles.btnMerge}
+            onClick={onMergeToMain}
+          >
+            ▸ Merge to main
+          </button>
+        ) : null}
         {onOpenCockpit ? (
           <button
             type="button"
@@ -378,6 +513,69 @@ function useReducedMotion(forced?: boolean): boolean {
     return () => mql.removeListener(update);
   }, []);
   return Boolean(forced) || system;
+}
+
+/**
+ * Counts up from 0 to `target` over ~700ms with ease-out cubic.
+ * Returns `target` immediately when reduced-motion is honored, the target
+ * is null, or we're in a non-browser environment (jsdom / SSR) — that keeps
+ * jest/vitest assertions honest while still giving the user the celebration.
+ */
+function useXpCountUp(
+  target: number | null,
+  reducedMotion: boolean,
+): number | null {
+  const [value, setValue] = useState<number | null>(target);
+
+  useEffect(() => {
+    if (target == null) {
+      setValue(null);
+      return;
+    }
+    if (reducedMotion || !isRealBrowser()) {
+      setValue(target);
+      return;
+    }
+    const duration = 720;
+    const start = performance.now();
+    let raf = 0;
+    const tick = (now: number): void => {
+      const t = Math.min(1, (now - start) / duration);
+      // ease-out cubic
+      const eased = 1 - Math.pow(1 - t, 3);
+      setValue(Math.round(target * eased));
+      if (t < 1) raf = requestAnimationFrame(tick);
+    };
+    setValue(0);
+    raf = requestAnimationFrame(tick);
+    return (): void => cancelAnimationFrame(raf);
+  }, [target, reducedMotion]);
+
+  return value;
+}
+
+function isRealBrowser(): boolean {
+  if (typeof window === "undefined") return false;
+  if (typeof navigator === "undefined") return false;
+  // jsdom advertises itself in the user agent.
+  if (navigator.userAgent && /jsdom/i.test(navigator.userAgent)) return false;
+  return true;
+}
+
+function rarityGlyph(rarity: VictoryLoot["rarity"]): string {
+  switch (rarity) {
+    case "epic":
+      return "∇";
+    case "rare":
+      return "π";
+    case "common":
+    default:
+      return "◊";
+  }
+}
+
+function pad2(n: number): string {
+  return n.toString().padStart(2, "0");
 }
 
 function truncate(s: string, max: number): string {

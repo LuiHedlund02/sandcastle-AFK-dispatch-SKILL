@@ -1,10 +1,19 @@
 import type { CSSProperties, JSX, ReactNode } from "react";
-import { ChromaticHeadline } from "../fx/ChromaticHeadline.js";
 import { OctaPanel } from "../layout/OctaPanel.js";
 import { OperativePortrait } from "../operative/OperativePortrait.js";
 import { PlanetSvgRenderer } from "../planet/PlanetSvgRenderer.js";
 import type { Phase, Planet } from "@sandcastle/protocol";
 import { XpDeltaBadge } from "./XpDeltaBadge.js";
+import styles from "./DefeatStage.module.css";
+
+/** A single recovery action surfaced under the hazard-tape footer. */
+export interface DefeatRecoveryAction {
+  readonly id: string;
+  readonly label: string;
+  /** Visual variant — affects accent color. */
+  readonly variant?: "ghost" | "default" | "amber" | "danger" | "retry";
+  readonly onClick?: () => void;
+}
 
 export interface DefeatStageProps {
   readonly runId: string;
@@ -16,11 +25,19 @@ export interface DefeatStageProps {
   readonly xpDelta: number | null | undefined;
   /** Failed-check labels surfaced from `verification.failedChecks`. */
   readonly failedChecks?: readonly string[];
+  /** Headline cause-of-death string, e.g. "API GUARD VIOLATED". */
+  readonly causeOfDeath?: string;
+  /** Streak that got broken (e.g. 3). Null/undefined → no banner. */
+  readonly streakBroken?: number | null;
+  /** Optional grace-line, e.g. first-revert grace consumed. */
+  readonly graceConsumed?: string;
   readonly operativeCodename?: string;
   readonly operativeGlyph?: string;
   /** Count of scars earned on this planet for this operative. */
   readonly scarsEarnedHereCount?: number;
   readonly durationMs?: number | null;
+  /** Recovery actions — rendered as the hazard-tape decision row. */
+  readonly recoveryActions?: readonly DefeatRecoveryAction[];
   readonly onRevise?: () => void;
   readonly onDiscard?: () => void;
   readonly onBackToFleet?: () => void;
@@ -34,7 +51,7 @@ const stageStyle: CSSProperties = {
   display: "flex",
   flexDirection: "column",
   gap: 18,
-  padding: 24,
+  padding: "32px 24px 32px",
   minHeight: "100%",
 };
 
@@ -49,6 +66,7 @@ const heroBodyStyle: CSSProperties = {
 const heroTextStyle: CSSProperties = {
   display: "flex",
   flexDirection: "column",
+  alignItems: "flex-start",
   gap: 10,
   minWidth: 0,
 };
@@ -63,12 +81,6 @@ const eyebrowStyle: CSSProperties = {
   letterSpacing: "0.22em",
   textTransform: "uppercase",
   color: "var(--sc-steel, #5b6b7a)",
-};
-
-const headlineWrap: CSSProperties = {
-  fontSize: "clamp(40px, 6vw, 72px)",
-  lineHeight: 0.95,
-  color: "var(--sc-crimson, #ff5e6c)",
 };
 
 const subtitleStyle: CSSProperties = {
@@ -210,8 +222,8 @@ const planetThumbStyle: CSSProperties = {
 /**
  * Consolation screen for resolved-with-defeat runs.
  *
- * No confetti. Failed checks surface honestly under "CAUSE OF DEATH".
- * Wraps content in `OctaPanel tone="crimson"`.
+ * No confetti. Hazard-tape stripes frame the stage. Failed checks surface
+ * honestly under "CAUSE OF DEATH". Wraps content in `OctaPanel tone="crimson"`.
  */
 export function DefeatStage({
   runId,
@@ -220,10 +232,14 @@ export function DefeatStage({
   phases,
   xpDelta,
   failedChecks,
+  causeOfDeath,
+  streakBroken,
+  graceConsumed,
   operativeCodename,
   operativeGlyph,
   scarsEarnedHereCount,
   durationMs,
+  recoveryActions,
   onRevise,
   onDiscard,
   onBackToFleet,
@@ -236,8 +252,30 @@ export function DefeatStage({
   const total = phaseList.length;
   const checks = failedChecks ?? [];
 
+  // Default cause-of-death falls back to first failed check or failed phase.
+  const cause =
+    causeOfDeath ??
+    (checks[0]
+      ? checks[0].toUpperCase()
+      : failedPhase
+        ? `PHASE ${romanize(failedPhase.ordinal)} · ${failedPhase.title.toUpperCase()}`
+        : null);
+
   return (
-    <section style={stageStyle} aria-labelledby={`defeat-${runId}`}>
+    <section
+      className={styles.stage}
+      style={stageStyle}
+      aria-labelledby={`defeat-${runId}`}
+    >
+      <span
+        className={`${styles.hazard} ${styles.hazardTop}`}
+        aria-hidden="true"
+      />
+      <span
+        className={`${styles.hazard} ${styles.hazardBottom}`}
+        aria-hidden="true"
+      />
+
       <OctaPanel
         tone="crimson"
         eyebrow={
@@ -265,14 +303,32 @@ export function DefeatStage({
           />
 
           <div style={heroTextStyle}>
-            <div id={`defeat-${runId}`} style={headlineWrap}>
-              <ChromaticHeadline as="h1" glitch={!reducedMotion}>
-                DEFEAT
-              </ChromaticHeadline>
-            </div>
+            <h1
+              id={`defeat-${runId}`}
+              className={styles.heroTitle}
+              style={reducedMotion ? { animation: "none" } : undefined}
+            >
+              <em>DEFEAT</em>
+            </h1>
             <div style={subtitleStyle} title={directive}>
               {truncate(directive, 110)}
             </div>
+            {cause ? (
+              <div className={styles.cause}>
+                <span aria-hidden="true">▸</span>
+                <span>
+                  CAUSE · <b className={styles.causeLabel}>{cause}</b>
+                </span>
+              </div>
+            ) : null}
+            {streakBroken != null && streakBroken > 0 ? (
+              <div className={styles.streakRow}>
+                <span>▸ STREAK ×{streakBroken} → ×0 · BROKEN</span>
+                {graceConsumed ? (
+                  <span className={styles.streakAmber}>⚠ {graceConsumed}</span>
+                ) : null}
+              </div>
+            ) : null}
             <div style={metaRowStyle}>
               <span style={{ color: "var(--sc-cyan, #56d4e0)" }}>
                 {operativeCodename ?? "operative"}
@@ -409,6 +465,24 @@ export function DefeatStage({
         </OctaPanel>
       ) : null}
 
+      {recoveryActions && recoveryActions.length > 0 ? (
+        <div className={styles.recoveryRow} aria-label="recovery actions">
+          <div className={styles.recoveryHeading}>
+            ▸ DECISION · RECOVER OR ABANDON
+          </div>
+          {recoveryActions.map((action) => (
+            <button
+              key={action.id}
+              type="button"
+              className={`${styles.btn} ${variantClass(action.variant)}`}
+              onClick={action.onClick ?? noop}
+            >
+              {action.label}
+            </button>
+          ))}
+        </div>
+      ) : null}
+
       <div style={actionsStyle}>
         {onRevise ? (
           <button type="button" style={reviseButtonStyle} onClick={onRevise}>
@@ -430,6 +504,27 @@ export function DefeatStage({
       {footerSlot}
     </section>
   );
+}
+
+function variantClass(
+  variant: DefeatRecoveryAction["variant"] | undefined,
+): string {
+  switch (variant) {
+    case "ghost":
+      return styles.btnGhost ?? "";
+    case "amber":
+      return styles.btnAmber ?? "";
+    case "danger":
+      return styles.btnDanger ?? "";
+    case "retry":
+      return styles.btnRetry ?? "";
+    default:
+      return "";
+  }
+}
+
+function noop(): void {
+  /* placeholder for actions without handlers */
 }
 
 function truncate(s: string, max: number): string {
