@@ -1,4 +1,5 @@
 @import "@sandcastle/ui/tokens.css";
+@import "@sandcastle/screens/route-globals.css";
 
 * {
   box-sizing: border-box;
@@ -36,18 +37,9 @@ a {
   text-decoration: none;
 }
 
-.app-shell {
-  position: relative;
-  display: grid;
-  grid-template-rows: 44px minmax(0, 1fr);
-  height: 100vh;
-  overflow: hidden;
-  background:
-    radial-gradient(900px 360px at 78% -12%, rgba(80, 227, 255, 0.1), transparent 60%),
-    radial-gradient(760px 340px at 8% 110%, rgba(255, 77, 210, 0.08), transparent 60%),
-    var(--void);
-}
-
+/* ConnectScreen — pre-router landing surface. The router (and the rest
+ * of the app's class styles) only mounts once the user supplies an
+ * endpoint + token, so these stay app-local. */
 .connect-screen {
   display: grid;
   place-items: center;
@@ -125,78 +117,4 @@ a {
   color: var(--crimson);
   font-size: 12px;
   margin: 0;
-}
-
-.web-route {
-  padding: 28px;
-  min-height: 100vh;
-}
-
-.web-route h1 {
-  margin: 0 0 12px;
-  font-family: var(--display);
-  font-size: 26px;
-  color: var(--cyan);
-}
-
-.web-route .meta {
-  color: var(--mist);
-  font-size: 12px;
-}
-
-.web-route ul {
-  list-style: none;
-  margin: 18px 0 0;
-  padding: 0;
-  display: grid;
-  gap: 10px;
-}
-
-.web-route li {
-  display: grid;
-  grid-template-columns: 1fr auto;
-  gap: 12px;
-  align-items: center;
-  border: 1px solid var(--rule-2);
-  background: var(--hull-1);
-  padding: 10px 12px;
-}
-
-.web-route .placeholder {
-  color: var(--steel);
-  font-style: italic;
-}
-
-.web-nav {
-  display: flex;
-  gap: 12px;
-  padding: 12px 28px;
-  border-bottom: 1px solid var(--rule-2);
-  background: linear-gradient(180deg, rgba(10, 16, 24, 0.86), rgba(3, 6, 10, 0.96));
-  font-family: var(--display);
-  font-size: 11px;
-  letter-spacing: 0.18em;
-  text-transform: uppercase;
-  align-items: center;
-}
-
-.web-nav a {
-  color: var(--mist);
-  padding: 6px 10px;
-  border: 1px solid transparent;
-}
-
-.web-nav a:hover,
-.web-nav a.active {
-  color: var(--cyan);
-  border-color: var(--cyan-dim, var(--rule-2));
-}
-
-.web-nav .endpoint {
-  margin-left: auto;
-  color: var(--steel);
-  font-family: var(--mono);
-  letter-spacing: 0.04em;
-  text-transform: none;
-  font-size: 10px;
 }
