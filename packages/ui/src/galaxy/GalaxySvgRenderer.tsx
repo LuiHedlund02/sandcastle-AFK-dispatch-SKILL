@@ -81,7 +81,7 @@ export function GalaxySvgRenderer({
       <svg
         className={styles.svg}
         viewBox={`0 0 ${VIEW.w} ${VIEW.h}`}
-        role="img"
+        role="group"
         aria-label={`Galaxy of ${planets.length} planet${planets.length === 1 ? "" : "s"}`}
         preserveAspectRatio="xMidYMid meet"
       >
@@ -389,6 +389,7 @@ function PlanetNode({
       tabIndex={0}
       role="button"
       aria-label={`Planet ${planet.repoName}, climate ${climate}`}
+      className={styles.planetButton}
       onClick={(event) => onSelect?.(planet, event)}
       onKeyDown={(event) => {
         if (event.key === "Enter" || event.key === " ") {
@@ -398,10 +399,21 @@ function PlanetNode({
       }}
       style={{
         cursor: onSelect ? "pointer" : "default",
-        outline: "none",
       }}
       transform={`translate(${cx} ${cy}) scale(${scale})`}
     >
+      {/* Keyboard focus ring — hidden by default, shown on :focus-visible
+       *  via the CSS module. Drawn first so the planet body sits on top
+       *  with the ring extending past it as a halo. */}
+      <circle
+        cx={0}
+        cy={0}
+        r={r + 8}
+        className={styles.focusRing}
+        fill="none"
+        stroke="var(--sc-cyan)"
+        strokeWidth={2}
+      />
       {/* Counter-rotate the body so the body's own gradient highlights
        *  don't appear to spin opposite to the ring (and labels stay
        *  upright). */}

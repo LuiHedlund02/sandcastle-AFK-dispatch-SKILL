@@ -97,3 +97,28 @@
     animation: none !important;
   }
 }
+
+/* ── keyboard focus ring on planet buttons ───────────────────────────────
+ * The interactive planet <g> has role="button" + tabindex="0". CSS
+ * `outline` doesn't render reliably on SVG <g>, so we ship a hidden
+ * <circle> inside each planet and toggle its visibility on
+ * :focus-visible. Cyan stroke + magenta drop-shadow matches the rest
+ * of the cyberpunk palette and remains visible against every climate
+ * skin. The ring is rendered above the body but below the label and
+ * has pointer-events: none so it never intercepts clicks.
+ */
+.planetButton {
+  outline: none;
+}
+
+.focusRing {
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 120ms linear;
+}
+
+.planetButton:focus-visible .focusRing {
+  opacity: 1;
+  filter: drop-shadow(0 0 6px var(--sc-magenta))
+    drop-shadow(0 0 10px rgba(86, 212, 224, 0.55));
+}
