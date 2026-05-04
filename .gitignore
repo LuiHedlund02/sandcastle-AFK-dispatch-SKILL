@@ -3,3 +3,6 @@ dist
 .env.*
 .vercel
 apps/*/out
+.codex-run/*.out
+.codex-run/*.err
+.codex-run/*.json
