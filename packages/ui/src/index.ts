@@ -81,3 +81,34 @@ export { ToolTimelineCard } from "./timeline/ToolTimelineCard.js";
 export type { ToolTimelineCardProps } from "./timeline/ToolTimelineCard.js";
 export { RunTimeline } from "./timeline/RunTimeline.js";
 export type { RunTimelineProps } from "./timeline/RunTimeline.js";
+
+// combat
+export { CombatStage } from "./combat/CombatStage.js";
+export type { CombatStageProps } from "./combat/CombatStage.js";
+export { PhaseRound } from "./combat/PhaseRound.js";
+export type { PhaseRoundProps, PhaseRoundStatus } from "./combat/PhaseRound.js";
+export { AttackRoll } from "./combat/AttackRoll.js";
+export type { AttackRollProps } from "./combat/AttackRoll.js";
+export { SavingThrow } from "./combat/SavingThrow.js";
+export type { SavingThrowProps } from "./combat/SavingThrow.js";
+export {
+  CombatHud,
+  buildVerifyEntriesFromResults,
+} from "./combat/CombatHud.js";
+export type {
+  CombatHudProps,
+  CombatHudVerifyEntry,
+  VerifyRuleHudState,
+} from "./combat/CombatHud.js";
+
+// quest forge
+export { PhaseEditorList } from "./quest-forge/PhaseEditorList.js";
+export type { PhaseEditorListProps } from "./quest-forge/PhaseEditorList.js";
+export { PhaseEditorCard } from "./quest-forge/PhaseEditorCard.js";
+export type { PhaseEditorCardProps } from "./quest-forge/PhaseEditorCard.js";
+export {
+  describeVerifyRule,
+  parseVerifyRuleString,
+  VERIFY_RULE_KINDS,
+} from "./quest-forge/verifyRule.js";
+export type { VerifyRuleKind } from "./quest-forge/verifyRule.js";

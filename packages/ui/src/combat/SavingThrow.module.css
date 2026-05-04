@@ -1,0 +1,74 @@
+.root {
+  display: grid;
+  grid-template-columns: 22px 1fr auto;
+  gap: 10px;
+  align-items: center;
+  padding: 6px 10px;
+  border: 1px solid var(--sc-rule-2);
+  background: var(--sc-hull-1);
+  font-family: var(--sc-mono);
+  font-size: 11px;
+  color: var(--sc-mist);
+  clip-path: polygon(
+    5px 0,
+    100% 0,
+    100% calc(100% - 5px),
+    calc(100% - 5px) 100%,
+    0 100%,
+    0 5px
+  );
+}
+
+.glyph {
+  display: grid;
+  place-items: center;
+  width: 18px;
+  height: 18px;
+  font-family: var(--sc-display);
+  font-weight: 700;
+  font-size: 11px;
+  border: 1px solid currentColor;
+}
+
+.pass {
+  border-color: rgba(108, 255, 170, 0.45);
+  background: var(--sc-plasma-dim);
+}
+.pass .glyph {
+  color: var(--sc-plasma);
+}
+
+.fail {
+  border-color: rgba(255, 94, 108, 0.45);
+  background: var(--sc-crimson-dim);
+}
+.fail .glyph {
+  color: var(--sc-crimson);
+}
+
+.label {
+  font-family: var(--sc-mono);
+  font-size: 11px;
+  letter-spacing: 0.04em;
+  color: var(--sc-frost);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.fail .label {
+  color: var(--sc-frost);
+}
+
+.duration {
+  font-family: var(--sc-mono);
+  font-size: 9.5px;
+  color: var(--sc-steel);
+  letter-spacing: 0.05em;
+}
+
+@media (prefers-contrast: more) {
+  .pass,
+  .fail {
+    background: var(--sc-hull-1);
+  }
+}
