@@ -1,3 +1,15 @@
+.decisionStack {
+  position: fixed;
+  z-index: 61;
+  right: 16px;
+  bottom: 100px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  max-width: min(420px, calc(100vw - 32px));
+  pointer-events: auto;
+}
+
 .root {
   position: fixed;
   z-index: 60;
@@ -188,6 +200,44 @@
 }
 .button-merge:not([disabled]) {
   opacity: 1;
+}
+
+.button-merge-flash-ok {
+  background: var(--sc-plasma-ink);
+  box-shadow: 0 0 16px rgba(108, 255, 170, 0.55);
+  animation: merge-flash-ok 1.4s ease-in-out;
+}
+
+.button-merge-flash-mixed {
+  border-color: var(--sc-amber, #f7b955);
+  color: var(--sc-amber, #f7b955);
+  background: rgba(247, 185, 85, 0.08);
+  animation: merge-flash-mixed 1.4s ease-in-out;
+}
+
+@keyframes merge-flash-ok {
+  0% {
+    box-shadow: 0 0 24px rgba(108, 255, 170, 0.85);
+  }
+  100% {
+    box-shadow: 0 0 16px rgba(108, 255, 170, 0.55);
+  }
+}
+
+@keyframes merge-flash-mixed {
+  0% {
+    box-shadow: 0 0 24px rgba(247, 185, 85, 0.65);
+  }
+  100% {
+    box-shadow: 0 0 12px rgba(247, 185, 85, 0.45);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .button-merge-flash-ok,
+  .button-merge-flash-mixed {
+    animation: none;
+  }
 }
 
 @media (max-width: 1080px) {

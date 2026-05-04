@@ -29,14 +29,26 @@ export type {
 export { FleetDockCell } from "./fleet/FleetDockCell.js";
 export type { FleetDockCellProps } from "./fleet/FleetDockCell.js";
 export { MergeAllGreenButton } from "./fleet/MergeAllGreenButton.js";
-export type { MergeAllGreenButtonProps } from "./fleet/MergeAllGreenButton.js";
+export type {
+  MergeAllGreenButtonProps,
+  MergeAllGreenResult,
+} from "./fleet/MergeAllGreenButton.js";
+export { WinPendingDecisionCard } from "./fleet/WinPendingDecisionCard.js";
+export type { WinPendingDecisionCardProps } from "./fleet/WinPendingDecisionCard.js";
 
 // deploy
 export { DeployChordOverlay } from "./deploy/DeployChordOverlay.js";
 export type {
   DeployChordOverlayProps,
   DeployChordSubmission,
+  DeployChordMultiSubmission,
 } from "./deploy/DeployChordOverlay.js";
+export { parseDeployChord } from "./deploy/parseDeployChord.js";
+export type {
+  ParsedDeploy,
+  ParsedDeployTarget,
+  PlanetForParser,
+} from "./deploy/parseDeployChord.js";
 
 // operative
 export { OperativePortrait } from "./operative/OperativePortrait.js";
