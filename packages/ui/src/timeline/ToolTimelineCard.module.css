@@ -1,0 +1,73 @@
+.root {
+  display: grid;
+  grid-template-columns: 30px minmax(0, 1fr);
+  gap: 12px;
+  border: 1px solid var(--sc-rule-2);
+  background: rgba(6, 10, 16, 0.72);
+  padding: 12px;
+}
+
+.icon {
+  display: grid;
+  width: 30px;
+  height: 30px;
+  place-items: center;
+  border: 1px solid var(--sc-cyan-dim);
+  color: var(--sc-cyan);
+  transform: rotate(45deg);
+}
+
+.icon svg {
+  transform: rotate(-45deg);
+}
+
+.icon-ok {
+  border-color: rgba(108, 255, 170, 0.4);
+  color: var(--sc-plasma);
+}
+
+.icon-fail {
+  border-color: rgba(255, 94, 108, 0.4);
+  color: var(--sc-crimson);
+}
+
+.icon-warn {
+  border-color: rgba(255, 181, 71, 0.4);
+  color: var(--sc-amber);
+}
+
+.body {
+  min-width: 0;
+}
+
+.meta {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  color: var(--sc-cyan);
+  font-family: var(--sc-display);
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  font-size: 11px;
+}
+
+.detail {
+  margin-top: 6px;
+  color: var(--sc-mist);
+}
+
+.code,
+.text {
+  display: block;
+  max-height: 220px;
+  margin: 8px 0 0;
+  overflow: auto;
+  border-left: 2px solid var(--sc-magenta);
+  background: rgba(0, 0, 0, 0.22);
+  color: var(--sc-frost);
+  padding: 10px;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  font-family: var(--sc-mono);
+  font-size: 11px;
+}

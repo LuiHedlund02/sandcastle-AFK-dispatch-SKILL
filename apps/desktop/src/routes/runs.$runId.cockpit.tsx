@@ -2,9 +2,8 @@ import type { JSX } from "react";
 import { useMemo } from "react";
 import { Navigate, useParams } from "react-router-dom";
 import { Ban, GitBranch, ScrollText } from "lucide-react";
+import { RunTimeline, StatusPill } from "@sandcastle/ui";
 import { useCancelRun, useRun } from "../api/queries";
-import { CockpitTimeline } from "../primitives/CockpitTimeline";
-import { StatusPill } from "../primitives/StatusPill";
 import { useFleetStore } from "../state/fleetStore";
 
 const terminal = new Set(["victory", "defeat", "aborted"]);
@@ -101,7 +100,7 @@ function CockpitContent({ runId }: { readonly runId: string }): JSX.Element {
             </button>
           </div>
         </header>
-        <CockpitTimeline events={events} />
+        <RunTimeline events={events} />
       </div>
     </section>
   );

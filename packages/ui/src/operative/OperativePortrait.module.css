@@ -1,0 +1,96 @@
+.root {
+  position: relative;
+  display: grid;
+  place-items: center;
+  background: linear-gradient(180deg, #15091c, #060a14);
+  border: 1px solid var(--sc-cyan);
+  color: var(--sc-cyan);
+  font-family: var(--sc-display);
+  font-weight: 800;
+  text-shadow:
+    -2px 0 var(--sc-magenta),
+    2px 0 var(--sc-cyan),
+    0 0 14px rgba(86, 212, 224, 0.5);
+  box-shadow:
+    0 0 18px rgba(86, 212, 224, 0.25),
+    -2px 2px 0 rgba(255, 46, 136, 0.4);
+  clip-path: polygon(15% 0, 100% 0, 100% 85%, 85% 100%, 0 100%, 0 15%);
+}
+
+.size-sm {
+  width: 46px;
+  height: 46px;
+  font-size: 19px;
+  clip-path: var(--sc-clip-avatar);
+}
+
+.size-md {
+  width: 88px;
+  height: 88px;
+  font-size: 36px;
+}
+
+.size-lg {
+  width: 160px;
+  height: 176px;
+  font-size: 76px;
+}
+
+.tone-magenta {
+  border-color: var(--sc-magenta);
+  color: var(--sc-magenta);
+}
+
+.tone-plasma {
+  border-color: var(--sc-plasma);
+  color: var(--sc-plasma);
+}
+
+.tone-amber {
+  border-color: var(--sc-amber);
+  color: var(--sc-amber);
+}
+
+.tone-crimson {
+  border-color: var(--sc-crimson);
+  color: var(--sc-crimson);
+}
+
+.aura {
+  position: absolute;
+  inset: -8px;
+  border: 1px solid currentColor;
+  pointer-events: none;
+  opacity: 0.4;
+  animation: aura 2.4s var(--sc-motion-ease) infinite;
+  clip-path: inherit;
+}
+
+@keyframes aura {
+  0%,
+  100% {
+    transform: scale(1);
+    opacity: 0.4;
+  }
+  50% {
+    transform: scale(1.04);
+    opacity: 0.15;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .aura {
+    animation: none;
+    opacity: 0.25;
+  }
+}
+
+@media (prefers-contrast: more) {
+  .root {
+    text-shadow: none;
+    box-shadow: none;
+  }
+  .aura {
+    display: none;
+  }
+}

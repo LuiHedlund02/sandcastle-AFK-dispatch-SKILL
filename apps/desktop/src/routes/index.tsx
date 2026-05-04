@@ -4,7 +4,7 @@ import { Play } from "lucide-react";
 import type { Run } from "@sandcastle/protocol";
 import { useFleet, useRepo } from "../api/queries";
 import { useFleetStore } from "../state/fleetStore";
-import { StatusPill } from "../primitives/StatusPill";
+import { StatusPill } from "@sandcastle/ui";
 
 export function IndexRoute(): JSX.Element {
   const { data: repo } = useRepo();

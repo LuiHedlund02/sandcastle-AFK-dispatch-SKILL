@@ -1,0 +1,148 @@
+/*
+ * @sandcastle/ui — design tokens
+ *
+ * Single source of truth for the cyberpunk cockpit design system.
+ * Imported by the desktop app via `@sandcastle/ui/tokens.css`.
+ *
+ * Tokens are organised into:
+ *   - palette         (void/hull/frost/cyan/magenta/plasma/amber/crimson)
+ *   - typography      (display + monospace stacks, font feature settings)
+ *   - motion          (durations, easings; honor prefers-reduced-motion)
+ *   - clip-paths      (octagon corners at 3 sizes)
+ *   - status          (per-RunStatus colors, used by StatusPill)
+ */
+
+:root {
+  /* ── palette: structural ── */
+  --sc-void: #03060a;
+  --sc-hull-0: #060a10;
+  --sc-hull-1: #0a1018;
+  --sc-hull-2: #11181f;
+  --sc-hull-3: #1a232c;
+  --sc-hull-4: #243140;
+
+  /* ── palette: content ── */
+  --sc-frost: #dceaf3;
+  --sc-mist: #9eb3c2;
+  --sc-steel: #5b6b7a;
+  --sc-gunmetal: #3a4754;
+
+  /* ── rules / dividers ── */
+  --sc-rule: rgba(120, 200, 220, 0.07);
+  --sc-rule-2: rgba(120, 200, 220, 0.13);
+  --sc-rule-3: rgba(120, 200, 220, 0.22);
+
+  /* ── palette: accent (signal) ── */
+  --sc-cyan: #56d4e0;
+  --sc-cyan-2: #7fe6ef;
+  --sc-cyan-dim: rgba(86, 212, 224, 0.16);
+  --sc-cyan-ink: rgba(86, 212, 224, 0.06);
+
+  --sc-magenta: #ff2e88;
+  --sc-magenta-2: #ff5ca7;
+  --sc-magenta-dim: rgba(255, 46, 136, 0.16);
+  --sc-magenta-ink: rgba(255, 46, 136, 0.06);
+
+  --sc-plasma: #6cffaa;
+  --sc-plasma-dim: rgba(108, 255, 170, 0.14);
+  --sc-plasma-ink: rgba(108, 255, 170, 0.06);
+
+  --sc-amber: #ffb547;
+  --sc-amber-dim: rgba(255, 181, 71, 0.14);
+  --sc-amber-ink: rgba(255, 181, 71, 0.06);
+
+  --sc-crimson: #ff5e6c;
+  --sc-crimson-dim: rgba(255, 94, 108, 0.14);
+  --sc-crimson-ink: rgba(255, 94, 108, 0.06);
+
+  /* ── typography ── */
+  --sc-mono:
+    "JetBrains Mono", "Cascadia Mono", ui-monospace, "SF Mono", Menlo, Consolas,
+    monospace;
+  --sc-display:
+    "Chakra Petch", "Eurostile", "Segoe UI", system-ui, sans-serif;
+
+  /* ── motion ── */
+  --sc-motion-fast: 120ms;
+  --sc-motion-base: 200ms;
+  --sc-motion-slow: 360ms;
+  --sc-motion-ease: cubic-bezier(0.2, 0.7, 0.2, 1);
+
+  /* ── clip-paths (octagon corners) ── */
+  --sc-clip-sm: polygon(
+    8px 0,
+    100% 0,
+    100% calc(100% - 8px),
+    calc(100% - 8px) 100%,
+    0 100%,
+    0 8px
+  );
+  --sc-clip-md: polygon(
+    14px 0,
+    100% 0,
+    100% calc(100% - 14px),
+    calc(100% - 14px) 100%,
+    0 100%,
+    0 14px
+  );
+  --sc-clip-avatar: polygon(
+    20% 0,
+    100% 0,
+    100% 80%,
+    80% 100%,
+    0 100%,
+    0 20%
+  );
+
+  /* ── alias tokens for desktop app back-compat ── */
+  --void: var(--sc-void);
+  --hull-0: var(--sc-hull-0);
+  --hull-1: var(--sc-hull-1);
+  --hull-2: var(--sc-hull-2);
+  --hull-3: var(--sc-hull-3);
+  --hull-4: var(--sc-hull-4);
+  --frost: var(--sc-frost);
+  --mist: var(--sc-mist);
+  --steel: var(--sc-steel);
+  --gunmetal: var(--sc-gunmetal);
+  --rule: var(--sc-rule);
+  --rule-2: var(--sc-rule-2);
+  --rule-3: var(--sc-rule-3);
+  --cyan: var(--sc-cyan);
+  --cyan-dim: var(--sc-cyan-dim);
+  --cyan-ink: var(--sc-cyan-ink);
+  --magenta: var(--sc-magenta);
+  --magenta-dim: var(--sc-magenta-dim);
+  --magenta-ink: var(--sc-magenta-ink);
+  --plasma: var(--sc-plasma);
+  --plasma-dim: var(--sc-plasma-dim);
+  --amber: var(--sc-amber);
+  --amber-dim: var(--sc-amber-dim);
+  --crimson: var(--sc-crimson);
+  --crimson-dim: var(--sc-crimson-dim);
+  --mono: var(--sc-mono);
+  --display: var(--sc-display);
+}
+
+/* prefers-reduced-motion — disable bespoke transitions/animations in primitives.
+   Individual *.module.css files use this guard too; the global fallback below
+   guarantees reduced motion even if a primitive forgets. */
+@media (prefers-reduced-motion: reduce) {
+  :root {
+    --sc-motion-fast: 0ms;
+    --sc-motion-base: 0ms;
+    --sc-motion-slow: 0ms;
+  }
+}
+
+/* prefers-contrast: more — bump rule alpha so borders are legible */
+@media (prefers-contrast: more) {
+  :root {
+    --sc-rule: rgba(220, 234, 243, 0.22);
+    --sc-rule-2: rgba(220, 234, 243, 0.35);
+    --sc-rule-3: rgba(220, 234, 243, 0.55);
+    --rule: var(--sc-rule);
+    --rule-2: var(--sc-rule-2);
+    --rule-3: var(--sc-rule-3);
+  }
+}

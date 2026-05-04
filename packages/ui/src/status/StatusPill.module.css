@@ -1,0 +1,63 @@
+.root {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  width: fit-content;
+  border: 1px solid var(--sc-rule-3);
+  background: var(--sc-hull-1);
+  color: var(--sc-mist);
+  padding: 4px 9px;
+  font-family: var(--sc-display);
+  font-size: 10px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  white-space: nowrap;
+}
+
+.glyph {
+  width: 7px;
+  height: 7px;
+  background: currentColor;
+  transform: rotate(45deg);
+}
+
+/* per-status tones — keyed by RunStatus */
+.queued {
+  border-color: var(--sc-rule-3);
+  color: var(--sc-mist);
+}
+.starting,
+.casting,
+.striking {
+  border-color: var(--sc-cyan);
+  color: var(--sc-cyan);
+  background: var(--sc-cyan-ink);
+}
+.verifying {
+  border-color: var(--sc-amber);
+  color: var(--sc-amber);
+  background: var(--sc-amber-ink);
+}
+.win-pending,
+.victory {
+  border-color: var(--sc-plasma);
+  color: var(--sc-plasma);
+  background: var(--sc-plasma-dim);
+}
+.fail-pending,
+.defeat,
+.aborted {
+  border-color: var(--sc-crimson);
+  color: var(--sc-crimson);
+  background: var(--sc-crimson-dim);
+}
+
+/* Make sure the glyph stays accessible even at high contrast */
+@media (prefers-contrast: more) {
+  .root {
+    background: transparent;
+    color: var(--sc-frost);
+    border-color: currentColor;
+  }
+}

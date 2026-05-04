@@ -1,5 +1,5 @@
 @import "tailwindcss";
-@import "./tokens.css";
+@import "@sandcastle/ui/tokens.css";
 
 * {
   box-sizing: border-box;
