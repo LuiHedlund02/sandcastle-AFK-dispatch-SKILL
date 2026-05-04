@@ -100,6 +100,14 @@ function titleFor(event: RunEvent): string {
       return `decision · ${event.kind}`;
     case "intervention.used":
       return `intervention · ${event.action}`;
+    case "phase.started":
+      return `phase ${event.phase.ordinal} · ${event.phase.title}`;
+    case "phase.verifying":
+      return `phase verifying · ${event.phaseId}`;
+    case "phase.verified":
+      return `phase verified · ${event.phaseId}`;
+    case "phase.failed":
+      return `phase failed · ${event.phaseId}`;
   }
 }
 
@@ -141,6 +149,10 @@ function renderPayload(event: RunEvent): JSX.Element | null {
     case "run.statusChanged":
     case "decision.required":
     case "intervention.used":
+    case "phase.started":
+    case "phase.verifying":
+    case "phase.verified":
+    case "phase.failed":
       return null;
   }
 }

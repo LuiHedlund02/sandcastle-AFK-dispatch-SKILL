@@ -1,10 +1,11 @@
-import type { Run, RunEvent, RunStatus } from "@sandcastle/protocol";
+import type { Phase, Run, RunEvent, RunStatus } from "@sandcastle/protocol";
 
 const OPERATIVE_ID = "pi-default";
 const PLANET_ID = "planet-local";
 
 export class RunEventProjector {
   private readonly runs = new Map<string, Run>();
+  private readonly phases = new Map<string, Phase>();
 
   createQueued(input: {
     readonly id: string;
@@ -15,6 +16,7 @@ export class RunEventProjector {
     readonly provider?: Run["provider"];
     readonly sandboxProvider?: string;
     readonly startedAt?: string;
+    readonly phaseIds?: readonly string[];
   }): Run {
     const existing = this.runs.get(input.id);
     if (existing) return existing;
@@ -30,7 +32,7 @@ export class RunEventProjector {
       worktreePath: input.worktreePath,
       startedAt: input.startedAt ?? new Date().toISOString(),
       endedAt: null,
-      phaseIds: [],
+      phaseIds: [...(input.phaseIds ?? [])],
       currentPhaseId: null,
       verification: { allGreen: false, failedChecks: [] },
       totals: { toolCalls: 0, filesEdited: 0, commandsRun: 0 },
@@ -103,10 +105,68 @@ export class RunEventProjector {
           verification: {
             allGreen: event.allGreen,
             failedChecks: [...event.failedChecks],
+            failedPhaseId: event.failedPhaseId,
           },
         };
         break;
+      case "phase.started":
+        this.phases.set(event.phaseId, event.phase);
+        run = {
+          ...run,
+          status: "casting",
+          phaseIds: run.phaseIds.includes(event.phaseId)
+            ? run.phaseIds
+            : [...run.phaseIds, event.phaseId],
+          currentPhaseId: event.phaseId,
+        };
+        break;
+      case "phase.verifying": {
+        const phase = this.phases.get(event.phaseId);
+        if (phase)
+          this.phases.set(event.phaseId, { ...phase, status: "active" });
+        transition("verifying");
+        break;
+      }
+      case "phase.verified": {
+        const phase = this.phases.get(event.phaseId);
+        if (phase) {
+          this.phases.set(event.phaseId, {
+            ...phase,
+            status: "verified",
+            endedAt: event.timestamp.toISOString(),
+          });
+        }
+        run = { ...run, currentPhaseId: null };
+        break;
+      }
+      case "phase.failed": {
+        const phase = this.phases.get(event.phaseId);
+        if (phase) {
+          this.phases.set(event.phaseId, {
+            ...phase,
+            status: "failed",
+            endedAt: event.timestamp.toISOString(),
+          });
+        }
+        run = { ...run, currentPhaseId: event.phaseId };
+        break;
+      }
       case "run.resolved":
+        if (event.result === "aborted") {
+          for (const phaseId of run.phaseIds) {
+            const phase = this.phases.get(phaseId);
+            if (
+              phase &&
+              (phase.status === "pending" || phase.status === "active")
+            ) {
+              this.phases.set(phaseId, {
+                ...phase,
+                status: "skipped",
+                endedAt: event.timestamp.toISOString(),
+              });
+            }
+          }
+        }
         run = {
           ...run,
           status: event.result,
@@ -129,5 +189,9 @@ export class RunEventProjector {
 
   listRuns(): Run[] {
     return [...this.runs.values()];
+  }
+
+  listPhases(): Phase[] {
+    return [...this.phases.values()];
   }
 }

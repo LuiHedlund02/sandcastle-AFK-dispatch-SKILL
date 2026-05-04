@@ -6,6 +6,8 @@ import {
 } from "node:http";
 import { URL } from "node:url";
 import {
+  zPostQuestForgeEngageRequest,
+  zPostQuestForgeParseRequest,
   zPostReposRequest,
   zPostRunDecisionRequest,
   zPostRunsRequest,
@@ -16,6 +18,7 @@ import { DeckLoader } from "./deck/DeckLoader.js";
 import { BudgetExceededError } from "./fleet/FleetBudgetService.js";
 import { OperativeStore } from "./operatives/OperativeStore.js";
 import { SnapshotProjector } from "./projector/SnapshotProjector.js";
+import { QuestForgeParser } from "./quest-forge/QuestForgeParser.js";
 import { RepoRegistry } from "./repos/RepoRegistry.js";
 import { RunSupervisor } from "./runs/RunSupervisor.js";
 import { SqliteStore } from "./telemetry/SqliteStore.js";
@@ -179,6 +182,20 @@ const handleRequest = async (ctx: {
     if (req.method === "POST" && url.pathname === "/runs") {
       const body = zPostRunsRequest.parse(await readJson(req));
       writeJson(res, 200, await ctx.runSupervisor.startRun(body));
+      return;
+    }
+
+    if (req.method === "POST" && url.pathname === "/quest-forge/parse") {
+      const body = zPostQuestForgeParseRequest.parse(await readJson(req));
+      writeJson(res, 200, {
+        phases: new QuestForgeParser().parse(body.directive),
+      });
+      return;
+    }
+
+    if (req.method === "POST" && url.pathname === "/quest-forge/engage") {
+      const body = zPostQuestForgeEngageRequest.parse(await readJson(req));
+      writeJson(res, 200, await ctx.runSupervisor.startPhasedRun(body));
       return;
     }
 

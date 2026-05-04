@@ -18,6 +18,7 @@ export class SnapshotProjector {
     const repo = await this.repoRegistry.getRepo();
     const repos = this.repoRegistry.listRepos();
     const runs = this.runSupervisor.listRuns();
+    const phases = this.runSupervisor.listPhases();
     const runsById = Object.fromEntries(runs.map((run) => [run.id, run]));
     const activeRunIds = runs
       .filter((run) => !["victory", "defeat", "aborted"].includes(run.status))
@@ -75,7 +76,7 @@ export class SnapshotProjector {
       ),
       operativesById,
       runsById: runsById as Record<string, Run>,
-      phasesById: {},
+      phasesById: Object.fromEntries(phases.map((phase) => [phase.id, phase])),
       dockOrder: runs.map((run) => run.id),
       pendingDecisions: runs
         .filter(

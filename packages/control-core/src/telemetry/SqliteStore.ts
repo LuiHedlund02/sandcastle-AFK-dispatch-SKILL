@@ -1,5 +1,11 @@
 import { createRequire } from "node:module";
-import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
+import {
+  existsSync,
+  mkdirSync,
+  readFileSync,
+  renameSync,
+  writeFileSync,
+} from "node:fs";
 import { dirname, join } from "node:path";
 import type { RepoTelemetry, Run, RunEvent } from "@sandcastle/protocol";
 
@@ -309,7 +315,9 @@ class JsonFallbackDriver implements StoreDriver {
   close(): void {}
 
   private flush(): void {
-    writeFileSync(this.path, JSON.stringify(this.data, null, 2));
+    const tmpPath = `${this.path}.${process.pid}.tmp`;
+    writeFileSync(tmpPath, JSON.stringify(this.data, null, 2));
+    renameSync(tmpPath, this.path);
   }
 }
 

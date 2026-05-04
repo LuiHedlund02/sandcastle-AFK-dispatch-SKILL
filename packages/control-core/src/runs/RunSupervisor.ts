@@ -10,7 +10,9 @@ import {
 } from "@ai-hero/sandcastle";
 import type {
   PostRunDecisionResponse,
+  PostQuestForgeEngageRequest,
   PostRunsRequest,
+  Phase,
   Run,
   RunEvent,
 } from "@sandcastle/protocol";
@@ -24,6 +26,8 @@ import {
   type CoordinatedRunStrategy,
 } from "./RepoRunCoordinator.js";
 import type { SqliteStore } from "../telemetry/SqliteStore.js";
+import { PhasedRunOrchestrator } from "../quest-forge/PhasedRunOrchestrator.js";
+import { QuestForgeParser } from "../quest-forge/QuestForgeParser.js";
 import { spawn, type StdioOptions } from "node:child_process";
 import { createInterface } from "node:readline";
 import { join } from "node:path";
@@ -171,6 +175,10 @@ export class RunSupervisor {
     return [...byId.values()];
   }
 
+  listPhases(): Phase[] {
+    return this.projector.listPhases();
+  }
+
   getRun(id: string): Run | undefined {
     return this.projector.getRun(id) ?? this.options.store.getRun(id);
   }
@@ -254,6 +262,95 @@ export class RunSupervisor {
           timestamp: new Date(),
         });
         console.error("[sandcastle-control] run failed", error);
+      })
+      .finally(() => {
+        prepared.release();
+        this.controllers.delete(runId);
+      });
+
+    return { runId };
+  }
+
+  async startPhasedRun(
+    request: PostQuestForgeEngageRequest,
+  ): Promise<{ runId: string }> {
+    const phases =
+      request.phases ?? new QuestForgeParser().parse(request.directive);
+    if (phases.length === 0) {
+      throw new Error("QuestForge engage requires at least one phase");
+    }
+
+    const operativeId = request.operativeId ?? "pi-default";
+    const operative = this.getOperative(operativeId);
+    this.budgetService.assertCanStart({
+      operative,
+      repoRoot: this.options.repoRoot,
+      activeRuns: this.listRuns().map((run) => ({
+        id: run.id,
+        operativeId: run.operativeId,
+        repoRoot: this.options.repoRoot,
+        status: run.status,
+      })),
+    });
+
+    const targetBranch = await currentBranch(this.options.repoRoot).catch(
+      () => "unknown",
+    );
+    const prepared = this.coordinator.prepareRun({
+      repoRoot: this.options.repoRoot,
+      targetBranch,
+      strategy: toCoordinatedStrategy(request),
+    });
+    const runId = prepared.runId;
+    const worktreePath =
+      prepared.engineBranchStrategy.type === "head"
+        ? undefined
+        : join(
+            this.options.repoRoot,
+            ".sandcastle",
+            "worktrees",
+            prepared.branch.replace(/\//g, "-"),
+          );
+    const queued = this.projector.createQueued({
+      id: runId,
+      directive: request.directive,
+      branch: prepared.branch,
+      worktreePath,
+      operativeId,
+      provider: request.provider,
+      sandboxProvider: "host-bind-mount",
+      phaseIds: phases.map((phase) => phase.id),
+    });
+    this.options.store.upsertRun(queued);
+
+    const controller = new AbortController();
+    this.controllers.set(runId, controller);
+    const orchestrator = new PhasedRunOrchestrator({
+      repoRoot: this.options.repoRoot,
+      runImpl: this.runImpl,
+      agent: this.agentFactory(request),
+      sandbox: this.sandboxFactory(),
+      prepared,
+      worktreePath,
+      maxIterations: request.maxIterations,
+      completionSignal: request.completionSignal,
+      signal: controller.signal,
+      emitEvent: (id, event) => this.handleEvent(id, event),
+    });
+
+    void orchestrator
+      .run({ runId, directive: request.directive, phases })
+      .catch((error: unknown) => {
+        if (controller.signal.aborted) return;
+        this.handleEvent(runId, {
+          type: "run.resolved",
+          runId,
+          result: "defeat",
+          xpDelta: 0,
+          iteration: 0,
+          timestamp: new Date(),
+        });
+        console.error("[sandcastle-control] phased run failed", error);
       })
       .finally(() => {
         prepared.release();

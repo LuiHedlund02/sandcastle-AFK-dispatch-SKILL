@@ -26,3 +26,8 @@ export type {
 } from "./fleet/FleetBudgetService.js";
 export { DecisionActions } from "./decisions/DecisionActions.js";
 export type { DecisionActionsOptions } from "./decisions/DecisionActions.js";
+export { QuestForgeParser } from "./quest-forge/QuestForgeParser.js";
+export { VerifyRuleExecutor } from "./quest-forge/VerifyRuleExecutor.js";
+export { PhasedRunOrchestrator } from "./quest-forge/PhasedRunOrchestrator.js";
+export { describeVerifyRule } from "./quest-forge/VerifyRule.js";
+export type { VerifyRule, VerifyRuleResult } from "./quest-forge/VerifyRule.js";
