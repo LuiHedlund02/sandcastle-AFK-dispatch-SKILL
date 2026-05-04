@@ -5,6 +5,7 @@ import {
   CombatRoute,
   DefeatRoute,
   FleetRoute,
+  GalaxyRoute,
   IndexRoute,
   OperativeRoute,
   PlanetRoute,
@@ -27,6 +28,7 @@ export const router = createBrowserRouter([
     children: [
       { path: "/", element: <IndexRoute /> },
       { path: "/fleet", element: <FleetRoute /> },
+      { path: "/galaxy", element: <GalaxyRoute /> },
       { path: "/runs/:runId/cockpit", element: <CockpitRoute /> },
       { path: "/runs/:runId/combat", element: <CombatRoute /> },
       { path: "/runs/:runId/victory", element: <VictoryRoute /> },

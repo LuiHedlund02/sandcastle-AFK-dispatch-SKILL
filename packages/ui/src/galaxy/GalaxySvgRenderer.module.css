@@ -1,0 +1,99 @@
+/*
+ * GalaxySvgRenderer — concentric-orbital galaxy stage.
+ *
+ * Each ring rotates at its own pace. The sun pulses. A "transit" sprite
+ * decays along its motion path. All animations freeze under
+ * prefers-reduced-motion: reduce so the layout still parses statically.
+ */
+
+.root {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  display: block;
+  overflow: hidden;
+}
+
+.svg {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  display: block;
+}
+
+/* Ring rotation — applied to the <g> wrapping each orbital. The actual
+ * rate is set per-ring via `--ring-period` (animation-duration) plus
+ * `--ring-dir` (1 forward, -1 reverse). */
+.ring {
+  transform-box: fill-box;
+  transform-origin: center;
+  animation: galaxy-ring-spin var(--ring-period, 90s) linear infinite;
+  animation-direction: var(--ring-dir, normal);
+}
+
+@keyframes galaxy-ring-spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+/* Counter-rotate planet bodies so labels stay upright while sitting on
+ * the spinning ring group. Same period, opposite direction. */
+.bodyCounter {
+  transform-box: fill-box;
+  transform-origin: center;
+  animation: galaxy-ring-spin var(--ring-period, 90s) linear infinite;
+  animation-direction: var(--ring-counter-dir, reverse);
+}
+
+.sun {
+  transform-box: fill-box;
+  transform-origin: center;
+  animation: galaxy-sun-pulse 3.4s ease-in-out infinite;
+}
+
+@keyframes galaxy-sun-pulse {
+  0%, 100% { filter: brightness(1); }
+  50% { filter: brightness(1.18); }
+}
+
+.selectedRing {
+  transform-box: fill-box;
+  transform-origin: center;
+  animation: galaxy-ring-spin 18s linear infinite;
+}
+
+.stormBody {
+  transform-box: fill-box;
+  transform-origin: center;
+  animation: galaxy-storm-pulse 2.4s ease-in-out infinite;
+}
+
+@keyframes galaxy-storm-pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.7; }
+}
+
+.transitSpark {
+  transform-box: fill-box;
+  transform-origin: center;
+  animation: galaxy-transit-fade 6s linear infinite;
+}
+
+@keyframes galaxy-transit-fade {
+  0% { opacity: 0; }
+  10% { opacity: 1; }
+  90% { opacity: 1; }
+  100% { opacity: 0; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ring,
+  .bodyCounter,
+  .sun,
+  .selectedRing,
+  .stormBody,
+  .transitSpark {
+    animation: none !important;
+  }
+}

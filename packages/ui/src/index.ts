@@ -66,7 +66,12 @@ export type { ReactiveOperativeTileProps } from "./operative/ReactiveOperativeTi
 export { PlanetSvgRenderer } from "./planet/PlanetSvgRenderer.js";
 export type { PlanetSvgRendererProps } from "./planet/PlanetSvgRenderer.js";
 export { GalaxySvgRenderer } from "./galaxy/GalaxySvgRenderer.js";
-export type { GalaxySvgRendererProps } from "./galaxy/GalaxySvgRenderer.js";
+export type {
+  GalaxySvgRendererProps,
+  GalaxyTransitOperative,
+} from "./galaxy/GalaxySvgRenderer.js";
+export { planetClimate } from "./galaxy/climate.js";
+export type { PlanetClimate } from "./galaxy/climate.js";
 
 // cards
 export { CardFrame } from "./cards/CardFrame.js";

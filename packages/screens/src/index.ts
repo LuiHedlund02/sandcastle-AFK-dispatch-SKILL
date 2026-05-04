@@ -49,6 +49,7 @@ export { CombatRoute } from "./routes/runs.$runId.combat";
 export { VictoryRoute } from "./routes/runs.$runId.victory";
 export { DefeatRoute } from "./routes/runs.$runId.defeat";
 export { FleetRoute } from "./routes/fleet";
+export { GalaxyRoute } from "./routes/galaxy";
 export { PlanetRoute } from "./routes/planet.$planetId";
 export { QuestForgeRoute } from "./routes/quest-forge";
 export { RosterRoute } from "./routes/roster";
