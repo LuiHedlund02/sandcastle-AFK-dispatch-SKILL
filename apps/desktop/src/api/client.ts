@@ -1,11 +1,21 @@
 import {
   zGetFleetResponse,
+  zGetOperativeResponse,
+  zGetOperativesResponse,
+  zGetRepoDeckResponse,
   zGetRepoResponse,
+  zGetRepoTelemetryResponse,
+  zGetReposResponse,
   zGetRunResponse,
   zPostRunCancelResponse,
   zPostRunsResponse,
   type GetFleetResponse,
+  type GetOperativeResponse,
+  type GetOperativesResponse,
+  type GetRepoDeckResponse,
   type GetRepoResponse,
+  type GetRepoTelemetryResponse,
+  type GetReposResponse,
   type GetRunResponse,
   type PostRunsRequest,
   type PostRunsResponse,
@@ -76,6 +86,42 @@ export const apiClient = {
         method: "POST",
         body: JSON.stringify({ id: runId }),
       }),
+    );
+  },
+
+  async getRepos(): Promise<GetReposResponse> {
+    return zGetReposResponse.parse(await requestJson<unknown>("/repos"));
+  },
+
+  async getRepoDeck(repoId: string): Promise<GetRepoDeckResponse> {
+    return zGetRepoDeckResponse.parse(
+      await requestJson<unknown>(`/repos/${encodeURIComponent(repoId)}/deck`),
+    );
+  },
+
+  async getRepoTelemetry(
+    repoId: string,
+    options?: { force?: boolean },
+  ): Promise<GetRepoTelemetryResponse> {
+    const qs = options?.force ? "?force=true" : "";
+    return zGetRepoTelemetryResponse.parse(
+      await requestJson<unknown>(
+        `/repos/${encodeURIComponent(repoId)}/telemetry${qs}`,
+      ),
+    );
+  },
+
+  async getOperatives(): Promise<GetOperativesResponse> {
+    return zGetOperativesResponse.parse(
+      await requestJson<unknown>("/operatives"),
+    );
+  },
+
+  async getOperative(operativeId: string): Promise<GetOperativeResponse> {
+    return zGetOperativeResponse.parse(
+      await requestJson<unknown>(
+        `/operatives/${encodeURIComponent(operativeId)}`,
+      ),
     );
   },
 };

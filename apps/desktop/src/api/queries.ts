@@ -6,6 +6,11 @@ export const queryKeys = {
   fleet: ["fleet"] as const,
   repo: ["repo"] as const,
   run: (runId: string) => ["run", runId] as const,
+  repos: ["repos"] as const,
+  repoDeck: (repoId: string) => ["repo", repoId, "deck"] as const,
+  repoTelemetry: (repoId: string) => ["repo", repoId, "telemetry"] as const,
+  operatives: ["operatives"] as const,
+  operative: (operativeId: string) => ["operative", operativeId] as const,
 };
 
 export const useFleet = () =>
@@ -53,3 +58,33 @@ export const useCancelRun = (runId: string) => {
     },
   });
 };
+
+export const useRepos = () =>
+  useQuery({ queryKey: queryKeys.repos, queryFn: () => apiClient.getRepos() });
+
+export const useRepoDeck = (repoId: string | undefined) =>
+  useQuery({
+    queryKey: queryKeys.repoDeck(repoId ?? ""),
+    queryFn: () => apiClient.getRepoDeck(repoId ?? ""),
+    enabled: Boolean(repoId),
+  });
+
+export const useRepoTelemetry = (repoId: string | undefined) =>
+  useQuery({
+    queryKey: queryKeys.repoTelemetry(repoId ?? ""),
+    queryFn: () => apiClient.getRepoTelemetry(repoId ?? ""),
+    enabled: Boolean(repoId),
+  });
+
+export const useOperatives = () =>
+  useQuery({
+    queryKey: queryKeys.operatives,
+    queryFn: () => apiClient.getOperatives(),
+  });
+
+export const useOperative = (operativeId: string | undefined) =>
+  useQuery({
+    queryKey: queryKeys.operative(operativeId ?? ""),
+    queryFn: () => apiClient.getOperative(operativeId ?? ""),
+    enabled: Boolean(operativeId),
+  });

@@ -2,6 +2,11 @@ import { createBrowserRouter } from "react-router-dom";
 import { AppChrome } from "./AppChrome";
 import { IndexRoute } from "./routes/index";
 import { CockpitRoute } from "./routes/runs.$runId.cockpit";
+import { FleetRoute } from "./routes/fleet";
+import { PlanetRoute } from "./routes/planet.$planetId";
+import { QuestForgeRoute } from "./routes/quest-forge";
+import { RosterRoute } from "./routes/roster";
+import { OperativeRoute } from "./routes/operatives.$operativeId";
 
 export const router = createBrowserRouter([
   {
@@ -9,6 +14,11 @@ export const router = createBrowserRouter([
     children: [
       { path: "/", element: <IndexRoute /> },
       { path: "/runs/:runId/cockpit", element: <CockpitRoute /> },
+      { path: "/fleet", element: <FleetRoute /> },
+      { path: "/planet/:planetId", element: <PlanetRoute /> },
+      { path: "/quest-forge", element: <QuestForgeRoute /> },
+      { path: "/roster", element: <RosterRoute /> },
+      { path: "/operatives/:operativeId", element: <OperativeRoute /> },
     ],
   },
 ]);
