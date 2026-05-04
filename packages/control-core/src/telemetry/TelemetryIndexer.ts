@@ -85,9 +85,16 @@ const safeTelemetry = async <T>(
   read: () => T | Promise<T>,
 ): Promise<T | null> => {
   try {
-    return await read();
+    const value = await read();
+    if (value === null) {
+      console.debug(
+        `[sandcastle-control] telemetry ${domain} unavailable`,
+        "reader returned no data",
+      );
+    }
+    return value;
   } catch (error) {
-    console.warn(
+    console.debug(
       `[sandcastle-control] telemetry ${domain} unavailable`,
       error instanceof Error ? error.message : String(error),
     );

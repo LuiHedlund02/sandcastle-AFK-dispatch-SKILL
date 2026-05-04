@@ -42,4 +42,54 @@ describe("TelemetryIndexer", () => {
       store.close();
     }
   });
+
+  it("passes null through when a telemetry reader fails", async () => {
+    const repo = makeGitRepo();
+    mkdirSync(join(repo, "coverage"));
+    writeFileSync(join(repo, "coverage", "coverage-summary.json"), "{nope");
+    const store = new SqliteStore(repo);
+    try {
+      const telemetry = await new TelemetryIndexer(store).getTelemetry({
+        id: "repo-1",
+        root: repo,
+      });
+
+      expect(telemetry.coveragePct).toBeNull();
+      expect(telemetry.ageDays).toBeGreaterThanOrEqual(0);
+      expect(telemetry.testCount).toBe(2);
+      expect(store.getRepoTelemetry("repo-1")).toEqual(telemetry);
+    } finally {
+      store.close();
+    }
+  });
+
+  it("uses cached repo telemetry unless force refresh is requested", async () => {
+    const repo = makeGitRepo();
+    const store = new SqliteStore(repo);
+    try {
+      const indexer = new TelemetryIndexer(store);
+      const first = await indexer.getTelemetry({
+        id: "repo-1",
+        root: repo,
+      });
+      writeFileSync(join(repo, "later.test.ts"), "test('later', () => {});\n");
+
+      const cached = await indexer.getTelemetry({
+        id: "repo-1",
+        root: repo,
+      });
+      const refreshed = await indexer.getTelemetry(
+        {
+          id: "repo-1",
+          root: repo,
+        },
+        { force: true },
+      );
+
+      expect(cached).toEqual(first);
+      expect(refreshed.testCount).toBe(first.testCount! + 1);
+    } finally {
+      store.close();
+    }
+  });
 });

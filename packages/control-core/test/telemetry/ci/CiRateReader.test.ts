@@ -19,7 +19,7 @@ describe("CiRateReader", () => {
     await expect(readCiGreenRate30d("C:/repo", { github })).resolves.toBe(80);
   });
 
-  it("returns null when local git has no CI signal", async () => {
+  it("returns null when GitHub Actions data is unavailable", async () => {
     await expect(readCiGreenRate30d(makeRepo())).resolves.toBeNull();
   });
 });

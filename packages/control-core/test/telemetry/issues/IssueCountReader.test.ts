@@ -1,12 +1,6 @@
-import { mkdirSync, mkdtempSync, writeFileSync } from "node:fs";
-import { tmpdir } from "node:os";
-import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 import type { GitHubClient } from "../../../src/github/GitHubClient.js";
-import {
-  readOpenIssueCount,
-  readTodoFixmeFallback,
-} from "../../../src/telemetry/issues/IssueCountReader.js";
+import { readOpenIssueCount } from "../../../src/telemetry/issues/IssueCountReader.js";
 
 describe("IssueCountReader", () => {
   it("reads open issue count from GitHub pagination", async () => {
@@ -20,13 +14,11 @@ describe("IssueCountReader", () => {
     await expect(readOpenIssueCount("C:/repo", { github })).resolves.toBe(47);
   });
 
-  it("counts TODO and FIXME markers as local fallback", () => {
-    const repo = mkdtempSync(join(tmpdir(), "sandcastle-issues-"));
-    mkdirSync(join(repo, "src"));
-    writeFileSync(join(repo, "src", "a.ts"), "// TODO: one\n// FIXME: two\n");
-    mkdirSync(join(repo, "dist"));
-    writeFileSync(join(repo, "dist", "ignored.ts"), "// TODO: ignored\n");
+  it("returns null when GitHub issues are unavailable", async () => {
+    const github = {
+      requestJson: async () => null,
+    } as unknown as GitHubClient;
 
-    expect(readTodoFixmeFallback(repo)).toBe(2);
+    await expect(readOpenIssueCount("C:/repo", { github })).resolves.toBeNull();
   });
 });
