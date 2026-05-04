@@ -16,6 +16,10 @@ export const queryKeys = {
   repoTelemetry: (repoId: string) => ["repo", repoId, "telemetry"] as const,
   operatives: ["operatives"] as const,
   operative: (operativeId: string) => ["operative", operativeId] as const,
+  operativeXp: (operativeId: string) =>
+    ["operative", operativeId, "xp"] as const,
+  repoActivity: (repoId: string, limit: number) =>
+    ["repo", repoId, "activity", limit] as const,
   questForgeParse: (directive: string) =>
     ["quest-forge", "parse", directive] as const,
 };
@@ -152,4 +156,26 @@ export const useOperative = (operativeId: string | undefined) =>
     queryKey: queryKeys.operative(operativeId ?? ""),
     queryFn: () => apiClient.getOperative(operativeId ?? ""),
     enabled: Boolean(operativeId),
+  });
+
+/**
+ * Recent ActivityEvents for a repo. Default limit is 10 (planet screen);
+ * the backend caps at 50.
+ */
+export const useActivity = (repoId: string | undefined, limit = 10) =>
+  useQuery({
+    queryKey: queryKeys.repoActivity(repoId ?? "", limit),
+    queryFn: () => apiClient.getActivity(repoId ?? "", limit),
+    enabled: Boolean(repoId),
+    // Activity is append-only; refetch lazily.
+    staleTime: 5_000,
+  });
+
+/** Operative XP summary — totalXp + recent merges. */
+export const useOperativeXp = (operativeId: string | undefined) =>
+  useQuery({
+    queryKey: queryKeys.operativeXp(operativeId ?? ""),
+    queryFn: () => apiClient.getOperativeXp(operativeId ?? ""),
+    enabled: Boolean(operativeId),
+    staleTime: 5_000,
   });

@@ -1,6 +1,8 @@
 import {
+  zGetActivityResponse,
   zGetFleetResponse,
   zGetOperativeResponse,
+  zGetOperativeXpResponse,
   zGetOperativesResponse,
   zGetRepoDeckResponse,
   zGetRepoResponse,
@@ -13,8 +15,10 @@ import {
   zPostRunCancelResponse,
   zPostRunDecisionResponse,
   zPostRunsResponse,
+  type GetActivityResponse,
   type GetFleetResponse,
   type GetOperativeResponse,
+  type GetOperativeXpResponse,
   type GetOperativesResponse,
   type GetRepoDeckResponse,
   type GetRepoResponse,
@@ -174,6 +178,27 @@ export const apiClient = {
     return zGetOperativeResponse.parse(
       await requestJson<unknown>(
         `/operatives/${encodeURIComponent(operativeId)}`,
+      ),
+    );
+  },
+
+  async getActivity(
+    repoId: string,
+    limit?: number,
+  ): Promise<GetActivityResponse> {
+    const qs =
+      typeof limit === "number" ? `?limit=${encodeURIComponent(limit)}` : "";
+    return zGetActivityResponse.parse(
+      await requestJson<unknown>(
+        `/repos/${encodeURIComponent(repoId)}/activity${qs}`,
+      ),
+    );
+  },
+
+  async getOperativeXp(operativeId: string): Promise<GetOperativeXpResponse> {
+    return zGetOperativeXpResponse.parse(
+      await requestJson<unknown>(
+        `/operatives/${encodeURIComponent(operativeId)}/xp`,
       ),
     );
   },

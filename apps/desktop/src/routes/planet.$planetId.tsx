@@ -3,6 +3,7 @@ import { Link, Navigate, useParams } from "react-router-dom";
 import { GitBranch, Globe2, Rocket, ShieldCheck, Skull } from "lucide-react";
 import type { Planet, RegisteredRepo, Run } from "@sandcastle/protocol";
 import {
+  ActivityFeed,
   ChromaticHeadline,
   CommandCardView,
   CrtRasterOverlay,
@@ -12,8 +13,10 @@ import {
   PlanetSvgRenderer,
   SkillCardView,
   StatusPill,
+  TelemetryGrid,
 } from "@sandcastle/ui";
 import {
+  useActivity,
   useFleet,
   useRepoDeck,
   useRepoTelemetry,
@@ -56,32 +59,6 @@ const deckStyle: CSSProperties = {
   padding: "22px 22px 36px",
   minHeight: 0,
   overflowY: "auto",
-};
-
-const vitalsGridStyle: CSSProperties = {
-  display: "grid",
-  gridTemplateColumns: "repeat(2, minmax(0, 1fr))",
-  gap: 12,
-  marginTop: 12,
-  paddingTop: 12,
-  borderTop: "1px dashed var(--rule-2)",
-};
-
-const vitalKeyStyle: CSSProperties = {
-  fontFamily: "var(--display)",
-  fontSize: 9,
-  letterSpacing: "0.22em",
-  textTransform: "uppercase",
-  color: "var(--steel)",
-  fontWeight: 500,
-};
-
-const vitalValueStyle: CSSProperties = {
-  fontFamily: "var(--mono)",
-  fontSize: 12,
-  color: "var(--frost)",
-  letterSpacing: "0.04em",
-  fontWeight: 600,
 };
 
 const sectionHeadStyle: CSSProperties = {
@@ -150,6 +127,7 @@ function PlanetContent({
   const reposQuery = useRepos();
   const deckQuery = useRepoDeck(planetId);
   const telemetryQuery = useRepoTelemetry(planetId);
+  const activityQuery = useActivity(planetId, 10);
 
   const livePlanet = useFleetStore(
     (state) => state.fleet?.planetsById[planetId],
@@ -223,6 +201,7 @@ function PlanetContent({
           registeredRepo={registeredRepo}
           deckQuery={deckQuery}
           telemetryQuery={telemetryQuery}
+          activityQuery={activityQuery}
           relatedRuns={relatedRuns}
         />
       </div>
@@ -429,6 +408,7 @@ interface PlanetDeckPanelProps {
   readonly registeredRepo: RegisteredRepo;
   readonly deckQuery: ReturnType<typeof useRepoDeck>;
   readonly telemetryQuery: ReturnType<typeof useRepoTelemetry>;
+  readonly activityQuery: ReturnType<typeof useActivity>;
   readonly relatedRuns: Run[];
 }
 
@@ -437,6 +417,7 @@ function PlanetDeckPanel({
   registeredRepo,
   deckQuery,
   telemetryQuery,
+  activityQuery,
   relatedRuns,
 }: PlanetDeckPanelProps): JSX.Element {
   // Prefer freshly-fetched deck/telemetry; fall back to the snapshot copy.
@@ -486,45 +467,10 @@ function PlanetDeckPanel({
           <p style={muted}>Loading telemetry…</p>
         ) : null}
         {telemetry ? (
-          <dl style={vitalsGridStyle}>
-            <Vital
-              k="Branch"
-              v={telemetry.branch ?? planet.defaultBranch}
-              tone="cyan"
-            />
-            <Vital k="Age" v={formatAge(telemetry.ageDays)} />
-            <Vital
-              k="Coverage"
-              v={formatPercent(telemetry.coveragePct)}
-              tone="plasma"
-            />
-            <Vital
-              k="CI · 30d"
-              v={formatPercent(telemetry.ciGreenRate30d)}
-              tone="plasma"
-            />
-            <Vital
-              k="Open issues"
-              v={
-                telemetry.openIssues == null
-                  ? "—"
-                  : String(telemetry.openIssues)
-              }
-              tone="magenta"
-            />
-            <Vital
-              k="Tests"
-              v={
-                telemetry.testCount == null ? "—" : String(telemetry.testCount)
-              }
-            />
-            <Vital
-              k="Churn"
-              v={formatChurn(telemetry.churnScore)}
-              tone="amber"
-            />
-            <Vital k="Last commit" v={formatRelative(telemetry.lastCommitAt)} />
-          </dl>
+          <TelemetryGrid
+            telemetry={telemetry}
+            fallbackBranch={planet.defaultBranch}
+          />
         ) : null}
       </OctaPanel>
 
@@ -724,30 +670,30 @@ function PlanetDeckPanel({
           </ul>
         )}
       </OctaPanel>
-    </div>
-  );
-}
 
-interface VitalProps {
-  readonly k: string;
-  readonly v: string;
-  readonly tone?: "cyan" | "plasma" | "amber" | "magenta";
-}
-
-function Vital({ k, v, tone }: VitalProps): JSX.Element {
-  const toneColor: Record<NonNullable<VitalProps["tone"]>, string> = {
-    cyan: "var(--cyan)",
-    plasma: "var(--plasma)",
-    amber: "var(--amber)",
-    magenta: "var(--magenta)",
-  };
-  const valueStyle: CSSProperties = tone
-    ? { ...vitalValueStyle, color: toneColor[tone] }
-    : vitalValueStyle;
-  return (
-    <div style={{ display: "flex", flexDirection: "column", gap: 3 }}>
-      <dt style={vitalKeyStyle}>{k}</dt>
-      <dd style={{ margin: 0, ...valueStyle }}>{v}</dd>
+      <OctaPanel
+        tone="cyan"
+        eyebrow={
+          <span style={sectionHeadStyle}>
+            <span style={{ color: "var(--cyan)" }}>0x08</span>
+            RECENT ACTIVITY
+            <span style={ruleLineStyle} />
+            <span style={{ color: "var(--mist)" }}>
+              {activityQuery.data?.events.length ?? 0}
+            </span>
+          </span>
+        }
+      >
+        {activityQuery.error instanceof Error ? (
+          <p style={{ color: "var(--crimson)" }}>
+            activity unavailable: {activityQuery.error.message}
+          </p>
+        ) : activityQuery.isLoading && !activityQuery.data ? (
+          <p style={muted}>Loading activity…</p>
+        ) : (
+          <ActivityFeed events={activityQuery.data?.events ?? []} limit={10} />
+        )}
+      </OctaPanel>
     </div>
   );
 }
@@ -773,40 +719,4 @@ const STAGE_LABEL: Record<number, string> = {
 function clamp(value: number, min: number, max: number): number {
   if (Number.isNaN(value)) return min;
   return Math.max(min, Math.min(max, value));
-}
-
-function formatPercent(value: number | null): string {
-  if (value == null) return "—";
-  // Telemetry stores fractions in 0..1 if <= 1, else assume already a percent.
-  const pct = value <= 1 ? value * 100 : value;
-  return `${Math.round(pct)} %`;
-}
-
-function formatAge(days: number | null): string {
-  if (days == null) return "—";
-  if (days < 1) return "today";
-  if (days < 30) return `${Math.round(days)} d`;
-  if (days < 365) return `${Math.round(days / 30)} mo`;
-  return `${(days / 365).toFixed(1)} y`;
-}
-
-function formatChurn(score: number | null): string {
-  if (score == null) return "—";
-  if (score < 0.33) return "calm";
-  if (score < 0.66) return "warm";
-  return "hot";
-}
-
-function formatRelative(iso: string | null): string {
-  if (!iso) return "—";
-  const then = new Date(iso).getTime();
-  if (Number.isNaN(then)) return "—";
-  const diff = Date.now() - then;
-  const minutes = Math.round(diff / 60_000);
-  if (minutes < 1) return "just now";
-  if (minutes < 60) return `${minutes}m ago`;
-  const hours = Math.round(minutes / 60);
-  if (hours < 24) return `${hours}h ago`;
-  const days = Math.round(hours / 24);
-  return `${days}d ago`;
 }

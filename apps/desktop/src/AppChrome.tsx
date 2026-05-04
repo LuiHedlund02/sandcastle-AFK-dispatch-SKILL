@@ -5,6 +5,7 @@ import {
   AppChrome as AppChromeShell,
   DeployChordOverlay,
   FleetDock,
+  XpDeltaBadge,
   type DeployChordMultiSubmission,
   type FleetConnectionState,
   type MergeAllGreenResult,
@@ -50,6 +51,7 @@ export function AppChrome(): JSX.Element {
   const [mergeResult, setMergeResult] = useState<MergeAllGreenResult | null>(
     null,
   );
+  const [xpToast, setXpToast] = useState<number | null>(null);
   const setConnectionState = useFleetStore((state) => state.setConnectionState);
   const fleet = useFleetStore((state) => state.fleet);
   const connectionState = useFleetStore((state) => state.connectionState);
@@ -66,6 +68,13 @@ export function AppChrome(): JSX.Element {
     );
     return disconnect;
   }, []);
+
+  // Auto-dismiss the +XP toast after a few seconds.
+  useEffect(() => {
+    if (xpToast == null) return;
+    const handle = setTimeout(() => setXpToast(null), 4_000);
+    return () => clearTimeout(handle);
+  }, [xpToast]);
 
   useEffect(() => {
     const open = (): void => setDeployOpen(true);
@@ -213,13 +222,36 @@ export function AppChrome(): JSX.Element {
     (decisionRunId: string, kind: RunDecisionKind) => {
       // Use a transient mutation; we don't subscribe to per-run hook state
       // here because dock decisions can fire on any run.
+      const priorStatus = fleet?.runsById[decisionRunId]?.status;
       void apiClient
         .decideRun(decisionRunId, kind)
-        .then(() => {
+        .then((response) => {
           void queryClient.invalidateQueries({ queryKey: queryKeys.fleet });
           void queryClient.invalidateQueries({
             queryKey: queryKeys.run(decisionRunId),
           });
+
+          // Post-decision navigation: opt-in to ceremony only on terminal
+          // win/fail decisions — merge confirms route to /victory, and a
+          // discard from a fail-pending state routes to /defeat. Revise
+          // stays in the cockpit (the operative continues working).
+          if (
+            response.ok &&
+            kind === "merge" &&
+            priorStatus === "win-pending"
+          ) {
+            // Surface +N XP if the backend reported a positive delta.
+            if (typeof response.xpDelta === "number" && response.xpDelta > 0) {
+              setXpToast(response.xpDelta);
+            }
+            navigate(`/runs/${decisionRunId}/victory`);
+          } else if (
+            response.ok &&
+            kind === "discard" &&
+            priorStatus === "fail-pending"
+          ) {
+            navigate(`/runs/${decisionRunId}/defeat`);
+          }
         })
         .catch((error: unknown) => {
           // Surface in the overlay error slot — better than silent failure.
@@ -230,7 +262,7 @@ export function AppChrome(): JSX.Element {
           );
         });
     },
-    [queryClient],
+    [fleet, navigate, queryClient],
   );
 
   const handleMergeAllGreen = useCallback(async () => {
@@ -266,17 +298,22 @@ export function AppChrome(): JSX.Element {
         </>
       }
       right={
-        <span
-          style={{
-            border: "1px solid var(--sc-rule-2)",
-            background: "var(--sc-hull-1)",
-            color: "var(--sc-mist)",
-            padding: "3px 8px",
-            fontSize: 11,
-            fontFamily: "var(--sc-mono)",
-          }}
-        >
-          127.0.0.1:{window.sandcastle.port || "..."}
+        <span style={{ display: "inline-flex", alignItems: "center", gap: 8 }}>
+          {xpToast != null ? (
+            <XpDeltaBadge xpDelta={xpToast} size="sm" />
+          ) : null}
+          <span
+            style={{
+              border: "1px solid var(--sc-rule-2)",
+              background: "var(--sc-hull-1)",
+              color: "var(--sc-mist)",
+              padding: "3px 8px",
+              fontSize: 11,
+              fontFamily: "var(--sc-mono)",
+            }}
+          >
+            127.0.0.1:{window.sandcastle.port || "..."}
+          </span>
         </span>
       }
       dock={

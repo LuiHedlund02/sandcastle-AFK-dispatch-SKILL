@@ -7,6 +7,7 @@ import {
   FilmGrainOverlay,
   OctaPanel,
   OperativePortrait,
+  OperativeXpStrip,
   ReactiveOperativeTile,
   StatusPill,
 } from "@sandcastle/ui";
@@ -16,7 +17,7 @@ import type {
   OperativeRepoRecord,
   Run,
 } from "@sandcastle/protocol";
-import { useFleet, useOperative } from "../api/queries";
+import { useFleet, useOperative, useOperativeXp } from "../api/queries";
 import { useFleetStore } from "../state/fleetStore";
 
 /* ------------------------------------------------------------------ styles */
@@ -335,6 +336,7 @@ function OperativeContent({
 }): JSX.Element {
   const { data, isLoading, error } = useOperative(operativeId);
   const { data: fleet } = useFleet();
+  const operativeXpQuery = useOperativeXp(operativeId);
   const liveFleet = useFleetStore((state) => state.fleet);
   const activeFleet = liveFleet ?? fleet;
 
@@ -776,12 +778,32 @@ function OperativeContent({
           </p>
         </OctaPanel>
 
+        <OctaPanel
+          tone="cyan"
+          eyebrow={
+            <span style={sectionLabel}>
+              <span style={{ color: "var(--sc-cyan, #56d4e0)" }}>0x05</span>
+              XP LEDGER
+            </span>
+          }
+        >
+          {operativeXpQuery.error instanceof Error ? (
+            <p style={emptyStateStyle}>
+              xp ledger unavailable: {operativeXpQuery.error.message}
+            </p>
+          ) : operativeXpQuery.isLoading && !operativeXpQuery.data ? (
+            <p style={emptyStateStyle}>Loading xp…</p>
+          ) : (
+            <OperativeXpStrip operativeXp={operativeXpQuery.data ?? null} />
+          )}
+        </OctaPanel>
+
         {primaryDeployment ? (
           <OctaPanel
             tone="plasma"
             eyebrow={
               <span style={sectionLabel}>
-                <span style={{ color: "var(--sc-plasma, #6cffaa)" }}>0x05</span>
+                <span style={{ color: "var(--sc-plasma, #6cffaa)" }}>0x06</span>
                 PRIMARY RUN
               </span>
             }
