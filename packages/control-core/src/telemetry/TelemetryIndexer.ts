@@ -3,6 +3,11 @@ import { readdirSync } from "node:fs";
 import { join } from "node:path";
 import { promisify } from "node:util";
 import type { RegisteredRepo, RepoTelemetry } from "@sandcastle/protocol";
+import { GitHubClient } from "../github/GitHubClient.js";
+import { readChurnScore } from "./churn/ChurnReader.js";
+import { readCiGreenRate30d } from "./ci/CiRateReader.js";
+import { readCoveragePct } from "./coverage/CoverageReader.js";
+import { readOpenIssueCount } from "./issues/IssueCountReader.js";
 import type { SqliteStore } from "./SqliteStore.js";
 
 const execFileAsync = promisify(execFile);
@@ -18,11 +23,24 @@ export class TelemetryIndexer {
     const cached = this.store.getRepoTelemetry(repo.id);
     if (!options?.force && cached && isFresh(cached)) return cached;
 
+    const github = new GitHubClient({ repoRoot: repo.root });
+    const [coveragePct, ciGreenRate30d, openIssues, churnScore] =
+      await Promise.all([
+        safeTelemetry("coverage", () => readCoveragePct(repo.root, this.store)),
+        safeTelemetry("ci", () =>
+          readCiGreenRate30d(repo.root, { store: this.store, github }),
+        ),
+        safeTelemetry("issues", () =>
+          readOpenIssueCount(repo.root, { store: this.store, github }),
+        ),
+        safeTelemetry("churn", () => readChurnScore(repo.root, this.store)),
+      ]);
+
     const telemetry: RepoTelemetry = {
-      coveragePct: null,
-      ciGreenRate30d: null,
-      openIssues: null,
-      churnScore: null,
+      coveragePct,
+      ciGreenRate30d,
+      openIssues,
+      churnScore,
       ageDays: await getAgeDays(repo.root),
       testCount: countTestFiles(repo.root),
       branch: await git(repo.root, ["rev-parse", "--abbrev-ref", "HEAD"]),
@@ -60,6 +78,21 @@ const getAgeDays = async (repoRoot: string): Promise<number | null> => {
   const ageMs = Date.now() - Date.parse(firstCommitAt);
   if (!Number.isFinite(ageMs)) return null;
   return Math.max(0, Math.floor(ageMs / 86_400_000));
+};
+
+const safeTelemetry = async <T>(
+  domain: string,
+  read: () => T | Promise<T>,
+): Promise<T | null> => {
+  try {
+    return await read();
+  } catch (error) {
+    console.warn(
+      `[sandcastle-control] telemetry ${domain} unavailable`,
+      error instanceof Error ? error.message : String(error),
+    );
+    return null;
+  }
 };
 
 const git = async (

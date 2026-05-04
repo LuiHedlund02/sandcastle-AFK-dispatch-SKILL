@@ -17,6 +17,7 @@ import type {
   RunEvent,
 } from "@sandcastle/protocol";
 import type { OperativeIdentity } from "@sandcastle/protocol";
+import { ActivityFeed } from "../activity/ActivityFeed.js";
 import { DecisionActions } from "../decisions/DecisionActions.js";
 import { FleetBudgetService } from "../fleet/FleetBudgetService.js";
 import type { OperativeStore } from "../operatives/OperativeStore.js";
@@ -26,6 +27,7 @@ import {
   type CoordinatedRunStrategy,
 } from "./RepoRunCoordinator.js";
 import type { SqliteStore } from "../telemetry/SqliteStore.js";
+import { XpLedger } from "../xp/XpLedger.js";
 import { PhasedRunOrchestrator } from "../quest-forge/PhasedRunOrchestrator.js";
 import { QuestForgeParser } from "../quest-forge/QuestForgeParser.js";
 import { spawn, type StdioOptions } from "node:child_process";
@@ -141,6 +143,8 @@ export class RunSupervisor {
   private readonly sandboxFactory: () => SandboxProvider;
   private readonly coordinator: RepoRunCoordinator;
   private readonly budgetService: FleetBudgetService;
+  private readonly activityFeed: ActivityFeed;
+  private readonly xpLedger: XpLedger;
 
   constructor(private readonly options: RunSupervisorOptions) {
     this.runImpl = options.runImpl ?? sandcastleRun;
@@ -148,6 +152,8 @@ export class RunSupervisor {
     this.sandboxFactory = options.sandboxFactory ?? hostSandbox;
     this.coordinator = options.coordinator ?? new RepoRunCoordinator();
     this.budgetService = options.budgetService ?? new FleetBudgetService();
+    this.activityFeed = new ActivityFeed(options.store);
+    this.xpLedger = new XpLedger(options.store);
     for (const run of options.store.listRuns()) {
       this.projector.createQueued({
         id: run.id,
@@ -225,6 +231,15 @@ export class RunSupervisor {
       sandboxProvider: "host-bind-mount",
     });
     this.options.store.upsertRun(queued);
+    this.handleEvent(runId, {
+      type: "run.started",
+      runId,
+      directive: request.directive,
+      branch: prepared.branch,
+      worktreePath,
+      iteration: 0,
+      timestamp: new Date(queued.startedAt),
+    });
 
     const controller = new AbortController();
     this.controllers.set(runId, controller);
@@ -322,6 +337,15 @@ export class RunSupervisor {
       phaseIds: phases.map((phase) => phase.id),
     });
     this.options.store.upsertRun(queued);
+    this.handleEvent(runId, {
+      type: "run.started",
+      runId,
+      directive: request.directive,
+      branch: prepared.branch,
+      worktreePath,
+      iteration: 0,
+      timestamp: new Date(queued.startedAt),
+    });
 
     const controller = new AbortController();
     this.controllers.set(runId, controller);
@@ -452,7 +476,10 @@ export class RunSupervisor {
 
   private handleEvent(runId: string, event: RunEvent): void {
     const run = this.projector.project(event, runId);
-    if (run) this.options.store.upsertRun(run);
+    if (run) {
+      this.options.store.upsertRun(run);
+      this.activityFeed.recordRunEvent(this.options.repoRoot, run, event);
+    }
     this.options.store.appendEvent(runId, event);
     for (const subscriber of this.subscribers) subscriber(runId, event);
   }
@@ -464,6 +491,7 @@ export class RunSupervisor {
       getRun: (runId) => this.getRun(runId),
       emitEvent: (runId, event) => this.handleEvent(runId, event),
       targetBranch: () => currentBranch(this.options.repoRoot),
+      xpLedger: this.xpLedger,
     });
   }
 

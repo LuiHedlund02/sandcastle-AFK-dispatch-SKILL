@@ -26,6 +26,14 @@ export type {
 } from "./fleet/FleetBudgetService.js";
 export { DecisionActions } from "./decisions/DecisionActions.js";
 export type { DecisionActionsOptions } from "./decisions/DecisionActions.js";
+export { GitHubClient } from "./github/GitHubClient.js";
+export { parseGitRemote } from "./github/parseGitRemote.js";
+export { ActivityFeed } from "./activity/ActivityFeed.js";
+export { XpLedger } from "./xp/XpLedger.js";
+export {
+  computePatchIdentityHash,
+  hashCanonicalDiff,
+} from "./xp/patchIdentity.js";
 export { QuestForgeParser } from "./quest-forge/QuestForgeParser.js";
 export { VerifyRuleExecutor } from "./quest-forge/VerifyRuleExecutor.js";
 export { PhasedRunOrchestrator } from "./quest-forge/PhasedRunOrchestrator.js";

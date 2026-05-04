@@ -7,7 +7,13 @@ import {
   writeFileSync,
 } from "node:fs";
 import { dirname, join } from "node:path";
-import type { RepoTelemetry, Run, RunEvent } from "@sandcastle/protocol";
+import type {
+  ActivityEvent,
+  RepoTelemetry,
+  Run,
+  RunEvent,
+  XpLedgerEntry,
+} from "@sandcastle/protocol";
 
 export interface StoredRunEvent {
   readonly seq: number;
@@ -23,7 +29,28 @@ interface StoreDriver {
   getRepoTelemetry(repoId: string): RepoTelemetry | undefined;
   upsertRepoTelemetry(repoId: string, telemetry: RepoTelemetry): void;
   clearRepoTelemetry(repoId: string): void;
+  getDomainCache<T>(
+    repoRoot: string,
+    domain: string,
+  ): DomainCache<T> | undefined;
+  setDomainCache(repoRoot: string, domain: string, value: unknown): void;
+  insertXpEntry(entry: XpLedgerEntry): boolean;
+  listXpEntries(filter?: XpEntryFilter): XpLedgerEntry[];
+  markXpReverted(repoRoot: string, patchHash: string, revertedAt: string): void;
+  appendActivity(repoRoot: string, event: ActivityEvent): void;
+  listActivity(repoRoot: string, limit: number): ActivityEvent[];
   close(): void;
+}
+
+export interface DomainCache<T> {
+  readonly indexedAt: string;
+  readonly value: T;
+}
+
+export interface XpEntryFilter {
+  readonly runId?: string;
+  readonly operativeId?: string;
+  readonly repoRoot?: string;
 }
 
 export class SqliteStore {
@@ -68,6 +95,41 @@ export class SqliteStore {
 
   clearRepoTelemetry(repoId: string): void {
     this.driver.clearRepoTelemetry(repoId);
+  }
+
+  getDomainCache<T>(
+    repoRoot: string,
+    domain: string,
+  ): DomainCache<T> | undefined {
+    return this.driver.getDomainCache<T>(repoRoot, domain);
+  }
+
+  setDomainCache(repoRoot: string, domain: string, value: unknown): void {
+    this.driver.setDomainCache(repoRoot, domain, value);
+  }
+
+  insertXpEntry(entry: XpLedgerEntry): boolean {
+    return this.driver.insertXpEntry(entry);
+  }
+
+  listXpEntries(filter?: XpEntryFilter): XpLedgerEntry[] {
+    return this.driver.listXpEntries(filter);
+  }
+
+  markXpReverted(
+    repoRoot: string,
+    patchHash: string,
+    revertedAt: string,
+  ): void {
+    this.driver.markXpReverted(repoRoot, patchHash, revertedAt);
+  }
+
+  appendActivity(repoRoot: string, event: ActivityEvent): void {
+    this.driver.appendActivity(repoRoot, event);
+  }
+
+  listActivity(repoRoot: string, limit = 50): ActivityEvent[] {
+    return this.driver.listActivity(repoRoot, limit);
   }
 
   close(): void {
@@ -125,6 +187,39 @@ CREATE TABLE IF NOT EXISTS repo_telemetry (
   indexed_at INTEGER NOT NULL,
   raw_json TEXT NOT NULL
 );
+CREATE TABLE IF NOT EXISTS telemetry_domain_cache (
+  repo_root TEXT NOT NULL,
+  domain TEXT NOT NULL,
+  indexed_at INTEGER NOT NULL,
+  raw_json TEXT NOT NULL,
+  PRIMARY KEY (repo_root, domain)
+);
+CREATE TABLE IF NOT EXISTS xp_ledger (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  run_id TEXT NOT NULL,
+  repo_root TEXT NOT NULL,
+  operative_id TEXT NOT NULL,
+  patch_hash TEXT NOT NULL,
+  base_xp INTEGER NOT NULL,
+  bonus INTEGER NOT NULL,
+  penalty INTEGER NOT NULL,
+  net_xp INTEGER NOT NULL,
+  recorded_at TEXT NOT NULL,
+  reverted_at TEXT,
+  UNIQUE(repo_root, patch_hash)
+);
+CREATE INDEX IF NOT EXISTS idx_xp_ledger_operative_recorded_at
+  ON xp_ledger(operative_id, recorded_at DESC);
+CREATE TABLE IF NOT EXISTS activity_events (
+  id TEXT PRIMARY KEY,
+  repo_root TEXT NOT NULL,
+  at TEXT NOT NULL,
+  type TEXT NOT NULL,
+  run_id TEXT NOT NULL,
+  raw_json TEXT NOT NULL
+);
+CREATE INDEX IF NOT EXISTS idx_activity_events_repo_at
+  ON activity_events(repo_root, at DESC);
 `);
   }
 
@@ -243,6 +338,136 @@ CREATE TABLE IF NOT EXISTS repo_telemetry (
     this.db.prepare("DELETE FROM repo_telemetry WHERE repo_id = ?").run(repoId);
   }
 
+  getDomainCache<T>(
+    repoRoot: string,
+    domain: string,
+  ): DomainCache<T> | undefined {
+    const row = this.db
+      .prepare(
+        "SELECT indexed_at, raw_json FROM telemetry_domain_cache WHERE repo_root = ? AND domain = ?",
+      )
+      .get(repoRoot, domain) as
+      | { indexed_at: number; raw_json: string }
+      | undefined;
+    if (!row) return undefined;
+    return {
+      indexedAt: new Date(row.indexed_at).toISOString(),
+      value: JSON.parse(row.raw_json) as T,
+    };
+  }
+
+  setDomainCache(repoRoot: string, domain: string, value: unknown): void {
+    this.db
+      .prepare(
+        `INSERT INTO telemetry_domain_cache (repo_root, domain, indexed_at, raw_json)
+         VALUES (?, ?, ?, ?)
+         ON CONFLICT(repo_root, domain) DO UPDATE SET
+           indexed_at = excluded.indexed_at,
+           raw_json = excluded.raw_json`,
+      )
+      .run(repoRoot, domain, Date.now(), JSON.stringify(value));
+  }
+
+  insertXpEntry(entry: XpLedgerEntry): boolean {
+    const result = this.db
+      .prepare(
+        `INSERT OR IGNORE INTO xp_ledger
+         (run_id, repo_root, operative_id, patch_hash, base_xp, bonus, penalty, net_xp, recorded_at, reverted_at)
+         VALUES (@runId, @repoRoot, @operativeId, @patchHash, @baseXp, @bonus, @penalty, @netXp, @recordedAt, @revertedAt)`,
+      )
+      .run(entry);
+    return result.changes === 1;
+  }
+
+  listXpEntries(filter?: XpEntryFilter): XpLedgerEntry[] {
+    const clauses: string[] = [];
+    const params: Record<string, string> = {};
+    if (filter?.runId) {
+      clauses.push("run_id = @runId");
+      params.runId = filter.runId;
+    }
+    if (filter?.operativeId) {
+      clauses.push("operative_id = @operativeId");
+      params.operativeId = filter.operativeId;
+    }
+    if (filter?.repoRoot) {
+      clauses.push("repo_root = @repoRoot");
+      params.repoRoot = filter.repoRoot;
+    }
+    const where = clauses.length > 0 ? `WHERE ${clauses.join(" AND ")}` : "";
+    const rows = this.db
+      .prepare(
+        `SELECT run_id, repo_root, operative_id, patch_hash, base_xp, bonus, penalty, net_xp, recorded_at, reverted_at
+         FROM xp_ledger ${where} ORDER BY recorded_at DESC, id DESC`,
+      )
+      .all(params) as Array<{
+      run_id: string;
+      repo_root: string;
+      operative_id: string;
+      patch_hash: string;
+      base_xp: number;
+      bonus: number;
+      penalty: number;
+      net_xp: number;
+      recorded_at: string;
+      reverted_at: string | null;
+    }>;
+    return rows.map((row) => ({
+      runId: row.run_id,
+      repoRoot: row.repo_root,
+      operativeId: row.operative_id,
+      patchHash: row.patch_hash,
+      baseXp: row.base_xp,
+      bonus: row.bonus,
+      penalty: row.penalty,
+      netXp: row.net_xp,
+      recordedAt: row.recorded_at,
+      revertedAt: row.reverted_at,
+    }));
+  }
+
+  markXpReverted(
+    repoRoot: string,
+    patchHash: string,
+    revertedAt: string,
+  ): void {
+    this.db
+      .prepare(
+        `UPDATE xp_ledger
+         SET reverted_at = COALESCE(reverted_at, ?), net_xp = 0
+         WHERE repo_root = ? AND patch_hash = ? AND reverted_at IS NULL`,
+      )
+      .run(revertedAt, repoRoot, patchHash);
+  }
+
+  appendActivity(repoRoot: string, event: ActivityEvent): void {
+    this.db
+      .prepare(
+        `INSERT OR IGNORE INTO activity_events
+         (id, repo_root, at, type, run_id, raw_json)
+         VALUES (?, ?, ?, ?, ?, ?)`,
+      )
+      .run(
+        repoRootScopedActivityId(repoRoot, event.id),
+        repoRoot,
+        event.at,
+        event.type,
+        event.runId,
+        JSON.stringify(event),
+      );
+  }
+
+  listActivity(repoRoot: string, limit: number): ActivityEvent[] {
+    const rows = this.db
+      .prepare(
+        "SELECT raw_json FROM activity_events WHERE repo_root = ? ORDER BY at DESC LIMIT ?",
+      )
+      .all(repoRoot, Math.max(1, Math.min(500, limit))) as Array<{
+      raw_json: string;
+    }>;
+    return rows.map((row) => JSON.parse(row.raw_json) as ActivityEvent);
+  }
+
   close(): void {
     this.db.close();
   }
@@ -252,6 +477,9 @@ interface JsonData {
   readonly runs: Record<string, Run>;
   readonly events: Record<string, StoredRunEvent[]>;
   readonly repoTelemetry?: Record<string, RepoTelemetry>;
+  readonly domainCache?: Record<string, DomainCache<unknown>>;
+  readonly xpLedger?: XpLedgerEntry[];
+  readonly activity?: Record<string, ActivityEvent[]>;
 }
 
 class JsonFallbackDriver implements StoreDriver {
@@ -312,6 +540,101 @@ class JsonFallbackDriver implements StoreDriver {
     this.flush();
   }
 
+  getDomainCache<T>(
+    repoRoot: string,
+    domain: string,
+  ): DomainCache<T> | undefined {
+    return this.data.domainCache?.[domainCacheKey(repoRoot, domain)] as
+      | DomainCache<T>
+      | undefined;
+  }
+
+  setDomainCache(repoRoot: string, domain: string, value: unknown): void {
+    this.data = {
+      ...this.data,
+      domainCache: {
+        ...(this.data.domainCache ?? {}),
+        [domainCacheKey(repoRoot, domain)]: {
+          indexedAt: new Date().toISOString(),
+          value,
+        },
+      },
+    };
+    this.flush();
+  }
+
+  insertXpEntry(entry: XpLedgerEntry): boolean {
+    const entries = this.data.xpLedger ?? [];
+    if (
+      entries.some(
+        (existing) =>
+          existing.repoRoot === entry.repoRoot &&
+          existing.patchHash === entry.patchHash,
+      )
+    ) {
+      return false;
+    }
+    this.data = { ...this.data, xpLedger: [entry, ...entries] };
+    this.flush();
+    return true;
+  }
+
+  listXpEntries(filter?: XpEntryFilter): XpLedgerEntry[] {
+    return [...(this.data.xpLedger ?? [])]
+      .filter(
+        (entry) =>
+          (!filter?.runId || entry.runId === filter.runId) &&
+          (!filter?.operativeId || entry.operativeId === filter.operativeId) &&
+          (!filter?.repoRoot || entry.repoRoot === filter.repoRoot),
+      )
+      .sort((a, b) => b.recordedAt.localeCompare(a.recordedAt));
+  }
+
+  markXpReverted(
+    repoRoot: string,
+    patchHash: string,
+    revertedAt: string,
+  ): void {
+    this.data = {
+      ...this.data,
+      xpLedger: (this.data.xpLedger ?? []).map((entry) =>
+        entry.repoRoot === repoRoot &&
+        entry.patchHash === patchHash &&
+        entry.revertedAt === null
+          ? { ...entry, revertedAt, netXp: 0 }
+          : entry,
+      ),
+    };
+    this.flush();
+  }
+
+  appendActivity(repoRoot: string, event: ActivityEvent): void {
+    const scoped = repoRootScopedActivityId(repoRoot, event.id);
+    const events = this.data.activity?.[repoRoot] ?? [];
+    if (
+      events.some(
+        (existing) =>
+          repoRootScopedActivityId(repoRoot, existing.id) === scoped,
+      )
+    ) {
+      return;
+    }
+    this.data = {
+      ...this.data,
+      activity: {
+        ...(this.data.activity ?? {}),
+        [repoRoot]: [event, ...events],
+      },
+    };
+    this.flush();
+  }
+
+  listActivity(repoRoot: string, limit: number): ActivityEvent[] {
+    return [...(this.data.activity?.[repoRoot] ?? [])]
+      .sort((a, b) => b.at.localeCompare(a.at))
+      .slice(0, Math.max(1, Math.min(500, limit)));
+  }
+
   close(): void {}
 
   private flush(): void {
@@ -326,3 +649,9 @@ const reviveEvent = (event: RunEvent): RunEvent =>
     ...event,
     timestamp: new Date(event.timestamp),
   }) as RunEvent;
+
+const domainCacheKey = (repoRoot: string, domain: string): string =>
+  `${repoRoot}\0${domain}`;
+
+const repoRootScopedActivityId = (repoRoot: string, id: string): string =>
+  `${repoRoot}\0${id}`;

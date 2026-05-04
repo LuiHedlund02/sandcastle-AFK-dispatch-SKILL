@@ -9,6 +9,7 @@ import type {
   RunEvent,
 } from "@sandcastle/protocol";
 import { RepoRunCoordinator } from "../runs/RepoRunCoordinator.js";
+import type { XpLedger } from "../xp/XpLedger.js";
 
 const execFileAsync = promisify(execFile);
 
@@ -23,6 +24,7 @@ export interface DecisionActionsOptions {
     readonly targetBranch: string;
   }) => Promise<void>;
   readonly discardImpl?: (run: Run) => Promise<void>;
+  readonly xpLedger?: XpLedger;
 }
 
 export class DecisionActions {
@@ -52,6 +54,9 @@ export class DecisionActions {
         : await currentBranch(this.options.repoRoot);
 
     try {
+      const beforeCommit = await currentCommit(this.options.repoRoot).catch(
+        () => null,
+      );
       await this.options.coordinator.withMergeMutex(
         this.options.repoRoot,
         targetBranch,
@@ -60,6 +65,13 @@ export class DecisionActions {
             ? this.options.mergeImpl({ run, targetBranch })
             : mergeBranch(this.options.repoRoot, run.branch, targetBranch),
       );
+      const afterCommit = await currentCommit(this.options.repoRoot).catch(
+        () => null,
+      );
+      const xpDelta =
+        beforeCommit && afterCommit && this.options.xpLedger
+          ? await this.recordXp(run, beforeCommit, afterCommit, targetBranch)
+          : 0;
       this.options.emitEvent(run.id, {
         type: "intervention.used",
         action: "merge",
@@ -70,11 +82,11 @@ export class DecisionActions {
         type: "run.resolved",
         runId: run.id,
         result: "victory",
-        xpDelta: 0,
+        xpDelta,
         iteration: 0,
         timestamp: new Date(),
       });
-      return { runId: run.id, kind: "merge", ok: true };
+      return { runId: run.id, kind: "merge", ok: true, xpDelta };
     } catch (error) {
       return {
         runId: run.id,
@@ -82,6 +94,30 @@ export class DecisionActions {
         ok: false,
         message: error instanceof Error ? error.message : String(error),
       };
+    }
+  }
+
+  private async recordXp(
+    run: Run,
+    beforeCommit: string,
+    afterCommit: string,
+    targetBranch: string,
+  ): Promise<number> {
+    try {
+      return await this.options.xpLedger!.recordMerge({
+        runId: run.id,
+        repoRoot: this.options.repoRoot,
+        beforeCommit,
+        afterCommit,
+        mergedIntoBranch: targetBranch,
+        operativeId: run.operativeId,
+      });
+    } catch (error) {
+      console.warn(
+        "[sandcastle-control] XP ledger unavailable",
+        error instanceof Error ? error.message : String(error),
+      );
+      return 0;
     }
   }
 
@@ -124,6 +160,13 @@ const currentBranch = async (repoRoot: string): Promise<string> => {
     ["rev-parse", "--abbrev-ref", "HEAD"],
     { cwd: repoRoot },
   );
+  return stdout.trim();
+};
+
+const currentCommit = async (repoRoot: string): Promise<string> => {
+  const { stdout } = await execFileAsync("git", ["rev-parse", "HEAD"], {
+    cwd: repoRoot,
+  });
   return stdout.trim();
 };
 

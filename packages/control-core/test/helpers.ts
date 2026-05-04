@@ -12,8 +12,12 @@ export const makeRepo = (): string => {
   execFileSync("git", ["config", "user.email", "test@example.com"], {
     cwd: dir,
   });
+  // Match the runtime gitignore so SQLite cache files in .sandcastle/state/
+  // (created by SqliteStore + telemetry indexers) don't poison git
+  // operations like `git revert` that refuse on dirty trees.
+  writeFileSync(join(dir, ".gitignore"), ".sandcastle/state/\n");
   writeFileSync(join(dir, "README.md"), "# test\n");
-  execFileSync("git", ["add", "README.md"], { cwd: dir });
+  execFileSync("git", ["add", ".gitignore", "README.md"], { cwd: dir });
   execFileSync("git", ["commit", "-m", "init"], { cwd: dir, stdio: "ignore" });
   mkdirSync(join(dir, ".sandcastle", "logs"), { recursive: true });
   return dir;

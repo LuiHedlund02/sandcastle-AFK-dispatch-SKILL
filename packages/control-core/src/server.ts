@@ -13,6 +13,7 @@ import {
   zPostRunsRequest,
 } from "@sandcastle/protocol";
 import type { FleetState } from "@sandcastle/protocol";
+import { ActivityFeed } from "./activity/ActivityFeed.js";
 import { resolveToken } from "./auth/token.js";
 import { DeckLoader } from "./deck/DeckLoader.js";
 import { BudgetExceededError } from "./fleet/FleetBudgetService.js";
@@ -24,6 +25,7 @@ import { RunSupervisor } from "./runs/RunSupervisor.js";
 import { SqliteStore } from "./telemetry/SqliteStore.js";
 import { TelemetryIndexer } from "./telemetry/TelemetryIndexer.js";
 import { WsHub } from "./ws/WsHub.js";
+import { XpLedger } from "./xp/XpLedger.js";
 
 export interface StartServerOptions {
   readonly port?: number;
@@ -270,6 +272,36 @@ const handleRequest = async (ctx: {
       return;
     }
 
+    const repoActivityMatch = url.pathname.match(
+      /^\/repos\/([^/]+)\/activity$/,
+    );
+    if (req.method === "GET" && repoActivityMatch) {
+      const repo = ctx.repoRegistry.getRepoById(
+        decodeURIComponent(repoActivityMatch[1]!),
+      );
+      if (!repo) {
+        writeJson(res, 404, {
+          error: { code: "NOT_FOUND", message: "Repo not found" },
+        });
+        return;
+      }
+      const activityStore =
+        repo.root === ctx.repoRegistry.root
+          ? ctx.store
+          : new SqliteStore(repo.root);
+      try {
+        writeJson(res, 200, {
+          events: new ActivityFeed(activityStore).getRecent(
+            repo.root,
+            Number(url.searchParams.get("limit") ?? 50),
+          ),
+        });
+      } finally {
+        if (activityStore !== ctx.store) activityStore.close();
+      }
+      return;
+    }
+
     if (req.method === "GET" && url.pathname === "/operatives") {
       writeJson(res, 200, {
         operatives: ctx.operativeStore.listIdentities(),
@@ -292,6 +324,13 @@ const handleRequest = async (ctx: {
         id,
       );
       writeJson(res, 200, repoRecord ? { ...identity, repoRecord } : identity);
+      return;
+    }
+
+    const operativeXpMatch = url.pathname.match(/^\/operatives\/([^/]+)\/xp$/);
+    if (req.method === "GET" && operativeXpMatch) {
+      const id = decodeURIComponent(operativeXpMatch[1]!);
+      writeJson(res, 200, new XpLedger(ctx.store).getOperativeXp(id));
       return;
     }
 
