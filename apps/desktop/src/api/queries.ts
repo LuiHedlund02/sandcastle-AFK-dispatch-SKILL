@@ -5,7 +5,7 @@ import type {
   PostRunsRequest,
   RunDecisionKind,
 } from "@sandcastle/protocol";
-import { apiClient } from "./client";
+import { useApiClient } from "@sandcastle/transport";
 
 export const queryKeys = {
   fleet: ["fleet"] as const,
@@ -35,6 +35,7 @@ export const useQuestForgeParse = (
   directive: string,
   options?: { readonly debounceMs?: number; readonly minChars?: number },
 ) => {
+  const apiClient = useApiClient();
   const debounceMs = options?.debounceMs ?? 300;
   const minChars = options?.minChars ?? 4;
   const [debounced, setDebounced] = useState(directive);
@@ -51,6 +52,7 @@ export const useQuestForgeParse = (
 };
 
 export const useEngageQuestForge = () => {
+  const apiClient = useApiClient();
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: (request: PostQuestForgeEngageRequest) =>
@@ -61,20 +63,25 @@ export const useEngageQuestForge = () => {
   });
 };
 
-export const useFleet = () =>
-  useQuery({
+export const useFleet = () => {
+  const apiClient = useApiClient();
+  return useQuery({
     queryKey: queryKeys.fleet,
     queryFn: () => apiClient.getFleet(),
   });
+};
 
-export const useRepo = () =>
-  useQuery({
+export const useRepo = () => {
+  const apiClient = useApiClient();
+  return useQuery({
     queryKey: queryKeys.repo,
     queryFn: () => apiClient.getRepo(),
   });
+};
 
-export const useRun = (runId: string | undefined) =>
-  useQuery({
+export const useRun = (runId: string | undefined) => {
+  const apiClient = useApiClient();
+  return useQuery({
     queryKey: queryKeys.run(runId ?? ""),
     queryFn: () => apiClient.getRun(runId ?? ""),
     enabled: Boolean(runId),
@@ -85,8 +92,10 @@ export const useRun = (runId: string | undefined) =>
         : 2_000;
     },
   });
+};
 
 export const useCreateRun = () => {
+  const apiClient = useApiClient();
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: (request: PostRunsRequest) => apiClient.createRun(request),
@@ -97,6 +106,7 @@ export const useCreateRun = () => {
 };
 
 export const useCancelRun = (runId: string) => {
+  const apiClient = useApiClient();
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: () => apiClient.cancelRun(runId),
@@ -108,6 +118,7 @@ export const useCancelRun = (runId: string) => {
 };
 
 export const useDecideRun = (runId: string) => {
+  const apiClient = useApiClient();
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: (kind: RunDecisionKind) => apiClient.decideRun(runId, kind),
@@ -119,6 +130,7 @@ export const useDecideRun = (runId: string) => {
 };
 
 export const useMergeAllGreen = () => {
+  const apiClient = useApiClient();
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: () => apiClient.mergeAllGreen(),
@@ -128,54 +140,71 @@ export const useMergeAllGreen = () => {
   });
 };
 
-export const useRepos = () =>
-  useQuery({ queryKey: queryKeys.repos, queryFn: () => apiClient.getRepos() });
+export const useRepos = () => {
+  const apiClient = useApiClient();
+  return useQuery({
+    queryKey: queryKeys.repos,
+    queryFn: () => apiClient.getRepos(),
+  });
+};
 
-export const useRepoDeck = (repoId: string | undefined) =>
-  useQuery({
+export const useRepoDeck = (repoId: string | undefined) => {
+  const apiClient = useApiClient();
+  return useQuery({
     queryKey: queryKeys.repoDeck(repoId ?? ""),
     queryFn: () => apiClient.getRepoDeck(repoId ?? ""),
     enabled: Boolean(repoId),
   });
+};
 
-export const useRepoTelemetry = (repoId: string | undefined) =>
-  useQuery({
+export const useRepoTelemetry = (repoId: string | undefined) => {
+  const apiClient = useApiClient();
+  return useQuery({
     queryKey: queryKeys.repoTelemetry(repoId ?? ""),
     queryFn: () => apiClient.getRepoTelemetry(repoId ?? ""),
     enabled: Boolean(repoId),
   });
+};
 
-export const useOperatives = () =>
-  useQuery({
+export const useOperatives = () => {
+  const apiClient = useApiClient();
+  return useQuery({
     queryKey: queryKeys.operatives,
     queryFn: () => apiClient.getOperatives(),
   });
+};
 
-export const useOperative = (operativeId: string | undefined) =>
-  useQuery({
+export const useOperative = (operativeId: string | undefined) => {
+  const apiClient = useApiClient();
+  return useQuery({
     queryKey: queryKeys.operative(operativeId ?? ""),
     queryFn: () => apiClient.getOperative(operativeId ?? ""),
     enabled: Boolean(operativeId),
   });
+};
 
 /**
  * Recent ActivityEvents for a repo. Default limit is 10 (planet screen);
  * the backend caps at 50.
  */
-export const useActivity = (repoId: string | undefined, limit = 10) =>
-  useQuery({
+export const useActivity = (repoId: string | undefined, limit = 10) => {
+  const apiClient = useApiClient();
+  return useQuery({
     queryKey: queryKeys.repoActivity(repoId ?? "", limit),
     queryFn: () => apiClient.getActivity(repoId ?? "", limit),
     enabled: Boolean(repoId),
     // Activity is append-only; refetch lazily.
     staleTime: 5_000,
   });
+};
 
 /** Operative XP summary — totalXp + recent merges. */
-export const useOperativeXp = (operativeId: string | undefined) =>
-  useQuery({
+export const useOperativeXp = (operativeId: string | undefined) => {
+  const apiClient = useApiClient();
+  return useQuery({
     queryKey: queryKeys.operativeXp(operativeId ?? ""),
     queryFn: () => apiClient.getOperativeXp(operativeId ?? ""),
     enabled: Boolean(operativeId),
     staleTime: 5_000,
   });
+};

@@ -25,6 +25,7 @@
     "nanoid": "^5.0.0"
   },
   "devDependencies": {
+    "@sandcastle/transport": "*",
     "@types/better-sqlite3": "^7.6.0",
     "@types/ws": "^8.5.0"
   }

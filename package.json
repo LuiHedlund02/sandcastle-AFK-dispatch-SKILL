@@ -49,6 +49,7 @@
     "test-vercel": "npm run build && tsx --env-file=.sandcastle/.env .sandcastle/test-vercel.ts",
     "test-interactive": "npm run build && tsx --env-file=.sandcastle/.env .sandcastle/test-interactive.ts",
     "dev:desktop": "npm run dev -w @sandcastle/desktop",
+    "dev:web": "npm run dev -w @sandcastle/web",
     "control-core:dev": "npm run dev -w @sandcastle/control-core",
     "control-core:test": "npm run test -w @sandcastle/control-core",
     "protocol:test": "npm run test -w @sandcastle/protocol"

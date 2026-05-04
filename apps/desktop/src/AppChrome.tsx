@@ -17,8 +17,11 @@ import type {
   Run,
   RunDecisionKind,
 } from "@sandcastle/protocol";
-import { connectFleetSocket } from "./api/ws";
-import { apiClient } from "./api/client";
+import {
+  useApiClient,
+  useFleetSocket,
+  useTransport,
+} from "@sandcastle/transport";
 import {
   queryKeys,
   useCreateRun,
@@ -57,17 +60,19 @@ export function AppChrome(): JSX.Element {
   const connectionState = useFleetStore((state) => state.connectionState);
   const { runId } = useParams();
   const navigate = useNavigate();
+  const apiClient = useApiClient();
+  const connectFleetSocket = useFleetSocket();
+  const { connection } = useTransport();
   const createRun = useCreateRun();
   const mergeAllGreen = useMergeAllGreen();
   const queryClient = useQueryClient();
 
   useEffect(() => {
     const disconnect = connectFleetSocket(
-      window.sandcastle,
       useFleetStore.getState().applyServerMessage,
     );
     return disconnect;
-  }, []);
+  }, [connectFleetSocket]);
 
   // Auto-dismiss the +XP toast after a few seconds.
   useEffect(() => {
@@ -312,7 +317,14 @@ export function AppChrome(): JSX.Element {
               fontFamily: "var(--sc-mono)",
             }}
           >
-            127.0.0.1:{window.sandcastle.port || "..."}
+            {(() => {
+              try {
+                const url = new URL(connection.baseUrl);
+                return url.host || connection.baseUrl;
+              } catch {
+                return connection.baseUrl || "...";
+              }
+            })()}
           </span>
         </span>
       }
