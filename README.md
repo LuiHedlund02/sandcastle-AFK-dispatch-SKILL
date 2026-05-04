@@ -667,7 +667,7 @@ Removes the Podman image.
 
 | Option               | Type               | Default                       | Description                                                                                                                                                     |
 | -------------------- | ------------------ | ----------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `agent`              | AgentProvider      | —                             | **Required.** Agent provider (e.g. `claudeCode("claude-opus-4-6")`, `pi("claude-sonnet-4-6")`, `codex("gpt-5.4-mini")`, `opencode("opencode/big-pickle")`)      |
+| `agent`              | AgentProvider      | —                             | **Required.** Agent provider (e.g. `claudeCode("claude-opus-4-6")`, `pi("openai-codex/gpt-5.5")`, `codex("gpt-5.4-mini")`, `opencode("opencode/big-pickle")`)   |
 | `sandbox`            | SandboxProvider    | —                             | **Required.** Sandbox provider (e.g. `docker()`, `podman()`, `docker({ imageName: "sandcastle:local" })`)                                                       |
 | `cwd`                | string             | `process.cwd()`               | Host repo directory — anchor for `.sandcastle/` artifacts and git operations. Relative paths resolve against `process.cwd()`.                                   |
 | `prompt`             | string             | —                             | Inline prompt (mutually exclusive with `promptFile`)                                                                                                            |

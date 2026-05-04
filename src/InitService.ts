@@ -188,11 +188,11 @@ ANTHROPIC_API_KEY=`,
   {
     name: "pi",
     label: "Pi",
-    defaultModel: "claude-sonnet-4-6",
+    defaultModel: "openai-codex/gpt-5.5",
     factoryImport: "pi",
     dockerfileTemplate: PI_DOCKERFILE,
-    envExample: `# Anthropic API key
-ANTHROPIC_API_KEY=`,
+    envExample: `# Pi defaults to openai-codex/gpt-5.5 via ChatGPT Plus/Pro (Codex).
+# Authenticate with Pi's /login flow and make ~/.pi/agent/auth.json available to the sandbox.`,
   },
   {
     name: "codex",
@@ -340,7 +340,6 @@ export function getNextStepsLines(
     return [
       "Next steps:",
       `1. Set the required env vars in .sandcastle/.env (see .sandcastle/.env.example)`,
-      "   If you want to use your Claude subscription instead of an API key, see https://github.com/mattpocock/sandcastle/issues/191",
       "2. Read and customize .sandcastle/prompt.md to describe what you want the agent to do",
       `3. Customize .sandcastle/${mainFilename} — it uses the JS API (\`run()\`) to control how the agent runs`,
       `4. Add "sandcastle": "npx tsx .sandcastle/${mainFilename}" to your package.json scripts`,
@@ -352,7 +351,6 @@ export function getNextStepsLines(
     const lines: string[] = [
       "Next steps:",
       `${step++}. Set the required env vars in .sandcastle/.env (see .sandcastle/.env.example)`,
-      "   If you want to use your Claude subscription instead of an API key, see https://github.com/mattpocock/sandcastle/issues/191",
       `${step++}. Add "sandcastle": "npx tsx .sandcastle/${mainFilename}" to your package.json scripts`,
       `${step++}. Templates use \`copyToWorktree: ["node_modules"]\` to copy your host node_modules into the sandbox for fast startup — the \`npm install\` in the onSandboxReady hook is a safety net for platform-specific binaries. Adjust both if you use a different package manager`,
       `${step++}. Read and customize the prompt files in .sandcastle/ — they shape what the agent does`,
