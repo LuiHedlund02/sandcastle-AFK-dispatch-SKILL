@@ -3,6 +3,7 @@ import {
   zCard,
   zDeck,
   zFleetState,
+  zMergeAllGreenResponse,
   zOperativeIdentity,
   zOperativeMicroState,
   zOperativeRepoRecord,
@@ -12,7 +13,9 @@ import {
   zRegisteredRepo,
   zRepoTelemetry,
   zRun,
+  zRunDecisionKind,
   zRunStatus,
+  zBudgetExceededError,
 } from "../src/index.js";
 
 const mode = {
@@ -195,5 +198,25 @@ describe("state schemas", () => {
     expect(zPhase.parse(phase)).toEqual(phase);
     expect(zRun.parse(run)).toEqual(run);
     expect(zFleetState.parse(fleet)).toEqual(fleet);
+  });
+
+  it("round-trips Phase 2 decision and budget schemas", () => {
+    expect(zRunDecisionKind.parse("merge")).toBe("merge");
+    expect(
+      zBudgetExceededError.parse({
+        code: "BUDGET_EXCEEDED",
+        dimension: "repo",
+        limit: 5,
+        active: 5,
+        id: "/repo",
+        message: "repo cap hit",
+      }),
+    ).toMatchObject({ dimension: "repo" });
+    expect(
+      zMergeAllGreenResponse.parse({
+        results: [{ runId: "run_123", ok: true, action: "merge" }],
+        aborted: false,
+      }),
+    ).toMatchObject({ aborted: false });
   });
 });

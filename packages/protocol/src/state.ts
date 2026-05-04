@@ -206,3 +206,30 @@ export const zFleetState = z.object({
   updatedAt: z.string(),
 });
 export type FleetState = z.infer<typeof zFleetState>;
+
+export const zBudgetExceededError = z.object({
+  code: z.literal("BUDGET_EXCEEDED"),
+  dimension: z.enum(["operative", "repo"]),
+  limit: z.number(),
+  active: z.number(),
+  id: z.string(),
+  message: z.string(),
+});
+export type BudgetExceededError = z.infer<typeof zBudgetExceededError>;
+
+export const zRunDecisionKind = z.enum(["merge", "revise", "discard"]);
+export type RunDecisionKind = z.infer<typeof zRunDecisionKind>;
+
+export const zMergeAllGreenRunResult = z.object({
+  runId: z.string(),
+  ok: z.boolean(),
+  action: z.literal("merge"),
+  message: z.string().optional(),
+});
+export type MergeAllGreenRunResult = z.infer<typeof zMergeAllGreenRunResult>;
+
+export const zMergeAllGreenResponse = z.object({
+  results: z.array(zMergeAllGreenRunResult),
+  aborted: z.boolean(),
+});
+export type MergeAllGreenResponse = z.infer<typeof zMergeAllGreenResponse>;

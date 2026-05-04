@@ -7,12 +7,26 @@ import {
   zRegisteredRepo,
   zRepoTelemetry,
   zRun,
+  zMergeAllGreenResponse,
+  zRunDecisionKind,
 } from "./state.js";
+
+const zRunBranchStrategy = z.discriminatedUnion("type", [
+  z.object({ type: z.literal("merge-to-head"), name: z.string().optional() }),
+  z.object({
+    type: z.literal("branch"),
+    branch: z.string().min(1),
+    baseBranch: z.string().optional(),
+  }),
+  z.object({ type: z.literal("head") }),
+]);
 
 export const zPostRunsRequest = z.object({
   directive: z.string().min(1),
   provider: z.enum(["claude-code", "codex", "pi", "opencode"]).optional(),
   model: z.string().optional(),
+  operativeId: z.string().optional(),
+  branchStrategy: zRunBranchStrategy.optional(),
   maxIterations: z.number().int().positive().optional(),
   completionSignal: z.union([z.string(), z.array(z.string())]).optional(),
 });
@@ -29,6 +43,24 @@ export const zPostRunCancelResponse = z.object({
   cancelled: z.boolean(),
 });
 export type PostRunCancelResponse = z.infer<typeof zPostRunCancelResponse>;
+
+export const zPostRunDecisionRequest = z.object({
+  kind: zRunDecisionKind,
+});
+export type PostRunDecisionRequest = z.infer<typeof zPostRunDecisionRequest>;
+
+export const zPostRunDecisionResponse = z.object({
+  runId: z.string(),
+  kind: zRunDecisionKind,
+  ok: z.boolean(),
+  message: z.string().optional(),
+});
+export type PostRunDecisionResponse = z.infer<typeof zPostRunDecisionResponse>;
+
+export const zPostMergeAllGreenResponse = zMergeAllGreenResponse;
+export type PostMergeAllGreenResponse = z.infer<
+  typeof zPostMergeAllGreenResponse
+>;
 
 export const zGetRunResponse = zRun;
 export type GetRunResponse = z.infer<typeof zGetRunResponse>;
