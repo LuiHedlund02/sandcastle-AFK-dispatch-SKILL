@@ -1,4 +1,4 @@
-import type { JSX } from "react";
+import type { ComponentProps, JSX } from "react";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { Outlet, useNavigate, useParams } from "react-router-dom";
 import {
@@ -26,6 +26,7 @@ import {
 } from "@sandcastle/transport";
 import { queryKeys, useCreateRun, useMergeAllGreen } from "../api/queries";
 import { useFleetStore } from "../state/fleetStore";
+import { useFleetMicroStateMap } from "../state/useFleetMicroStateMap";
 import { useQueryClient } from "@tanstack/react-query";
 
 const mapConnectionState = (
@@ -339,7 +340,7 @@ export function AppChrome(): JSX.Element {
           </span>
         }
         dock={
-          <FleetDock
+          <DockWithMicroState
             runs={runs}
             capacity={fleet?.capacity ?? { used: 0, max: 1 }}
             currentRunId={runId}
@@ -373,4 +374,16 @@ export function AppChrome(): JSX.Element {
       </AppChromeShell>
     </>
   );
+}
+
+/**
+ * Thin wrapper around <FleetDock /> that subscribes to the per-run
+ * micro-state map separately from the rest of the chrome state — keeps
+ * the dock the only thing re-rendering on event-driven decay ticks.
+ */
+function DockWithMicroState(
+  props: Omit<ComponentProps<typeof FleetDock>, "microStateByRunId">,
+): JSX.Element {
+  const microStateByRunId = useFleetMicroStateMap();
+  return <FleetDock {...props} microStateByRunId={microStateByRunId} />;
 }

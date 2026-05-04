@@ -1,5 +1,5 @@
 import type { JSX, MouseEvent, ReactNode } from "react";
-import type { Run } from "@sandcastle/protocol";
+import type { OperativeMicroState, Run } from "@sandcastle/protocol";
 import { StatusPill } from "../status/StatusPill.js";
 import styles from "./FleetDock.module.css";
 
@@ -10,6 +10,11 @@ export interface FleetDockCellProps {
   readonly glyph?: ReactNode;
   /** Optional href for link semantics. If provided, renders an <a>. Otherwise renders a <button>. */
   readonly href?: string;
+  /**
+   * Live event-driven micro-state for this run. Drives the eye flicker /
+   * glow / shake animations. Defaults to "idle".
+   */
+  readonly microState?: OperativeMicroState;
   readonly onActivate?: (run: Run, event: MouseEvent) => void;
   readonly className?: string;
 }
@@ -24,6 +29,7 @@ export function FleetDockCell({
   current,
   glyph,
   href,
+  microState = "idle",
   onActivate,
   className,
 }: FleetDockCellProps): JSX.Element {
@@ -40,6 +46,7 @@ export function FleetDockCell({
     <>
       <span className={styles.avatar} aria-hidden="true">
         {glyph ?? "π"}
+        <span className={styles.eye} aria-hidden="true" />
       </span>
       <span className={styles.body}>
         <span className={styles.title}>{run.directive}</span>
@@ -58,6 +65,7 @@ export function FleetDockCell({
       <a
         className={cls}
         href={href}
+        data-state={microState}
         aria-label={label}
         aria-current={current ? "page" : undefined}
         onClick={(event) => onActivate?.(run, event)}
@@ -71,6 +79,7 @@ export function FleetDockCell({
     <button
       type="button"
       className={cls}
+      data-state={microState}
       aria-label={label}
       aria-current={current ? "true" : undefined}
       onClick={(event) => onActivate?.(run, event)}

@@ -11,6 +11,17 @@
 export { AppChrome } from "./chrome/AppChrome";
 
 export { useFleetStore } from "./state/fleetStore";
+export {
+  useRunMicroState,
+  useOperativeMicroStates,
+} from "./state/useOperativeState";
+export {
+  projectMicroState,
+  decayEntry,
+  makeIdleEntry,
+  STRIKING_TOOL_NAMES,
+} from "./state/operativeMicroState";
+export type { OperativeMicroEntry } from "./state/operativeMicroState";
 
 export {
   queryKeys,

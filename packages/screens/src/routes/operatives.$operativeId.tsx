@@ -19,6 +19,7 @@ import type {
 } from "@sandcastle/protocol";
 import { useFleet, useOperative, useOperativeXp } from "../api/queries";
 import { useFleetStore } from "../state/fleetStore";
+import { useRunMicroState } from "../state/useOperativeState";
 
 /* ------------------------------------------------------------------ styles */
 
@@ -351,6 +352,7 @@ function OperativeContent({
       .filter((r) => r.operativeId === operativeId);
   }, [activeFleet, operativeId]);
   const primaryDeployment: Run | undefined = activeDeployments[0];
+  const liveMicro = useRunMicroState(primaryDeployment?.id);
 
   if (isLoading && !operative) {
     return (
@@ -810,7 +812,11 @@ function OperativeContent({
           >
             <ReactiveOperativeTile
               operative={operative}
-              microState={microStateForRun(primaryDeployment.status)}
+              microState={
+                liveMicro !== "idle"
+                  ? liveMicro
+                  : microStateForRun(primaryDeployment.status)
+              }
               footer={
                 <span
                   style={{

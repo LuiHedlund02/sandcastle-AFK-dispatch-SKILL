@@ -47,6 +47,7 @@ export function ReactiveOperativeTile({
     <button
       type="button"
       className={cls}
+      data-state={microState}
       onClick={() => onSelect?.(operative)}
       aria-label={`Operative ${operative.codename}, level ${operative.level}, ${microState}`}
     >

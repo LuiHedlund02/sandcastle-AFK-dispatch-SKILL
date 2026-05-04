@@ -99,6 +99,7 @@
 }
 
 .avatar {
+  position: relative;
   display: grid;
   width: 46px;
   height: 46px;
@@ -110,6 +111,34 @@
   font-size: 19px;
   font-weight: 800;
   clip-path: var(--sc-clip-avatar);
+}
+
+/* Mini eye dot — sourced from fleet.html .av-mini .eye-mini. */
+.eye {
+  position: absolute;
+  top: 9px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 4px;
+  height: 4px;
+  border-radius: 50%;
+  background: var(--sc-magenta);
+  box-shadow: 0 0 4px var(--sc-magenta);
+  pointer-events: none;
+}
+@media (prefers-reduced-motion: no-preference) {
+  .eye {
+    animation: eye-mini 2.6s ease-in-out infinite;
+  }
+}
+@keyframes eye-mini {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.5;
+  }
 }
 
 .cell.victory .avatar,
@@ -249,6 +278,89 @@
   }
 }
 
+/* ── reactive micro-states for dock cells ── */
+/* Mirrors fleet.html .cell.casting / .cell.striking colour stops. */
+.cell[data-state="casting"] {
+  border-color: var(--sc-cyan);
+  background: var(--sc-cyan-ink, rgba(86, 212, 224, 0.06));
+  box-shadow: 0 0 16px rgba(86, 212, 224, 0.2);
+}
+.cell[data-state="casting"] .avatar {
+  color: var(--sc-cyan);
+}
+.cell[data-state="striking"] {
+  border-color: var(--sc-cyan);
+  box-shadow: 0 0 18px rgba(86, 212, 224, 0.3);
+}
+.cell[data-state="striking"] .avatar {
+  color: var(--sc-cyan);
+}
+.cell[data-state="crit"] {
+  border-color: var(--sc-plasma);
+  box-shadow: 0 0 22px rgba(108, 255, 170, 0.35);
+}
+.cell[data-state="crit"] .avatar {
+  color: var(--sc-plasma);
+}
+.cell[data-state="hit"] {
+  border-color: var(--sc-crimson);
+  box-shadow: 0 0 20px rgba(255, 94, 108, 0.35);
+}
+.cell[data-state="hit"] .avatar {
+  color: var(--sc-crimson);
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  /* Eye flickers fast while text/tool events are streaming. */
+  .cell[data-state="casting"] .eye,
+  .cell[data-state="striking"] .eye {
+    animation: eye-cast 0.4s steps(2) infinite;
+  }
+  .cell[data-state="hit"] {
+    animation: cell-hit-shake 0.4s steps(4);
+  }
+  .cell[data-state="crit"] {
+    animation: cell-crit-flash 0.5s ease-out;
+  }
+}
+@keyframes eye-cast {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.3;
+  }
+}
+@keyframes cell-hit-shake {
+  0% {
+    transform: translateX(0);
+  }
+  25% {
+    transform: translateX(-2px);
+  }
+  50% {
+    transform: translateX(2px);
+  }
+  75% {
+    transform: translateX(-1px);
+  }
+  100% {
+    transform: translateX(0);
+  }
+}
+@keyframes cell-crit-flash {
+  0% {
+    box-shadow: 0 0 8px rgba(108, 255, 170, 0.2);
+  }
+  40% {
+    box-shadow: 0 0 32px rgba(108, 255, 170, 0.7);
+  }
+  100% {
+    box-shadow: 0 0 22px rgba(108, 255, 170, 0.35);
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
   .cell,
   .button {
@@ -257,5 +369,16 @@
   .cell:hover,
   .cell:focus-visible {
     transform: none;
+  }
+  .eye {
+    animation: none;
+  }
+  .cell[data-state="casting"] .eye,
+  .cell[data-state="striking"] .eye {
+    animation: none;
+  }
+  .cell[data-state="hit"],
+  .cell[data-state="crit"] {
+    animation: none;
   }
 }

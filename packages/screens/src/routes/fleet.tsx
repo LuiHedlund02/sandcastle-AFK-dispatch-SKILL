@@ -32,6 +32,7 @@ import {
   useRepos,
 } from "../api/queries";
 import { useFleetStore } from "../state/fleetStore";
+import { useOperativeMicroStates } from "../state/useOperativeState";
 
 const fmtRelative = (iso: string | null | undefined): string => {
   if (!iso) return "—";
@@ -771,13 +772,18 @@ function OperativesPanel({
   readonly operatives: OperativeIdentity[];
   readonly runs: Run[];
 }): JSX.Element {
-  // Build a map operativeId -> microState from active runs.
-  const microById = new Map<string, "casting" | "striking" | "idle">();
+  // Build a map operativeId -> microState. Prefer live event-driven state
+  // from the fleet store; fall back to a coarse derivation from run.status.
+  const liveMicro = useOperativeMicroStates();
+  const microById = new Map<
+    string,
+    "casting" | "striking" | "idle" | "crit" | "hit"
+  >();
   for (const run of runs) {
-    microById.set(
-      run.operativeId,
-      run.status === "striking" ? "striking" : "casting",
-    );
+    const fromStatus: "casting" | "striking" =
+      run.status === "striking" ? "striking" : "casting";
+    const live = liveMicro[run.operativeId];
+    microById.set(run.operativeId, live && live !== "idle" ? live : fromStatus);
   }
 
   return (

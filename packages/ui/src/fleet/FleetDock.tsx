@@ -1,6 +1,10 @@
 import type { JSX, MouseEvent, ReactNode } from "react";
 import { Play } from "lucide-react";
-import type { Run, RunDecisionKind } from "@sandcastle/protocol";
+import type {
+  OperativeMicroState,
+  Run,
+  RunDecisionKind,
+} from "@sandcastle/protocol";
 import { FleetDockCell } from "./FleetDockCell.js";
 import {
   MergeAllGreenButton,
@@ -33,6 +37,11 @@ export interface FleetDockProps {
    * Run ids currently mid-decision (their decision cards disable buttons).
    */
   readonly decisionPendingRunIds?: readonly string[];
+  /**
+   * Optional event-driven micro-state per run id; cells without an entry
+   * default to "idle". Drives the eye-flicker / glow / shake animations.
+   */
+  readonly microStateByRunId?: Readonly<Record<string, OperativeMicroState>>;
   readonly emptyHint?: ReactNode;
   readonly className?: string;
 }
@@ -65,6 +74,7 @@ export function FleetDock({
   mergeAllGreenResult,
   onDecide,
   decisionPendingRunIds,
+  microStateByRunId,
   emptyHint,
   className,
 }: FleetDockProps): JSX.Element {
@@ -117,6 +127,7 @@ export function FleetDock({
                   run={run}
                   current={run.id === currentRunId}
                   href={hrefForRun?.(run)}
+                  microState={microStateByRunId?.[run.id] ?? "idle"}
                   onActivate={onSelectRun}
                 />
               </div>
