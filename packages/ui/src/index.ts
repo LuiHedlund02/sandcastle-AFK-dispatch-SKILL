@@ -101,6 +101,24 @@ export type {
   VerifyRuleHudState,
 } from "./combat/CombatHud.js";
 
+// ceremony
+export { VictoryStage } from "./ceremony/VictoryStage.js";
+export type { VictoryStageProps } from "./ceremony/VictoryStage.js";
+export { DefeatStage } from "./ceremony/DefeatStage.js";
+export type { DefeatStageProps } from "./ceremony/DefeatStage.js";
+export { XpDeltaBadge } from "./ceremony/XpDeltaBadge.js";
+export type { XpDeltaBadgeProps } from "./ceremony/XpDeltaBadge.js";
+export { ConfettiSpray } from "./ceremony/ConfettiSpray.js";
+export type { ConfettiSprayProps } from "./ceremony/ConfettiSpray.js";
+export { ActivityFeed } from "./ceremony/ActivityFeed.js";
+export type { ActivityFeedProps } from "./ceremony/ActivityFeed.js";
+
+// telemetry
+export { TelemetryGrid } from "./telemetry/TelemetryGrid.js";
+export type { TelemetryGridProps } from "./telemetry/TelemetryGrid.js";
+export { OperativeXpStrip } from "./telemetry/OperativeXpStrip.js";
+export type { OperativeXpStripProps } from "./telemetry/OperativeXpStrip.js";
+
 // quest forge
 export { PhaseEditorList } from "./quest-forge/PhaseEditorList.js";
 export type { PhaseEditorListProps } from "./quest-forge/PhaseEditorList.js";
