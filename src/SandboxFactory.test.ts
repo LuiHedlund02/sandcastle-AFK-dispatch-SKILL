@@ -39,6 +39,31 @@ const mockHasUncommittedChanges = vi.mocked(
   WorktreeManager.hasUncommittedChanges,
 );
 
+const fwd = (path: string): string => path.replace(/\\/g, "/");
+
+const expectedHostMountPath = (path: string): string =>
+  process.platform === "win32" ? fwd(path) : path;
+
+const expectedSandboxMountPath = (
+  sandboxPath: string,
+  worktreeHostPath: string,
+): string => {
+  if (process.platform !== "win32") return sandboxPath;
+
+  const normalizedSandboxPath = fwd(sandboxPath);
+  const normalizedWorktreeHostPath = fwd(worktreeHostPath);
+
+  if (normalizedSandboxPath === normalizedWorktreeHostPath) {
+    return SANDBOX_REPO_DIR;
+  }
+  if (normalizedSandboxPath.startsWith(`${normalizedWorktreeHostPath}/`)) {
+    return `${SANDBOX_REPO_DIR}${normalizedSandboxPath.slice(
+      normalizedWorktreeHostPath.length,
+    )}`;
+  }
+  return normalizedSandboxPath;
+};
+
 /** Create a mock sandbox provider that records calls and delegates to a no-op handle. */
 const makeMockProvider = (): {
   provider: SandboxProvider;
@@ -219,9 +244,10 @@ describe("WorktreeDockerSandboxFactory", () => {
       sandboxPath: SANDBOX_REPO_DIR,
     });
     // Should include git mount
+    const gitPath = `${hostRepoDir}/.git`;
     expect(opts.mounts).toContainEqual({
-      hostPath: `${hostRepoDir}/.git`,
-      sandboxPath: `${hostRepoDir}/.git`,
+      hostPath: expectedHostMountPath(gitPath),
+      sandboxPath: expectedSandboxMountPath(gitPath, worktreePath),
     });
   });
 
@@ -546,12 +572,13 @@ describe("WorktreeDockerSandboxFactory", () => {
       expect(mockProvider.createCalls).toHaveLength(1);
       const opts = mockProvider.createCalls[0];
       expect(opts.mounts).toContainEqual({
-        hostPath: hostRepoDir,
+        hostPath: expectedHostMountPath(hostRepoDir),
         sandboxPath: SANDBOX_REPO_DIR,
       });
+      const gitPath = `${hostRepoDir}/.git`;
       expect(opts.mounts).toContainEqual({
-        hostPath: `${hostRepoDir}/.git`,
-        sandboxPath: `${hostRepoDir}/.git`,
+        hostPath: expectedHostMountPath(gitPath),
+        sandboxPath: expectedSandboxMountPath(gitPath, hostRepoDir),
       });
     });
 

@@ -18,6 +18,32 @@ import {
   type IsolatedSandboxProvider,
 } from "../SandboxProvider.js";
 
+const shellPathToHostPath = (path: string): Promise<string> => {
+  if (process.platform !== "win32" || !path.startsWith("/")) {
+    return Promise.resolve(path);
+  }
+
+  return new Promise((resolve) => {
+    execFile(
+      "sh",
+      ["-c", 'cygpath -w -- "$1"', "sh", path],
+      (error, stdout) => {
+        if (!error) {
+          resolve(stdout.toString().trim());
+          return;
+        }
+
+        if (path.startsWith("/tmp/")) {
+          resolve(join(tmpdir(), path.slice("/tmp/".length)));
+          return;
+        }
+
+        resolve(path);
+      },
+    );
+  });
+};
+
 /**
  * Create a filesystem-based test isolated sandbox provider.
  *
@@ -106,12 +132,13 @@ export const testIsolated = (): IsolatedSandboxProvider =>
           hostPath: string,
           sandboxPath: string,
         ): Promise<void> => {
+          const hostVisibleSandboxPath = await shellPathToHostPath(sandboxPath);
           const info = await stat(hostPath);
           if (info.isDirectory()) {
-            await cp(hostPath, sandboxPath, { recursive: true });
+            await cp(hostPath, hostVisibleSandboxPath, { recursive: true });
           } else {
-            await mkdir(dirname(sandboxPath), { recursive: true });
-            await copyFile(hostPath, sandboxPath);
+            await mkdir(dirname(hostVisibleSandboxPath), { recursive: true });
+            await copyFile(hostPath, hostVisibleSandboxPath);
           }
         },
 
@@ -119,8 +146,9 @@ export const testIsolated = (): IsolatedSandboxProvider =>
           sandboxPath: string,
           hostPath: string,
         ): Promise<void> => {
+          const hostVisibleSandboxPath = await shellPathToHostPath(sandboxPath);
           await mkdir(dirname(hostPath), { recursive: true });
-          await copyFile(sandboxPath, hostPath);
+          await copyFile(hostVisibleSandboxPath, hostPath);
         },
 
         close: async (): Promise<void> => {
