@@ -23,6 +23,7 @@ const makeDir = () => mkdtemp(join(tmpdir(), "init-service-"));
 
 const claudeCodeAgent = getAgent("claude-code")!;
 const piAgent = getAgent("pi")!;
+const piCodexAgent = getAgent("pi-codex")!;
 const codexAgent = getAgent("codex")!;
 const opencodeAgent = getAgent("opencode")!;
 
@@ -76,6 +77,28 @@ describe("Agent registry", () => {
     expect(agent!.dockerfileTemplate).toContain(
       "@mariozechner/pi-coding-agent",
     );
+  });
+
+  it("listAgents includes pi-codex", () => {
+    const agents = listAgents();
+    expect(agents.some((a) => a.name === "pi-codex")).toBe(true);
+  });
+
+  it("getAgent returns pi-codex entry with expected fields", () => {
+    const agent = getAgent("pi-codex");
+    expect(agent).toBeDefined();
+    expect(agent!.name).toBe("pi-codex");
+    expect(agent!.label).toBe("Pi (OpenAI Codex subscription)");
+    expect(agent!.defaultModel).toBe("openai-codex/gpt-5.5");
+    expect(agent!.factoryImport).toBe("pi");
+    expect(agent!.dockerfileTemplate).toContain(
+      "@mariozechner/pi-coding-agent",
+    );
+    expect(agent!.envExample).toContain("pi /login");
+    expect(agent!.envExample).not.toContain("ANTHROPIC_API_KEY");
+    expect(agent!.envExample).not.toContain("OPENAI_KEY");
+    expect(agent!.sandboxOptions).toContain("~/.pi/agent");
+    expect(agent!.sandboxOptions).toContain("/home/agent/.pi/agent");
   });
 
   it("listAgents includes codex", () => {
@@ -144,6 +167,12 @@ describe("InitService scaffold", () => {
       expectIssue191Link: false,
     },
     {
+      agent: piCodexAgent,
+      expectedKey: "pi /login",
+      unexpectedKey: "ANTHROPIC_API_KEY=",
+      expectIssue191Link: false,
+    },
+    {
       agent: codexAgent,
       expectedKey: "OPENAI_KEY=",
       unexpectedKey: "ANTHROPIC_API_KEY=",
@@ -167,6 +196,10 @@ describe("InitService scaffold", () => {
       );
       expect(envExample).toContain(expectedKey);
       expect(envExample).not.toContain(unexpectedKey);
+      if (agent.name === "pi-codex") {
+        expect(envExample).not.toContain("OPENAI_KEY=");
+        expect(envExample).toContain("OAuth tokens");
+      }
       if (expectIssue191Link) {
         expect(envExample).toContain("issues/191");
       } else {
@@ -347,6 +380,41 @@ describe("InitService scaffold", () => {
       "utf-8",
     );
     expect(mainTs).toContain('claudeCode("claude-opus-4-6")');
+  });
+
+  it("scaffolds pi-codex with the OpenAI Codex subscription model and auth mount", async () => {
+    const dir = await makeDir();
+    await runScaffold(dir, {
+      agent: piCodexAgent,
+      model: piCodexAgent.defaultModel,
+    });
+
+    const mainTs = await readFile(
+      join(dir, ".sandcastle", "main.mts"),
+      "utf-8",
+    );
+    expect(mainTs).toContain('pi("openai-codex/gpt-5.5")');
+    expect(mainTs).not.toContain("claudeCode");
+    expect(mainTs).toContain('hostPath: "~/.pi/agent"');
+    expect(mainTs).toContain('sandboxPath: "/home/agent/.pi/agent"');
+  });
+
+  it("scaffolds pi-codex without API keys in .env.example", async () => {
+    const dir = await makeDir();
+    await runScaffold(dir, {
+      agent: piCodexAgent,
+      model: piCodexAgent.defaultModel,
+      backlogManager: getBacklogManager("beads"),
+    });
+
+    const envExample = await readFile(
+      join(dir, ".sandcastle", ".env.example"),
+      "utf-8",
+    );
+    expect(envExample).toContain("pi /login");
+    expect(envExample).toContain("~/.pi/agent");
+    expect(envExample).not.toContain("ANTHROPIC_API_KEY");
+    expect(envExample).not.toContain("OPENAI_KEY");
   });
 
   // --- Template-specific tests ---
@@ -564,6 +632,15 @@ describe("InitService scaffold", () => {
       expect(joined).toContain(".env");
       expect(joined).toContain("package.json");
       expect(joined).toContain("npm run sandcastle");
+    });
+
+    it("pi-codex next steps mention host login and token mount", () => {
+      const lines = getNextStepsLines("blank", "main.mts", piCodexAgent);
+      const joined = lines.join("\n");
+      expect(joined).toContain("pi /login");
+      expect(joined).toContain("OpenAI/Codex");
+      expect(joined).toContain("~/.pi/agent");
+      expect(joined).not.toContain("issues/191");
     });
 
     it("non-blank template includes a note about customizing the install command", () => {
@@ -1911,6 +1988,43 @@ describe("InitService scaffold", () => {
       await expect(
         access(join(dir, ".sandcastle", "Containerfile")),
       ).rejects.toThrow();
+    });
+
+    it("selecting podman rewrites scaffolded main.mts to import and call podman", async () => {
+      const dir = await makeDir();
+      await runScaffold(dir, { sandboxProvider: podmanProvider });
+
+      const mainTs = await readFile(
+        join(dir, ".sandcastle", "main.mts"),
+        "utf-8",
+      );
+      expect(mainTs).toContain(
+        'import { podman } from "@ai-hero/sandcastle/sandboxes/podman";',
+      );
+      expect(mainTs).toContain("sandbox: podman()");
+      expect(mainTs).not.toContain("sandboxes/docker");
+      expect(mainTs).not.toContain("sandbox: docker()");
+    });
+
+    it("selecting podman with pi-codex preserves the Pi auth mount", async () => {
+      const dir = await makeDir();
+      await runScaffold(dir, {
+        agent: piCodexAgent,
+        model: piCodexAgent.defaultModel,
+        sandboxProvider: podmanProvider,
+      });
+
+      const mainTs = await readFile(
+        join(dir, ".sandcastle", "main.mts"),
+        "utf-8",
+      );
+      expect(mainTs).toContain(
+        'import { podman } from "@ai-hero/sandcastle/sandboxes/podman";',
+      );
+      expect(mainTs).toContain("sandbox: podman({");
+      expect(mainTs).toContain('hostPath: "~/.pi/agent"');
+      expect(mainTs).toContain('sandboxPath: "/home/agent/.pi/agent"');
+      expect(mainTs).toContain('pi("openai-codex/gpt-5.5")');
     });
   });
 });

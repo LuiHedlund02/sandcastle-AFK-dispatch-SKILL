@@ -39,7 +39,7 @@ npm install --save-dev @ai-hero/sandcastle
 npx sandcastle init
 ```
 
-3. Edit `.sandcastle/.env` and fill in your default values for `ANTHROPIC_API_KEY`. If you want to use your Claude subscription instead of an API key, see [#191](https://github.com/mattpocock/sandcastle/issues/191).
+3. Edit `.sandcastle/.env` and fill in the values from `.sandcastle/.env.example`. For Claude Code this usually means `ANTHROPIC_API_KEY`. If you want to use your Claude subscription instead of an API key, see [#191](https://github.com/mattpocock/sandcastle/issues/191). For Pi with an OpenAI Codex subscription, see [Pi with OpenAI Codex subscription](#pi-with-openai-codex-subscription).
 
 ```bash
 cp .sandcastle/.env.example .sandcastle/.env
@@ -62,6 +62,17 @@ await run({
   promptFile: ".sandcastle/prompt.md",
 });
 ```
+
+### Pi with OpenAI Codex subscription
+
+Sandcastle can scaffold a Pi-backed agent that uses your local Pi OAuth session instead of an OpenAI API key:
+
+```bash
+pi /login
+npx sandcastle init --agent pi-codex --model openai-codex/gpt-5.5
+```
+
+When you select Docker or Podman during init, the generated `main.ts`/`main.mts` mounts `~/.pi/agent` into `/home/agent/.pi/agent` so the sandboxed `pi` CLI can use the host subscription login. This is convenient for local AFK runs, but it also gives the sandbox access to your Pi OAuth tokens. Review the generated script before running it, and use this path only with local sandbox providers you trust.
 
 ## Sandbox Providers
 
@@ -1105,20 +1116,20 @@ All per-repo sandbox configuration lives in `.sandcastle/`. Run `sandcastle init
 
 ### Custom Dockerfile
 
-The `.sandcastle/Dockerfile` controls the sandbox environment. The default template installs:
+The `.sandcastle/Dockerfile` or `.sandcastle/Containerfile` controls the sandbox environment. The default template installs:
 
 - **Node.js 22** (base image)
 - **git**, **curl**, **jq** (system dependencies)
 - **GitHub CLI** (`gh`)
-- **Claude Code CLI**
-- A non-root `agent` user (required — Claude runs as this user)
+- The selected agent CLI, such as **Claude Code**, **Pi**, **Codex**, or **OpenCode**
+- A non-root `agent` user
 
 When customizing the Dockerfile, ensure you keep:
 
-- A non-root user (the default `agent` user) for Claude to run as
+- A non-root user (the default `agent` user) for the agent to run as
 - `git` (required for commits and branch operations)
-- `gh` (required for issue fetching)
-- Claude Code CLI installed and on PATH
+- Your backlog tool (`gh` or `bd`) if your prompts use one
+- The selected agent CLI installed and on PATH
 
 Add your project-specific dependencies (e.g., language runtimes, build tools) to the Dockerfile as needed.
 

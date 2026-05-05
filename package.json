@@ -36,7 +36,7 @@
   },
   "scripts": {
     "build": "tsgo --project tsconfig.build.json",
-    "postbuild": "rm -rf dist/templates && cp -r src/templates dist/templates",
+    "postbuild": "node -e \"const fs=require('node:fs'); fs.rmSync('dist/templates',{recursive:true,force:true}); fs.cpSync('src/templates','dist/templates',{recursive:true});\"",
     "test": "vitest run",
     "test:watch": "vitest",
     "typecheck": "tsgo --noEmit",
@@ -98,6 +98,7 @@
     "*.{ts,tsx,js,jsx,json,md}": "prettier --write"
   },
   "files": [
-    "dist"
+    "dist",
+    "skills"
   ]
 }

@@ -89,6 +89,30 @@ const initModelOption = Options.text("model").pipe(
   Options.optional,
 );
 
+const sandboxProviderOption = Options.text("sandbox-provider").pipe(
+  Options.withDescription(
+    "Sandbox provider to use during init (docker or podman)",
+  ),
+  Options.optional,
+);
+
+const backlogManagerOption = Options.text("backlog-manager").pipe(
+  Options.withDescription(
+    "Backlog manager to scaffold prompts for (github-issues or beads)",
+  ),
+  Options.optional,
+);
+
+const skipLabelOption = Options.boolean("skip-label").pipe(
+  Options.withDescription(
+    'Skip creating the "Sandcastle" GitHub label during init',
+  ),
+);
+
+const skipBuildOption = Options.boolean("skip-build").pipe(
+  Options.withDescription("Skip building the sandbox image during init"),
+);
+
 const initCommand = Command.make(
   "init",
   {
@@ -96,12 +120,20 @@ const initCommand = Command.make(
     template: templateOption,
     agent: agentOption,
     model: initModelOption,
+    sandboxProvider: sandboxProviderOption,
+    backlogManager: backlogManagerOption,
+    skipLabel: skipLabelOption,
+    skipBuild: skipBuildOption,
   },
   ({
     imageName: imageNameFlag,
     template,
     agent: agentFlag,
     model: modelFlag,
+    sandboxProvider: sandboxProviderFlag,
+    backlogManager: backlogManagerFlag,
+    skipLabel,
+    skipBuild,
   }) =>
     Effect.gen(function* () {
       const d = yield* Display;
@@ -165,7 +197,18 @@ const initCommand = Command.make(
       // Resolve sandbox provider: interactive select (no default — user must choose)
       const sandboxProviders = listSandboxProviders();
       let selectedSandboxProvider: SandboxProviderEntry;
-      {
+      if (sandboxProviderFlag._tag === "Some") {
+        const entry = getSandboxProvider(sandboxProviderFlag.value);
+        if (!entry) {
+          const names = sandboxProviders.map((p) => p.name).join(", ");
+          yield* Effect.fail(
+            new InitError({
+              message: `Unknown sandbox provider "${sandboxProviderFlag.value}". Available: ${names}`,
+            }),
+          );
+        }
+        selectedSandboxProvider = entry!;
+      } else {
         const selected = yield* Effect.promise(() =>
           clack.select({
             message: "Select a sandbox provider:",
@@ -188,7 +231,18 @@ const initCommand = Command.make(
       // Resolve backlog manager: interactive select
       const backlogManagers = listBacklogManagers();
       let selectedBacklogManager: BacklogManagerEntry;
-      {
+      if (backlogManagerFlag._tag === "Some") {
+        const entry = getBacklogManager(backlogManagerFlag.value);
+        if (!entry) {
+          const names = backlogManagers.map((b) => b.name).join(", ");
+          yield* Effect.fail(
+            new InitError({
+              message: `Unknown backlog manager "${backlogManagerFlag.value}". Available: ${names}`,
+            }),
+          );
+        }
+        selectedBacklogManager = entry!;
+      } else {
         const selected = yield* Effect.promise(() =>
           clack.select({
             message: "Select a backlog manager:",
@@ -235,7 +289,7 @@ const initCommand = Command.make(
 
       // Offer to create the "Sandcastle" label on the repo (skip for non-GitHub backlog managers)
       let shouldCreateLabel: boolean | symbol = false;
-      if (selectedBacklogManager.name === "github-issues") {
+      if (selectedBacklogManager.name === "github-issues" && !skipLabel) {
         shouldCreateLabel = yield* Effect.promise(() =>
           clack.confirm({
             message:
@@ -277,12 +331,14 @@ const initCommand = Command.make(
 
       // Prompt user before building image
       const providerLabel = selectedSandboxProvider.label;
-      const shouldBuild = yield* Effect.promise(() =>
-        clack.confirm({
-          message: `Build the default ${providerLabel} image now?`,
-          initialValue: true,
-        }),
-      );
+      const shouldBuild = skipBuild
+        ? false
+        : yield* Effect.promise(() =>
+            clack.confirm({
+              message: `Build the default ${providerLabel} image now?`,
+              initialValue: true,
+            }),
+          );
 
       if (shouldBuild === true) {
         const containerfileDir = join(cwd, CONFIG_DIR);
@@ -309,6 +365,7 @@ const initCommand = Command.make(
       const nextSteps = getNextStepsLines(
         selectedTemplate,
         scaffoldResult.mainFilename,
+        selectedAgent,
       );
       for (const [i, line] of nextSteps.entries()) {
         yield* d.text(i === 0 ? line : styleText("dim", line));

@@ -1,5 +1,5 @@
 import { exec } from "node:child_process";
-import { mkdtemp, writeFile } from "node:fs/promises";
+import { mkdtemp, readFile, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { promisify } from "node:util";
@@ -27,7 +27,7 @@ const commitFile = async (
 const cliPath = join(import.meta.dirname, "..", "dist", "main.js");
 
 const runCli = (args: string, cwd: string) =>
-  execAsync(`node ${cliPath} ${args}`, { cwd });
+  execAsync(`node ${JSON.stringify(cliPath)} ${args}`, { cwd });
 
 describe("sandcastle CLI", () => {
   it("shows help with --help flag", async () => {
@@ -81,6 +81,38 @@ describe("sandcastle CLI", () => {
   it("init --help exposes --model flag", async () => {
     const { stdout } = await runCli("init --help", process.cwd());
     expect(stdout).toContain("--model");
+  });
+
+  it("init --help exposes non-interactive scaffold flags", async () => {
+    const { stdout } = await runCli("init --help", process.cwd());
+    expect(stdout).toContain("--sandbox-provider");
+    expect(stdout).toContain("--backlog-manager");
+    expect(stdout).toContain("--skip-label");
+    expect(stdout).toContain("--skip-build");
+  });
+
+  it("init can scaffold pi-codex non-interactively", async () => {
+    const hostDir = await mkdtemp(join(tmpdir(), "cli-host-"));
+    await initRepo(hostDir);
+
+    await runCli(
+      "init --agent pi-codex --model openai-codex/gpt-5.5 --sandbox-provider docker --backlog-manager beads --template blank --skip-build",
+      hostDir,
+    );
+
+    const main = await readFile(
+      join(hostDir, ".sandcastle", "main.mts"),
+      "utf-8",
+    );
+    const envExample = await readFile(
+      join(hostDir, ".sandcastle", ".env.example"),
+      "utf-8",
+    );
+    expect(main).toContain('pi("openai-codex/gpt-5.5")');
+    expect(main).toContain('hostPath: "~/.pi/agent"');
+    expect(envExample).toContain("pi /login");
+    expect(envExample).not.toContain("ANTHROPIC_API_KEY");
+    expect(envExample).not.toContain("OPENAI_KEY");
   });
 
   it("init --template nonexistent produces error listing available templates", async () => {

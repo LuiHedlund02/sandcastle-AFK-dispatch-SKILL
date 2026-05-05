@@ -52,8 +52,10 @@ export interface AgentEntry {
   readonly defaultModel: string;
   readonly factoryImport: string;
   readonly dockerfileTemplate: string;
-  /** Lines to include in the generated `.env.example` for this agent's API key. */
+  /** Lines to include in the generated `.env.example` for this agent. */
   readonly envExample: string;
+  /** Optional options object passed to the generated sandbox provider call. */
+  readonly sandboxOptions?: string;
 }
 
 const CLAUDE_CODE_DOCKERFILE = `FROM node:22-bookworm
@@ -195,6 +197,22 @@ ANTHROPIC_API_KEY=`,
 ANTHROPIC_API_KEY=`,
   },
   {
+    name: "pi-codex",
+    label: "Pi (OpenAI Codex subscription)",
+    defaultModel: "openai-codex/gpt-5.5",
+    factoryImport: "pi",
+    dockerfileTemplate: PI_DOCKERFILE,
+    envExample: `# Pi OpenAI Codex subscription
+# Run "pi /login" on the host, then select the OpenAI/Codex provider.
+# Sandcastle mounts ~/.pi/agent into the sandbox for this agent.
+# That gives the sandbox access to your Pi OAuth tokens.`,
+    sandboxOptions: `{
+    mounts: [
+      { hostPath: "~/.pi/agent", sandboxPath: "/home/agent/.pi/agent" },
+    ],
+  }`,
+  },
+  {
     name: "codex",
     label: "Codex",
     defaultModel: "gpt-5.4-mini",
@@ -303,6 +321,10 @@ export interface SandboxProviderEntry {
   readonly containerfileName: string;
   /** CLI namespace for build/remove commands (e.g. "docker" or "podman") */
   readonly cliNamespace: string;
+  /** Factory imported in scaffolded .sandcastle/main.ts files. */
+  readonly factoryImport: string;
+  /** Package import path for the sandbox factory. */
+  readonly importPath: string;
 }
 
 const SANDBOX_PROVIDER_REGISTRY: SandboxProviderEntry[] = [
@@ -311,12 +333,16 @@ const SANDBOX_PROVIDER_REGISTRY: SandboxProviderEntry[] = [
     label: "Docker",
     containerfileName: "Dockerfile",
     cliNamespace: "docker",
+    factoryImport: "docker",
+    importPath: "@ai-hero/sandcastle/sandboxes/docker",
   },
   {
     name: "podman",
     label: "Podman",
     containerfileName: "Containerfile",
     cliNamespace: "podman",
+    factoryImport: "podman",
+    importPath: "@ai-hero/sandcastle/sandboxes/podman",
   },
 ];
 
@@ -335,24 +361,36 @@ export const getSandboxProvider = (
 export function getNextStepsLines(
   template: string,
   mainFilename: string,
+  agent?: AgentEntry,
 ): string[] {
+  const agentSetupLines =
+    agent?.name === "pi-codex"
+      ? [
+          `1. Run \`pi /login\` on the host and select the OpenAI/Codex provider before starting Sandcastle`,
+          "   The generated sandbox mounts ~/.pi/agent into /home/agent/.pi/agent, giving the sandbox access to your Pi OAuth tokens",
+          `2. Review .sandcastle/.env.example and copy any required backlog-manager env vars into .sandcastle/.env`,
+        ]
+      : [
+          `1. Set the required env vars in .sandcastle/.env (see .sandcastle/.env.example)`,
+          "   If you want to use your Claude subscription instead of an API key, see https://github.com/mattpocock/sandcastle/issues/191",
+        ];
+
   if (template === "blank") {
+    const nextStep = agent?.name === "pi-codex" ? 3 : 2;
     return [
       "Next steps:",
-      `1. Set the required env vars in .sandcastle/.env (see .sandcastle/.env.example)`,
-      "   If you want to use your Claude subscription instead of an API key, see https://github.com/mattpocock/sandcastle/issues/191",
-      "2. Read and customize .sandcastle/prompt.md to describe what you want the agent to do",
-      `3. Customize .sandcastle/${mainFilename} — it uses the JS API (\`run()\`) to control how the agent runs`,
-      `4. Add "sandcastle": "npx tsx .sandcastle/${mainFilename}" to your package.json scripts`,
-      "5. Run `npm run sandcastle` to start the agent",
+      ...agentSetupLines,
+      `${nextStep}. Read and customize .sandcastle/prompt.md to describe what you want the agent to do`,
+      `${nextStep + 1}. Customize .sandcastle/${mainFilename} — it uses the JS API (\`run()\`) to control how the agent runs`,
+      `${nextStep + 2}. Add "sandcastle": "npx tsx .sandcastle/${mainFilename}" to your package.json scripts`,
+      `${nextStep + 3}. Run \`npm run sandcastle\` to start the agent`,
     ];
   } else {
     const hasReviewer = template.includes("review");
-    let step = 1;
+    let step = agent?.name === "pi-codex" ? 3 : 1;
     const lines: string[] = [
       "Next steps:",
-      `${step++}. Set the required env vars in .sandcastle/.env (see .sandcastle/.env.example)`,
-      "   If you want to use your Claude subscription instead of an API key, see https://github.com/mattpocock/sandcastle/issues/191",
+      ...agentSetupLines,
       `${step++}. Add "sandcastle": "npx tsx .sandcastle/${mainFilename}" to your package.json scripts`,
       `${step++}. Templates use \`copyToWorktree: ["node_modules"]\` to copy your host node_modules into the sandbox for fast startup — the \`npm install\` in the onSandboxReady hook is a safety net for platform-specific binaries. Adjust both if you use a different package manager`,
       `${step++}. Read and customize the prompt files in .sandcastle/ — they shape what the agent does`,
@@ -440,6 +478,7 @@ const rewriteMainTs = (
   agent: AgentEntry,
   model: string,
   mainFilename: string,
+  sandboxProvider: SandboxProviderEntry,
 ): Effect.Effect<void, Error, FileSystem.FileSystem> =>
   Effect.gen(function* () {
     const fs = yield* FileSystem.FileSystem;
@@ -464,6 +503,16 @@ const rewriteMainTs = (
     // and all factory calls with the correct model.
     // Templates always use claudeCode as the placeholder factory.
     content = content.replace(/\bclaudeCode\b/g, agent.factoryImport);
+
+    content = content.replace(
+      /import \{ docker \} from "@ai-hero\/sandcastle\/sandboxes\/docker";/,
+      `import { ${sandboxProvider.factoryImport} } from "${sandboxProvider.importPath}";`,
+    );
+    const sandboxExpression = agent.sandboxOptions
+      ? `${sandboxProvider.factoryImport}(${agent.sandboxOptions})`
+      : `${sandboxProvider.factoryImport}()`;
+    content = content.replace(/\bdocker\(\)/g, sandboxExpression);
+
     // Replace model strings in factory calls: factoryImport("any-model")
     const factoryCallRe = new RegExp(
       `${agent.factoryImport}\\(["']([^"']+)["']\\)`,
@@ -678,7 +727,13 @@ export const scaffold = (
     );
 
     // Rewrite main file with the selected agent factory and model
-    yield* rewriteMainTs(configDir, agent, model, mainFilename);
+    yield* rewriteMainTs(
+      configDir,
+      agent,
+      model,
+      mainFilename,
+      sandboxProvider,
+    );
 
     // Replace backlog manager template arguments in all text files (must run before label stripping)
     yield* substituteTemplateArgs(configDir, backlogManager);
