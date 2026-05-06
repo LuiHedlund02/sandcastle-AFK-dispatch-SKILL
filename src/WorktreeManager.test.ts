@@ -124,6 +124,19 @@ describe("WorktreeManager.create", () => {
     expect(s.isDirectory()).toBe(true);
   });
 
+  it("creates a worktree under a custom worktreeRoot", async () => {
+    const repoDir = await setupRepo();
+    const worktreeRoot = await mkdtemp(join(tmpdir(), "sandcastle-wt-root-"));
+
+    const { path } = await run(create(repoDir, { worktreeRoot }));
+
+    expect(path).toContain(worktreeRoot);
+    const s = await stat(path);
+    expect(s.isDirectory()).toBe(true);
+
+    await run(remove(path, repoDir));
+  });
+
   it("returns the branch name", async () => {
     const repoDir = await setupRepo();
     const { branch } = await run(create(repoDir));
@@ -454,6 +467,16 @@ describe("WorktreeManager.remove", () => {
     });
     expect(stdout).not.toContain(path);
   });
+
+  it("removes worktrees outside .sandcastle when repoDir is provided", async () => {
+    const repoDir = await setupRepo();
+    const worktreeRoot = await mkdtemp(join(tmpdir(), "sandcastle-wt-root-"));
+    const { path } = await run(create(repoDir, { worktreeRoot }));
+
+    await run(remove(path, repoDir));
+
+    await expect(stat(path)).rejects.toThrow();
+  });
 });
 
 describe("WorktreeManager.pruneStale", () => {
@@ -487,6 +510,19 @@ describe("WorktreeManager.pruneStale", () => {
     await run(pruneStale(repoDir));
 
     const entries = await readdir(worktreesDir).catch(() => []);
+    expect(entries).not.toContain("orphan-dir");
+  });
+
+  it("removes orphaned directories under a custom worktreeRoot", async () => {
+    const repoDir = await setupRepo();
+    const worktreeRoot = await mkdtemp(join(tmpdir(), "sandcastle-wt-root-"));
+
+    const orphanDir = join(worktreeRoot, "orphan-dir");
+    await mkdir(orphanDir);
+
+    await run(pruneStale(repoDir, worktreeRoot));
+
+    const entries = await readdir(worktreeRoot).catch(() => []);
     expect(entries).not.toContain("orphan-dir");
   });
 

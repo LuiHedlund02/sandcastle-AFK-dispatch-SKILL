@@ -1,7 +1,7 @@
 import { Effect, Option } from "effect";
 import { FileSystem } from "@effect/platform";
 import { execFile } from "node:child_process";
-import { join } from "node:path";
+import { isAbsolute, join, resolve } from "node:path";
 import { WorktreeError, WorktreeTimeoutError, withTimeout } from "./errors.js";
 
 const WORKTREE_TIMEOUT_MS = 30_000;
@@ -114,6 +114,18 @@ const listWorktrees = (
     }),
   );
 
+const resolveWorktreesDir = (repoDir: string, worktreeRoot?: string): string =>
+  worktreeRoot
+    ? isAbsolute(worktreeRoot)
+      ? worktreeRoot
+      : resolve(repoDir, worktreeRoot)
+    : join(repoDir, ".sandcastle", "worktrees");
+
+const normalizeForPathCompare = (path: string): string => {
+  const normalized = path.replace(/\\/g, "/").replace(/\/+$/g, "");
+  return process.platform === "win32" ? normalized.toLowerCase() : normalized;
+};
+
 /**
  * Creates a git worktree at `.sandcastle/worktrees/<name>/`.
  *
@@ -132,6 +144,7 @@ export const create = (
     branch?: string;
     baseBranch?: string;
     name?: string;
+    worktreeRoot?: string;
   },
 ): Effect.Effect<
   WorktreeInfo,
@@ -140,7 +153,7 @@ export const create = (
 > =>
   Effect.gen(function* () {
     const fs = yield* FileSystem.FileSystem;
-    const worktreesDir = join(repoDir, ".sandcastle", "worktrees");
+    const worktreesDir = resolveWorktreesDir(repoDir, opts?.worktreeRoot);
     yield* fs
       .makeDirectory(worktreesDir, { recursive: true })
       .pipe(Effect.mapError((e) => new WorktreeError({ message: e.message })));
@@ -175,7 +188,11 @@ export const create = (
         existing.find((wt) => wt.path === worktreePath);
       if (collision) {
         // Only reuse worktrees managed by sandcastle (under .sandcastle/worktrees/)
-        const isManagedWorktree = collision.path.startsWith(worktreesDir);
+        const normalizedCollisionPath = normalizeForPathCompare(collision.path);
+        const normalizedWorktreesDir = normalizeForPathCompare(worktreesDir);
+        const isManagedWorktree =
+          normalizedCollisionPath === normalizedWorktreesDir ||
+          normalizedCollisionPath.startsWith(`${normalizedWorktreesDir}/`);
         if (isManagedWorktree) {
           const dirty = yield* hasUncommittedChanges(collision.path);
           if (dirty) {
@@ -187,7 +204,7 @@ export const create = (
               `Reusing existing worktree at ${collision.path} (branch '${branch}')`,
             );
           }
-          return { path: collision.path, branch };
+          return { path: worktreePath, branch };
         }
         // Branch is checked out in the main working tree or external worktree
         yield* Effect.fail(
@@ -284,12 +301,14 @@ export const hasUncommittedChanges = (
  */
 export const remove = (
   worktreePath: string,
+  repoDir?: string,
 ): Effect.Effect<void, WorktreeError> => {
   // Derive the main repo dir: worktreePath = <repoDir>/.sandcastle/worktrees/<name>
-  const repoDir = join(worktreePath, "..", "..", "..");
-  return execGit(["worktree", "remove", "--force", worktreePath], repoDir).pipe(
-    Effect.asVoid,
-  );
+  const resolvedRepoDir = repoDir ?? join(worktreePath, "..", "..", "..");
+  return execGit(
+    ["worktree", "remove", "--force", worktreePath],
+    resolvedRepoDir,
+  ).pipe(Effect.asVoid);
 };
 
 /**
@@ -298,6 +317,7 @@ export const remove = (
  */
 export const pruneStale = (
   repoDir: string,
+  worktreeRoot?: string,
 ): Effect.Effect<
   void,
   WorktreeError | WorktreeTimeoutError,
@@ -309,7 +329,7 @@ export const pruneStale = (
     // Let git clean up metadata for worktrees whose directories are gone
     yield* execGit(["worktree", "prune"], repoDir);
 
-    const worktreesDir = join(repoDir, ".sandcastle", "worktrees");
+    const worktreesDir = resolveWorktreesDir(repoDir, worktreeRoot);
 
     // Read directory entries — return null if directory doesn't exist
     const entries: string[] | null = yield* fs.readDirectory(worktreesDir).pipe(
@@ -341,7 +361,9 @@ export const pruneStale = (
       worktreeList
         .split("\n")
         .filter((line) => line.startsWith("worktree "))
-        .map((line) => line.slice("worktree ".length).trim()),
+        .map((line) =>
+          normalizeForPathCompare(line.slice("worktree ".length).trim()),
+        ),
     );
 
     // Remove any directory under .sandcastle/worktrees/ that is not an active worktree
@@ -351,7 +373,10 @@ export const pruneStale = (
         Effect.map((s) => s.type === "Directory"),
         Effect.catchAll(() => Effect.succeed(false)),
       );
-      if (isDir && !activeWorktreePaths.has(entryPath)) {
+      if (
+        isDir &&
+        !activeWorktreePaths.has(normalizeForPathCompare(entryPath))
+      ) {
         yield* fs.remove(entryPath, { recursive: true, force: true }).pipe(
           Effect.mapError(
             (e) =>

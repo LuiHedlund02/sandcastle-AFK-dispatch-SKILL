@@ -213,6 +213,11 @@ export interface RunOptions {
    * - Defaults to `process.cwd()` when omitted.
    */
   readonly cwd?: string;
+  /**
+   * Host directory for Sandcastle-managed worktrees. Relative paths are
+   * resolved against `cwd`/host repo dir. Defaults to `.sandcastle/worktrees`.
+   */
+  readonly worktreeRoot?: string;
   /** Inline prompt string (mutually exclusive with promptFile) */
   readonly prompt?: string;
   /**
@@ -423,6 +428,7 @@ export const run = async (options: RunOptions): Promise<RunResult> => {
         hooks,
         signal: options.signal,
         timeouts: options.timeouts,
+        worktreeRoot: options.worktreeRoot,
       }),
       NodeFileSystem.layer,
       displayLayer,

@@ -127,9 +127,7 @@ const invokeAgent = (
           errorDetail = resultText;
         }
         if (!errorDetail.trim()) {
-          const lines = execResult.stdout
-            .split("\n")
-            .filter((l) => l.trim());
+          const lines = execResult.stdout.split("\n").filter((l) => l.trim());
           errorDetail = lines.slice(-20).join("\n");
         }
         return yield* Effect.fail(
@@ -219,6 +217,13 @@ export interface OrchestrateResult {
   readonly preservedWorktreePath?: string;
 }
 
+interface OrchestrateWorkResult {
+  readonly iterations: IterationResult[];
+  readonly completionSignal?: string;
+  readonly completionIteration?: number;
+  readonly stdout: string;
+}
+
 export const orchestrate = (
   options: OrchestrateOptions,
 ): Effect.Effect<
@@ -235,48 +240,45 @@ export const orchestrate = (
     const { hostProjectsDir, sandboxProjectsDir } = yield* SessionPaths;
     const { hostRepoDir, iterations, hooks, prompt, branch, provider } =
       options;
-    let completionSignals: string[];
-    if (options.completionSignal === undefined) {
-      completionSignals = [DEFAULT_COMPLETION_SIGNAL];
-    } else if (Array.isArray(options.completionSignal)) {
-      completionSignals = options.completionSignal;
-    } else {
-      completionSignals = [options.completionSignal];
-    }
+    const completionSignals =
+      options.completionSignal === undefined
+        ? [DEFAULT_COMPLETION_SIGNAL]
+        : Array.isArray(options.completionSignal)
+          ? options.completionSignal
+          : [options.completionSignal];
 
     const label = (msg: string): string =>
       options.name ? `[${options.name}] ${msg}` : msg;
 
-    const allCommits: { sha: string }[] = [];
-    const allIterations: IterationResult[] = [];
-    let allStdout = "";
-    let resolvedBranch = "";
-    let iterationPreservedPath: string | undefined;
-
-    // Helper: check abort signal and bail via defect so run() can
-    // re-throw the signal's reason verbatim (no Sandcastle wrapping).
     const checkAbort = (): Effect.Effect<void> =>
       options.signal?.aborted ? Effect.die(options.signal.reason) : Effect.void;
 
-    for (let i = 1; i <= iterations; i++) {
-      yield* checkAbort();
-      yield* display.status(label(`Iteration ${i}/${iterations}`), "info");
+    yield* checkAbort();
 
-      const sandboxResult = yield* factory.withSandbox(
-        ({ hostWorktreePath, sandboxRepoPath, applyToHost, bindMountHandle }) =>
-          withSandboxLifecycle(
-            {
-              hostRepoDir,
-              sandboxRepoDir: sandboxRepoPath,
-              hooks,
-              branch,
-              hostWorktreePath,
-              applyToHost,
-              signal: options.signal,
-            },
-            (ctx) =>
-              Effect.gen(function* () {
-                // Resume session: transfer JSONL from host to sandbox before iteration 1
+    const sandboxResult = yield* factory.withSandbox(
+      ({ hostWorktreePath, sandboxRepoPath, applyToHost, bindMountHandle }) =>
+        withSandboxLifecycle(
+          {
+            hostRepoDir,
+            sandboxRepoDir: sandboxRepoPath,
+            hooks,
+            branch,
+            hostWorktreePath,
+            applyToHost,
+            signal: options.signal,
+          },
+          (ctx) =>
+            Effect.gen(function* () {
+              const allIterations: IterationResult[] = [];
+              let allStdout = "";
+
+              for (let i = 1; i <= iterations; i++) {
+                yield* checkAbort();
+                yield* display.status(
+                  label(`Iteration ${i}/${iterations}`),
+                  "info",
+                );
+
                 const iterationResumeSession =
                   i === 1 ? options.resumeSession : undefined;
                 if (iterationResumeSession && bindMountHandle) {
@@ -298,8 +300,6 @@ export const orchestrate = (
                   });
                 }
 
-                // Preprocess prompt (run !`command` expressions inside sandbox).
-                // Inline prompts pass through literally — skip expansion.
                 const fullPrompt = options.skipPromptExpansion
                   ? prompt
                   : yield* preprocessPrompt(
@@ -310,8 +310,6 @@ export const orchestrate = (
 
                 yield* display.status(label("Agent started"), "success");
 
-                // Invoke the agent — buffer text deltas so Pi's single-token
-                // chunks are displayed as readable multi-word lines.
                 const textBuffer = new TextDeltaBuffer((chunk) => {
                   Effect.runPromise(display.text(chunk));
                   Effect.runPromise(
@@ -360,12 +358,9 @@ export const orchestrate = (
                   options.signal,
                 );
 
-                // Flush any remaining buffered text deltas
                 textBuffer.dispose();
-
                 yield* display.status(label("Agent stopped"), "info");
 
-                // Capture session while sandbox is still alive
                 let sessionFilePath: string | undefined;
                 let usage: IterationUsage | undefined;
                 if (provider.captureSessions && sessionId && bindMountHandle) {
@@ -386,7 +381,6 @@ export const orchestrate = (
                   });
                   sessionFilePath = hStore.sessionFilePath(sessionId);
 
-                  // Parse token usage from the captured session JSONL
                   if (provider.parseSessionUsage) {
                     const content = yield* Effect.promise(() =>
                       hStore
@@ -399,61 +393,53 @@ export const orchestrate = (
                   }
                 }
 
-                // Check completion signal
+                allStdout += agentOutput;
+                allIterations.push({ sessionId, sessionFilePath, usage });
+
                 const matchedSignal = completionSignals.find((sig) =>
                   agentOutput.includes(sig),
                 );
-                return {
-                  completionSignal: matchedSignal,
-                  stdout: agentOutput,
-                  sessionId,
-                  sessionFilePath,
-                  usage,
-                } as const;
-              }),
-          ),
+                if (matchedSignal !== undefined) {
+                  return {
+                    iterations: allIterations,
+                    completionSignal: matchedSignal,
+                    completionIteration: i,
+                    stdout: allStdout,
+                  } satisfies OrchestrateWorkResult;
+                }
+              }
+
+              return {
+                iterations: allIterations,
+                completionSignal: undefined,
+                stdout: allStdout,
+              } satisfies OrchestrateWorkResult;
+            }),
+        ),
+    );
+
+    const lifecycleResult = sandboxResult.value;
+    if (lifecycleResult.result.completionSignal !== undefined) {
+      yield* display.status(
+        label(
+          `Agent signaled completion after ${lifecycleResult.result.completionIteration} iteration(s).`,
+        ),
+        "success",
       );
-
-      const lifecycleResult = sandboxResult.value;
-      iterationPreservedPath = sandboxResult.preservedWorktreePath;
-
-      allCommits.push(...lifecycleResult.commits);
-      allStdout += lifecycleResult.result.stdout;
-      resolvedBranch = lifecycleResult.branch;
-
-      allIterations.push({
-        sessionId: lifecycleResult.result.sessionId,
-        sessionFilePath: lifecycleResult.result.sessionFilePath,
-        usage: lifecycleResult.result.usage,
-      });
-
-      if (lifecycleResult.result.completionSignal !== undefined) {
-        yield* display.status(
-          label(`Agent signaled completion after ${i} iteration(s).`),
-          "success",
-        );
-        return {
-          iterations: allIterations,
-          completionSignal: lifecycleResult.result.completionSignal,
-          stdout: allStdout,
-          commits: allCommits,
-          branch: resolvedBranch,
-          preservedWorktreePath: iterationPreservedPath,
-        };
-      }
+    } else {
+      yield* display.status(
+        label(`Reached max iterations (${iterations}).`),
+        "info",
+      );
     }
 
-    yield* display.status(
-      label(`Reached max iterations (${iterations}).`),
-      "info",
-    );
     return {
-      iterations: allIterations,
-      completionSignal: undefined,
-      stdout: allStdout,
-      commits: allCommits,
-      branch: resolvedBranch,
-      preservedWorktreePath: iterationPreservedPath,
+      iterations: lifecycleResult.result.iterations,
+      completionSignal: lifecycleResult.result.completionSignal,
+      stdout: lifecycleResult.result.stdout,
+      commits: lifecycleResult.commits,
+      branch: lifecycleResult.branch,
+      preservedWorktreePath: sandboxResult.preservedWorktreePath,
     };
   });
 };

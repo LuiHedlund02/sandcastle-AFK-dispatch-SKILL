@@ -53,12 +53,34 @@ describe("createWorktree", () => {
     });
 
     try {
-      expect(ws.worktreePath).toContain(".sandcastle/worktrees");
+      expect(ws.worktreePath).toContain(join(".sandcastle", "worktrees"));
       expect(ws.branch).toBe("test-branch");
       expect(existsSync(ws.worktreePath)).toBe(true);
     } finally {
       await ws.close();
       await rm(hostDir, { recursive: true, force: true });
+    }
+  });
+
+  it("creates a worktree under a custom worktreeRoot", async () => {
+    const hostDir = await mkdtemp(join(tmpdir(), "ws-test-"));
+    const worktreeRoot = await mkdtemp(join(tmpdir(), "ws-root-"));
+    await initRepo(hostDir);
+    await commitFile(hostDir, "init.txt", "init", "initial commit");
+
+    const ws = await createWorktree({
+      branchStrategy: { type: "branch", branch: "custom-root" },
+      cwd: hostDir,
+      worktreeRoot,
+    });
+
+    try {
+      expect(ws.worktreePath).toContain(worktreeRoot);
+      expect(existsSync(ws.worktreePath)).toBe(true);
+    } finally {
+      await ws.close();
+      await rm(hostDir, { recursive: true, force: true });
+      await rm(worktreeRoot, { recursive: true, force: true });
     }
   });
 
@@ -73,7 +95,7 @@ describe("createWorktree", () => {
     });
 
     try {
-      expect(ws.worktreePath).toContain(".sandcastle/worktrees");
+      expect(ws.worktreePath).toContain(join(".sandcastle", "worktrees"));
       expect(ws.branch).toMatch(/^sandcastle\//);
       expect(existsSync(ws.worktreePath)).toBe(true);
     } finally {

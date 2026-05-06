@@ -73,6 +73,11 @@ export interface CreateWorktreeOptions {
    * - Defaults to `process.cwd()` when omitted.
    */
   readonly cwd?: string;
+  /**
+   * Host directory for the created worktree. Relative paths are resolved
+   * against `cwd`/host repo dir. Defaults to `.sandcastle/worktrees`.
+   */
+  readonly worktreeRoot?: string;
   /** Paths relative to the host repo root to copy into the worktree at creation time. */
   readonly copyToWorktree?: string[];
   /** Lifecycle hooks grouped by execution location (host or sandbox).
@@ -223,15 +228,21 @@ export const createWorktree = async (
 
   const { hostRepoDir, worktreeInfo } = await Effect.gen(function* () {
     const hostRepoDir = yield* resolveCwd(options.cwd);
-    yield* WorktreeManager.pruneStale(hostRepoDir).pipe(
+    yield* WorktreeManager.pruneStale(hostRepoDir, options.worktreeRoot).pipe(
       Effect.catchAll(() => Effect.void),
     );
     const info = yield* WorktreeManager.create(hostRepoDir, {
       branch,
       baseBranch,
+      worktreeRoot: options.worktreeRoot,
     });
     if (options.copyToWorktree && options.copyToWorktree.length > 0) {
-      yield* copyToWorktree(options.copyToWorktree, hostRepoDir, info.path, options.timeouts?.copyToWorktreeMs);
+      yield* copyToWorktree(
+        options.copyToWorktree,
+        hostRepoDir,
+        info.path,
+        options.timeouts?.copyToWorktreeMs,
+      );
     }
     // Run host.onWorktreeReady hooks after copyToWorktree, before sandbox creation
     if (options.hooks?.host?.onWorktreeReady?.length) {
@@ -255,7 +266,7 @@ export const createWorktree = async (
         return { preservedWorktreePath: worktreeInfo.path } as CloseResult;
       }
 
-      yield* WorktreeManager.remove(worktreeInfo.path).pipe(
+      yield* WorktreeManager.remove(worktreeInfo.path, hostRepoDir).pipe(
         Effect.catchAll(() => Effect.void),
       );
 

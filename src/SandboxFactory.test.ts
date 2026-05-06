@@ -39,6 +39,8 @@ const mockHasUncommittedChanges = vi.mocked(
   WorktreeManager.hasUncommittedChanges,
 );
 
+const normalizePath = (value: string) => value.replace(/\\/g, "/");
+
 /** Create a mock sandbox provider that records calls and delegates to a no-op handle. */
 const makeMockProvider = (): {
   provider: SandboxProvider;
@@ -93,6 +95,7 @@ describe("WorktreeDockerSandboxFactory", () => {
   const makeLayer = (
     displayRef = Ref.unsafeMake<ReadonlyArray<DisplayEntry>>([]),
     branchStrategy: BranchStrategy = { type: "merge-to-head" },
+    worktreeRoot?: string,
   ) =>
     Layer.provide(
       WorktreeDockerSandboxFactory.layer,
@@ -102,6 +105,7 @@ describe("WorktreeDockerSandboxFactory", () => {
           hostRepoDir,
           sandboxProvider: mockProvider.provider,
           branchStrategy,
+          worktreeRoot,
         }),
         NodeFileSystem.layer,
         SilentDisplay.layer(displayRef),
@@ -146,6 +150,7 @@ describe("WorktreeDockerSandboxFactory", () => {
     expect(mockCreate).toHaveBeenCalledWith(hostRepoDir, {
       branch: "feature/my-branch",
       baseBranch: undefined,
+      worktreeRoot: undefined,
     });
   });
 
@@ -159,6 +164,33 @@ describe("WorktreeDockerSandboxFactory", () => {
 
     expect(mockCreate).toHaveBeenCalledWith(hostRepoDir, {
       name: undefined,
+      worktreeRoot: undefined,
+    });
+  });
+
+  it("passes custom worktreeRoot to prune and create", async () => {
+    await Effect.runPromise(
+      Effect.gen(function* () {
+        const factory = yield* SandboxFactory;
+        yield* factory.withSandbox(() => Effect.void);
+      }).pipe(
+        Effect.provide(
+          makeLayer(
+            Ref.unsafeMake<ReadonlyArray<DisplayEntry>>([]),
+            { type: "merge-to-head" },
+            "C:\\tmp\\sandcastle-worktrees",
+          ),
+        ),
+      ),
+    );
+
+    expect(mockPruneStale).toHaveBeenCalledWith(
+      hostRepoDir,
+      "C:\\tmp\\sandcastle-worktrees",
+    );
+    expect(mockCreate).toHaveBeenCalledWith(hostRepoDir, {
+      name: undefined,
+      worktreeRoot: "C:\\tmp\\sandcastle-worktrees",
     });
   });
 
@@ -213,15 +245,21 @@ describe("WorktreeDockerSandboxFactory", () => {
 
     expect(mockProvider.createCalls).toHaveLength(1);
     const opts = mockProvider.createCalls[0];
+    const mounts = opts.mounts.map(
+      (mount: { hostPath: string; sandboxPath: string }) => ({
+        hostPath: normalizePath(mount.hostPath),
+        sandboxPath: normalizePath(mount.sandboxPath),
+      }),
+    );
     // Should include worktree mount
-    expect(opts.mounts).toContainEqual({
-      hostPath: worktreePath,
+    expect(mounts).toContainEqual({
+      hostPath: normalizePath(worktreePath),
       sandboxPath: SANDBOX_REPO_DIR,
     });
     // Should include git mount
-    expect(opts.mounts).toContainEqual({
-      hostPath: `${hostRepoDir}/.git`,
-      sandboxPath: `${hostRepoDir}/.git`,
+    expect(mounts).toContainEqual({
+      hostPath: normalizePath(`${hostRepoDir}/.git`),
+      sandboxPath: normalizePath(`${hostRepoDir}/.git`),
     });
   });
 
@@ -233,7 +271,7 @@ describe("WorktreeDockerSandboxFactory", () => {
       }).pipe(Effect.provide(makeLayer())),
     );
 
-    expect(mockRemove).toHaveBeenCalledWith(worktreePath);
+    expect(mockRemove).toHaveBeenCalledWith(worktreePath, hostRepoDir);
   });
 
   it("prunes stale worktrees before creating a new worktree", async () => {
@@ -257,7 +295,7 @@ describe("WorktreeDockerSandboxFactory", () => {
       }).pipe(Effect.provide(makeLayer())),
     );
 
-    expect(mockPruneStale).toHaveBeenCalledWith(hostRepoDir);
+    expect(mockPruneStale).toHaveBeenCalledWith(hostRepoDir, undefined);
     expect(callOrder.indexOf("pruneStale")).toBeLessThan(
       callOrder.indexOf("create"),
     );
@@ -277,6 +315,7 @@ describe("WorktreeDockerSandboxFactory", () => {
 
     expect(mockCreate).toHaveBeenCalledWith(hostRepoDir, {
       name: undefined,
+      worktreeRoot: undefined,
     });
   });
 
@@ -417,8 +456,31 @@ describe("WorktreeDockerSandboxFactory", () => {
       }).pipe(Effect.provide(makeLayer())),
     );
 
-    expect(mockRemove).toHaveBeenCalledWith(worktreePath);
+    expect(mockRemove).toHaveBeenCalledWith(worktreePath, hostRepoDir);
     expect(stderrSpy).not.toHaveBeenCalled();
+    stderrSpy.mockRestore();
+  });
+
+  it("preserves worktree and returns path when cleanup remove fails", async () => {
+    mockHasUncommittedChanges.mockReturnValue(Effect.succeed(false));
+    mockRemove.mockReturnValue(
+      Effect.fail(new WorktreeError({ message: "path too long" })),
+    );
+    const stderrSpy = vi.spyOn(console, "error").mockImplementation(() => {});
+
+    const result = await Effect.runPromise(
+      Effect.gen(function* () {
+        const factory = yield* SandboxFactory;
+        return yield* factory.withSandbox(() => Effect.succeed("done"));
+      }).pipe(Effect.provide(makeLayer())),
+    );
+
+    expect(result.value).toBe("done");
+    expect(result.preservedWorktreePath).toBe(worktreePath);
+    expect(mockRemove).toHaveBeenCalledWith(worktreePath, hostRepoDir);
+    expect(stderrSpy.mock.calls.map((c) => c[0]).join(" ")).toContain(
+      "failed to remove worktree",
+    );
     stderrSpy.mockRestore();
   });
 
@@ -468,7 +530,7 @@ describe("WorktreeDockerSandboxFactory", () => {
       ),
     ).rejects.toThrow();
 
-    expect(mockRemove).toHaveBeenCalledWith(worktreePath);
+    expect(mockRemove).toHaveBeenCalledWith(worktreePath, hostRepoDir);
   });
 
   it("prints 'no uncommitted changes' message on failure with clean worktree", async () => {
@@ -545,13 +607,19 @@ describe("WorktreeDockerSandboxFactory", () => {
 
       expect(mockProvider.createCalls).toHaveLength(1);
       const opts = mockProvider.createCalls[0];
-      expect(opts.mounts).toContainEqual({
-        hostPath: hostRepoDir,
+      const mounts = opts.mounts.map(
+        (mount: { hostPath: string; sandboxPath: string }) => ({
+          hostPath: normalizePath(mount.hostPath),
+          sandboxPath: normalizePath(mount.sandboxPath),
+        }),
+      );
+      expect(mounts).toContainEqual({
+        hostPath: normalizePath(hostRepoDir),
         sandboxPath: SANDBOX_REPO_DIR,
       });
-      expect(opts.mounts).toContainEqual({
-        hostPath: `${hostRepoDir}/.git`,
-        sandboxPath: `${hostRepoDir}/.git`,
+      expect(mounts).toContainEqual({
+        hostPath: normalizePath(`${hostRepoDir}/.git`),
+        sandboxPath: `${SANDBOX_REPO_DIR}/.git`,
       });
     });
 
@@ -808,7 +876,10 @@ describe("WorktreeDockerSandboxFactory — isolated providers", () => {
       }).pipe(Effect.provide(makeIsolatedLayer(hostDir))),
     );
 
-    expect(mockCreate).toHaveBeenCalledWith(hostDir, { name: undefined });
+    expect(mockCreate).toHaveBeenCalledWith(hostDir, {
+      name: undefined,
+      worktreeRoot: undefined,
+    });
   });
 
   it("creates a worktree with a named branch for branch strategy", async () => {
@@ -847,6 +918,8 @@ describe("WorktreeDockerSandboxFactory — isolated providers", () => {
 
     expect(mockCreate).toHaveBeenCalledWith(hostDir, {
       branch: "feature/my-branch",
+      baseBranch: undefined,
+      worktreeRoot: undefined,
     });
   });
 
@@ -901,7 +974,7 @@ describe("WorktreeDockerSandboxFactory — isolated providers", () => {
       }).pipe(Effect.provide(makeIsolatedLayer(hostDir))),
     );
 
-    expect(mockRemove).toHaveBeenCalledWith(hostDir);
+    expect(mockRemove).toHaveBeenCalledWith(hostDir, hostDir);
   });
 
   it("preserves worktree on failure with dirty worktree", async () => {
