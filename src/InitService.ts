@@ -190,11 +190,11 @@ ANTHROPIC_API_KEY=`,
   {
     name: "pi",
     label: "Pi",
-    defaultModel: "claude-sonnet-4-6",
+    defaultModel: "openai-codex/gpt-5.5",
     factoryImport: "pi",
     dockerfileTemplate: PI_DOCKERFILE,
-    envExample: `# Anthropic API key
-ANTHROPIC_API_KEY=`,
+    envExample: `# Pi defaults to openai-codex/gpt-5.5 via ChatGPT Plus/Pro (Codex).
+# Authenticate with Pi's /login flow and make ~/.pi/agent/auth.json available to the sandbox.`,
   },
   {
     name: "pi-codex",

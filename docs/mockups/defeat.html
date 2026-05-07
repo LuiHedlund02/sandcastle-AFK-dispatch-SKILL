@@ -1,0 +1,1466 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>SANDCASTLE :: DEFEAT</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --void:    #03060a;
+    --hull-0:  #060a10;
+    --hull-1:  #0a1018;
+    --hull-2:  #11181f;
+    --hull-3:  #1a232c;
+    --hull-4:  #243140;
+
+    --frost:   #dceaf3;
+    --mist:    #9eb3c2;
+    --steel:   #5b6b7a;
+    --gunmetal:#3a4754;
+
+    --rule:    rgba(120, 200, 220, 0.07);
+    --rule-2:  rgba(120, 200, 220, 0.13);
+    --rule-3:  rgba(120, 200, 220, 0.22);
+
+    --cyan:    #56d4e0;
+    --cyan-2:  #7fe6ef;
+    --cyan-dim:rgba(86, 212, 224, 0.16);
+    --cyan-ink:rgba(86, 212, 224, 0.06);
+
+    --magenta:    #ff2e88;
+    --magenta-2:  #ff5ca7;
+    --magenta-dim:rgba(255, 46, 136, 0.16);
+    --magenta-ink:rgba(255, 46, 136, 0.06);
+
+    --plasma:  #6cffaa;
+    --plasma-dim:rgba(108,255,170,0.14);
+    --amber:   #ffb547;
+    --amber-2: #ffd089;
+    --amber-dim:rgba(255,181,71,0.14);
+    --amber-ink:rgba(255,181,71,0.06);
+    --crimson: #ff5e6c;
+    --crimson-2:#ff8d97;
+    --crimson-dim:rgba(255,94,108,0.14);
+    --crimson-ink:rgba(255,94,108,0.06);
+    --slate:   #6f8aa3;
+
+    --mono:    'JetBrains Mono', ui-monospace, 'SF Mono', Menlo, Consolas, monospace;
+    --display: 'Chakra Petch', 'Eurostile', system-ui, sans-serif;
+  }
+
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  html, body {
+    height: 100%;
+    background: var(--void);
+    color: var(--frost);
+    font-family: var(--mono);
+    font-size: 12.5px;
+    line-height: 1.5;
+    -webkit-font-smoothing: antialiased;
+    overflow: hidden;
+    font-feature-settings: "ss01", "cv01", "zero";
+  }
+  button { font: inherit; color: inherit; background: none; border: 0; cursor: pointer; }
+  ::selection { background: var(--crimson-dim); color: var(--frost); }
+
+  /* heavy CRT distortion */
+  body::before {
+    content: "";
+    position: fixed; inset: 0;
+    pointer-events: none;
+    z-index: 9999;
+    opacity: 0.65;
+    background:
+      repeating-linear-gradient(0deg, rgba(0,0,0,0) 0 2px, rgba(255,94,108,0.045) 2px 3px),
+      linear-gradient(180deg, rgba(255,94,108,0.04), rgba(255,46,136,0.025) 50%, rgba(255,94,108,0.04));
+    animation: crt-broken 3.2s steps(40) infinite;
+  }
+  @keyframes crt-broken {
+    0%, 92%, 100% { opacity: 0.65; transform: translateY(0); }
+    93%   { opacity: 0.3;  transform: translateY(-2px); }
+    94%   { opacity: 0.85; transform: translateY(1px); }
+    95%   { opacity: 0.4;  transform: translateY(-1px); }
+    96%   { opacity: 0.7; }
+  }
+
+  /* dark vignette, bias to crimson */
+  body::after {
+    content: "";
+    position: fixed; inset: 0;
+    pointer-events: none;
+    z-index: 1;
+    background:
+      radial-gradient(ellipse 80% 70% at 50% 35%, rgba(255,94,108,0.10), transparent 65%),
+      radial-gradient(ellipse 60% 50% at 50% 100%, rgba(255,46,136,0.06), transparent 70%),
+      radial-gradient(ellipse 90% 80% at 50% 50%, transparent 40%, rgba(0,0,0,0.55) 100%);
+  }
+
+  .app {
+    height: 100vh;
+    overflow: hidden;
+    position: relative;
+  }
+
+  .app::before {
+    content: "サンドキャッスル ／ DEFEAT ／ ボス健在 ／ 撤退・分析 ／ 接続不安定";
+    position: fixed;
+    top: 50%; right: -10px;
+    transform: rotate(-90deg) translateX(50%);
+    transform-origin: right center;
+    font-family: var(--mono);
+    font-size: 9.5px; letter-spacing: 0.7em;
+    color: var(--crimson);
+    opacity: 0.22; pointer-events: none;
+    z-index: 2;
+    white-space: nowrap;
+    text-shadow: 0 0 6px rgba(255,94,108,0.55);
+  }
+
+  /* hazard tape stripes — top + bottom of viewport */
+  .hazard {
+    position: fixed; left: 0; right: 0;
+    height: 6px;
+    background:
+      repeating-linear-gradient(135deg, var(--amber) 0 14px, var(--void) 14px 28px);
+    pointer-events: none;
+    z-index: 3;
+    opacity: 0.85;
+    box-shadow: 0 0 12px rgba(255,181,71,0.4);
+  }
+  .hazard.top    { top: 44px; }
+  .hazard.bottom { bottom: 0; }
+
+  /* glitch shards drifting */
+  .shard {
+    position: fixed;
+    pointer-events: none;
+    z-index: 2;
+    width: 240px; height: 1px;
+    background: var(--crimson);
+    opacity: 0;
+    animation: shard-tear 2.6s steps(20) infinite;
+    box-shadow: 0 0 6px var(--crimson);
+  }
+  .shard.s2 { background: var(--magenta); box-shadow: 0 0 6px var(--magenta); }
+  @keyframes shard-tear {
+    0%   { opacity: 0; transform: translateX(-100px); }
+    8%   { opacity: 1; }
+    10%  { opacity: 0; }
+    50%  { opacity: 0; transform: translateX(100px); }
+    51%  { opacity: 1; }
+    52%  { opacity: 0; }
+    100% { opacity: 0; }
+  }
+
+  .layout {
+    height: 100%;
+    display: grid;
+    grid-template-rows: 44px 1fr;
+    position: relative;
+    z-index: 5;
+  }
+
+  /* titlebar */
+  .titlebar {
+    display: grid;
+    grid-template-columns: 1fr auto 1fr;
+    align-items: center;
+    padding: 0 14px;
+    border-bottom: 1px solid var(--crimson-dim);
+    background: linear-gradient(180deg, rgba(20,8,12,0.7), rgba(3,6,10,0.95));
+    backdrop-filter: blur(20px);
+    position: relative;
+    z-index: 10;
+  }
+  .titlebar::after {
+    content: ""; position: absolute; bottom: -1px; left: 0; right: 0; height: 1px;
+    background: linear-gradient(90deg, transparent 5%, var(--crimson) 50%, transparent 95%);
+    opacity: 0.7;
+    animation: scan-flick 4s steps(20) infinite;
+  }
+  @keyframes scan-flick {
+    0%, 95%, 100% { opacity: 0.7; }
+    96% { opacity: 0.3; }
+    97% { opacity: 0.9; }
+  }
+  .tb-left, .tb-right { display: flex; align-items: center; gap: 14px; }
+  .tb-right { justify-content: flex-end; }
+  .traffic { display: flex; gap: 8px; padding-right: 6px; }
+  .traffic i { width: 11px; height: 11px; transform: rotate(45deg); }
+  .traffic i:nth-child(1) { background: var(--crimson); animation: ping 1.4s ease-out infinite; box-shadow: 0 0 6px var(--crimson); }
+  .traffic i:nth-child(2) { background: var(--gunmetal); }
+  .traffic i:nth-child(3) { background: var(--gunmetal); }
+  @keyframes ping { 0%, 100% { opacity: 1; } 50% { opacity: 0.3; } }
+
+  .brand { display: flex; align-items: center; gap: 10px; font-size: 11px; color: var(--mist); letter-spacing: 0.04em; }
+  .brand-mark {
+    width: 22px; height: 22px;
+    background: linear-gradient(135deg, #1a0a14, #18060a);
+    border: 1px solid var(--crimson);
+    display: grid; place-items: center;
+    font-family: var(--display); font-weight: 700; font-size: 12px;
+    color: var(--crimson);
+    clip-path: polygon(20% 0, 100% 0, 100% 80%, 80% 100%, 0 100%, 0 20%);
+    box-shadow: 0 0 14px rgba(255,94,108,0.5), -2px 2px 0 rgba(255,46,136,0.6);
+    text-shadow: -1px 0 var(--magenta), 1px 0 var(--crimson);
+    animation: mark-flicker 3.4s steps(20) infinite;
+  }
+  @keyframes mark-flicker {
+    0%, 96%, 100% { opacity: 1; }
+    97% { opacity: 0.3; }
+    98% { opacity: 0.9; }
+  }
+  .brand-name {
+    font-family: var(--display); font-weight: 600; color: var(--frost);
+    letter-spacing: 0.18em; font-size: 12px; text-transform: uppercase;
+    text-shadow: -0.5px 0 var(--crimson), 0.5px 0 var(--magenta);
+  }
+  .brand-name::after {
+    content: "／ 敗北";
+    margin-left: 8px; font-family: var(--mono); font-size: 9.5px;
+    color: var(--crimson); letter-spacing: 0.15em; opacity: 0.85;
+    text-shadow: 0 0 6px rgba(255,94,108,0.55);
+  }
+  .brand-sep { color: var(--gunmetal); }
+  .brand-ctx {
+    font-family: var(--mono); font-size: 10.5px; color: var(--mist);
+    padding: 2px 8px; border: 1px solid var(--rule-2); background: var(--hull-1);
+    letter-spacing: 0.04em;
+  }
+
+  .alert-pill {
+    display: inline-flex; align-items: center; gap: 8px;
+    padding: 4px 14px;
+    font-family: var(--display); font-size: 10px; font-weight: 700;
+    letter-spacing: 0.28em; text-transform: uppercase;
+    color: var(--crimson);
+    border: 1px solid var(--crimson);
+    background: var(--crimson-dim);
+    text-shadow: 0 0 8px rgba(255,94,108,0.6);
+    clip-path: polygon(6px 0, 100% 0, 100% calc(100% - 6px), calc(100% - 6px) 100%, 0 100%, 0 6px);
+    box-shadow: 0 0 14px rgba(255,94,108,0.3);
+  }
+  .alert-pill .gl {
+    width: 7px; height: 7px; transform: rotate(45deg);
+    background: var(--crimson);
+    animation: ping 1.2s ease-out infinite;
+    box-shadow: 0 0 8px var(--crimson);
+  }
+
+  .icon-btn {
+    width: 28px; height: 28px;
+    display: grid; place-items: center;
+    color: var(--mist);
+    border: 1px solid transparent;
+  }
+  .icon-btn svg { width: 14px; height: 14px; }
+  .icon-btn:hover { background: var(--hull-2); color: var(--crimson); border-color: var(--crimson-dim); }
+
+  /* ─── stage ─── */
+  .stage {
+    overflow-y: auto;
+    padding: 32px 32px 40px;
+    position: relative;
+  }
+  .stage::-webkit-scrollbar { width: 8px; }
+  .stage::-webkit-scrollbar-thumb { background: var(--hull-3); }
+
+  /* HERO */
+  .hero {
+    max-width: 1280px;
+    margin: 0 auto 28px;
+    text-align: center;
+    position: relative;
+    padding: 24px 24px 28px;
+  }
+
+  .hero-eyebrow {
+    display: inline-flex; align-items: center; gap: 14px;
+    font-family: var(--mono); font-size: 10.5px;
+    letter-spacing: 0.32em; text-transform: uppercase;
+    color: var(--steel);
+  }
+  .hero-eyebrow .dot { color: var(--crimson); }
+  .hero-eyebrow .id { color: var(--crimson); text-shadow: 0 0 6px rgba(255,94,108,0.55); }
+
+  .hero-title {
+    font-family: var(--display); font-weight: 800;
+    font-size: 92px; line-height: 0.95;
+    letter-spacing: 0.04em;
+    color: var(--frost);
+    margin-top: 16px;
+    text-transform: uppercase;
+    text-shadow:
+      -5px 0 rgba(255,46,136,0.65),
+      5px 0 rgba(255,94,108,0.65),
+      0 0 36px rgba(255,94,108,0.55);
+    animation: defeat-chroma 3.2s ease-in-out infinite, defeat-glitch 4.4s steps(1) infinite;
+    position: relative;
+  }
+  .hero-title em {
+    font-style: normal;
+    color: var(--crimson);
+    text-shadow:
+      -5px 0 var(--magenta),
+      5px 0 var(--crimson),
+      0 0 40px rgba(255,94,108,0.7);
+  }
+  @keyframes defeat-chroma {
+    0%, 100% { text-shadow: -5px 0 rgba(255,46,136,0.65), 5px 0 rgba(255,94,108,0.65), 0 0 36px rgba(255,94,108,0.55); }
+    50%      { text-shadow: -7px 0 rgba(255,46,136,0.7),  7px 0 rgba(255,94,108,0.7),  0 0 48px rgba(255,94,108,0.65); }
+  }
+  @keyframes defeat-glitch {
+    0%, 88%, 100% { transform: translate(0); clip-path: inset(0 0 0 0); }
+    89%           { transform: translate(-5px, 1px); clip-path: inset(20% 0 30% 0); }
+    90%           { transform: translate(5px, -1px); clip-path: inset(45% 0 5% 0); }
+    91%           { transform: translate(-2px, 0); clip-path: inset(0 0 60% 0); }
+    92%           { transform: translate(3px, 0); clip-path: inset(70% 0 10% 0); }
+    93%           { transform: translate(0); clip-path: inset(0 0 0 0); }
+  }
+
+  .hero-subtitle {
+    margin-top: 14px;
+    font-family: var(--display); font-weight: 500;
+    font-size: 18px; letter-spacing: 0.18em; text-transform: uppercase;
+    color: var(--mist);
+  }
+  .hero-subtitle em {
+    font-style: normal; color: var(--magenta);
+    text-shadow: -1.5px 0 var(--magenta), 1.5px 0 var(--crimson), 0 0 12px rgba(255,46,136,0.55);
+  }
+
+  .hero-cause {
+    margin-top: 14px;
+    display: inline-block;
+    padding: 6px 14px;
+    font-family: var(--mono); font-size: 11px;
+    color: var(--crimson);
+    border: 1px solid var(--crimson);
+    background: var(--crimson-dim);
+    letter-spacing: 0.06em;
+    clip-path: polygon(8px 0, 100% 0, 100% calc(100% - 8px), calc(100% - 8px) 100%, 0 100%, 0 8px);
+    text-shadow: 0 0 6px rgba(255,94,108,0.5);
+  }
+  .hero-cause b {
+    color: var(--frost); font-weight: 600;
+    text-shadow: -0.5px 0 var(--crimson), 0.5px 0 var(--magenta);
+  }
+
+  .hero-meta {
+    margin-top: 14px;
+    display: inline-flex; gap: 22px;
+    font-family: var(--mono); font-size: 11px;
+    color: var(--steel); letter-spacing: 0.06em;
+  }
+  .hero-meta .v { color: var(--frost); }
+  .hero-meta .v.cy { color: var(--cyan); }
+  .hero-meta .v.cr { color: var(--crimson); text-shadow: 0 0 4px rgba(255,94,108,0.4); }
+  .hero-meta .v.am { color: var(--amber); text-shadow: 0 0 4px rgba(255,181,71,0.4); }
+  .hero-meta .sep { color: var(--gunmetal); }
+
+  /* GRID */
+  .grid {
+    max-width: 1280px;
+    margin: 0 auto;
+    display: grid;
+    grid-template-columns: 380px 1fr 380px;
+    gap: 20px;
+  }
+
+  .panel {
+    background: linear-gradient(180deg, var(--hull-2), var(--hull-1));
+    border: 1px solid var(--rule-2);
+    padding: 18px 20px;
+    position: relative;
+    clip-path: polygon(14px 0, 100% 0, 100% calc(100% - 14px), calc(100% - 14px) 100%, 0 100%, 0 14px);
+  }
+  .panel::before {
+    content: ""; position: absolute; top: 0; left: 0; right: 0; height: 1px;
+    background: linear-gradient(90deg, transparent, var(--rule-2), transparent);
+  }
+  .panel.center {
+    border-color: var(--crimson);
+    box-shadow: 0 0 32px rgba(255,94,108,0.22);
+  }
+  .panel.center::before { background: linear-gradient(90deg, transparent, var(--crimson), transparent); }
+  .panel.left-card { border-color: rgba(255,94,108,0.25); }
+  .panel.left-card::before { background: linear-gradient(90deg, transparent, var(--crimson-dim), transparent); }
+  .panel.right-card { border-color: rgba(255,181,71,0.25); }
+  .panel.right-card::before { background: linear-gradient(90deg, transparent, var(--amber-dim), transparent); }
+
+  .panel-eyebrow {
+    display: flex; align-items: center; gap: 10px;
+    font-family: var(--display); font-size: 9px;
+    letter-spacing: 0.24em; text-transform: uppercase;
+    color: var(--steel); font-weight: 500;
+    margin-bottom: 14px;
+  }
+  .panel-eyebrow .hex { font-family: var(--mono); color: var(--cyan); letter-spacing: 0.05em; }
+  .panel-eyebrow .hex.cr { color: var(--crimson); text-shadow: 0 0 4px rgba(255,94,108,0.4); }
+  .panel-eyebrow .hex.am { color: var(--amber); }
+  .panel-eyebrow .line { flex: 1; height: 1px; background: var(--rule-2); }
+
+  /* ─── L: phase recap (with failure) ─── */
+  .phase-recap {
+    display: grid;
+    grid-template-columns: 36px 1fr auto;
+    gap: 10px; align-items: flex-start;
+    padding: 10px 12px;
+    margin-bottom: 6px;
+    background: var(--hull-2);
+    border: 1px solid var(--rule-2);
+    clip-path: polygon(8px 0, 100% 0, 100% calc(100% - 8px), calc(100% - 8px) 100%, 0 100%, 0 8px);
+  }
+  .phase-recap.cleared { border-color: var(--plasma); background: rgba(108,255,170,0.06); }
+  .phase-recap.failed  {
+    border-color: var(--crimson);
+    background: var(--crimson-ink);
+    box-shadow: 0 0 14px rgba(255,94,108,0.18);
+  }
+  .phase-recap.locked  { opacity: 0.5; }
+
+  .phase-recap .marker {
+    width: 28px; height: 28px;
+    display: grid; place-items: center;
+    color: var(--steel); font-weight: 700; font-size: 12px;
+    font-family: var(--display); letter-spacing: 0;
+    background: var(--hull-3); border: 1px solid var(--rule-2);
+    clip-path: polygon(20% 0, 100% 0, 100% 80%, 80% 100%, 0 100%, 0 20%);
+  }
+  .phase-recap.cleared .marker {
+    background: var(--plasma); border-color: var(--plasma); color: var(--void);
+    box-shadow: 0 0 8px rgba(108,255,170,0.5);
+  }
+  .phase-recap.failed .marker {
+    background: var(--crimson); border-color: var(--crimson); color: var(--void);
+    box-shadow: 0 0 12px rgba(255,94,108,0.6);
+    animation: ping 1.6s ease-out infinite;
+  }
+
+  .phase-recap-body { min-width: 0; }
+  .phase-recap .name {
+    font-family: var(--display); font-weight: 600; font-size: 11px;
+    color: var(--frost); letter-spacing: 0.06em; text-transform: uppercase;
+    line-height: 1.3;
+  }
+  .phase-recap.failed .name {
+    color: var(--frost);
+    text-shadow: -0.5px 0 var(--crimson), 0.5px 0 var(--magenta);
+  }
+  .phase-recap.locked .name { color: var(--mist); }
+  .phase-recap .meta {
+    margin-top: 3px;
+    font-family: var(--mono); font-size: 9.5px;
+    color: var(--steel); letter-spacing: 0.04em;
+  }
+  .phase-recap .meta .ok   { color: var(--plasma); }
+  .phase-recap .meta .fail { color: var(--crimson); text-shadow: 0 0 4px rgba(255,94,108,0.4); }
+  .phase-recap .meta code {
+    font-family: var(--mono); padding: 0 4px;
+    background: var(--hull-3); border: 1px solid var(--rule-2);
+    color: var(--mist); font-size: 9.5px;
+  }
+  .phase-recap .xp {
+    font-family: var(--display); font-weight: 700; font-size: 13px;
+    color: var(--plasma); letter-spacing: 0.04em;
+    text-shadow: 0 0 6px rgba(108,255,170,0.4);
+  }
+  .phase-recap.failed .xp { color: var(--crimson); text-shadow: 0 0 6px rgba(255,94,108,0.4); }
+  .phase-recap.locked .xp { color: var(--steel); text-shadow: none; }
+  .phase-recap .xp::after {
+    content: "XP"; font-size: 9px; color: var(--steel); margin-left: 3px;
+    text-shadow: none; font-weight: 500;
+  }
+
+  /* xp tally */
+  .tally-block {
+    margin-top: 14px;
+    padding-top: 14px;
+    border-top: 1px dashed var(--rule-2);
+  }
+  .tally-row {
+    display: flex; justify-content: space-between; align-items: center;
+    padding: 6px 0;
+    font-family: var(--mono); font-size: 11px;
+    color: var(--mist); letter-spacing: 0.03em;
+  }
+  .tally-row .lbl { display: flex; align-items: center; gap: 8px; }
+  .tally-row .lbl .gl {
+    width: 8px; height: 8px; transform: rotate(45deg);
+    background: var(--cyan); box-shadow: 0 0 4px var(--cyan);
+  }
+  .tally-row .lbl .gl.cr { background: var(--crimson); box-shadow: 0 0 4px var(--crimson); }
+  .tally-row .lbl .gl.p  { background: var(--plasma); box-shadow: 0 0 4px var(--plasma); }
+  .tally-row .v {
+    font-family: var(--mono); font-weight: 600;
+    color: var(--frost); letter-spacing: 0.04em;
+  }
+  .tally-row .v.cr { color: var(--crimson); text-shadow: 0 0 4px rgba(255,94,108,0.4); }
+  .tally-row .v.p  { color: var(--plasma); text-shadow: 0 0 4px rgba(108,255,170,0.4); }
+
+  /* ─── CENTER: cause of death + boss state + agent ─── */
+  .cause-hero {
+    text-align: center;
+    padding: 4px 0 12px;
+  }
+  .cause-hero .lbl {
+    font-family: var(--display); font-size: 10px;
+    letter-spacing: 0.3em; text-transform: uppercase;
+    color: var(--steel); font-weight: 500;
+  }
+  .cause-hero .v {
+    margin-top: 8px;
+    font-family: var(--display); font-weight: 700;
+    font-size: 32px; line-height: 1;
+    color: var(--crimson); letter-spacing: 0.04em;
+    text-shadow:
+      -2px 0 var(--magenta), 2px 0 var(--crimson),
+      0 0 20px rgba(255,94,108,0.55);
+    text-transform: uppercase;
+  }
+  .cause-hero .desc {
+    margin-top: 10px;
+    font-family: var(--mono); font-size: 12px;
+    color: var(--mist); line-height: 1.6;
+    letter-spacing: 0.02em;
+    max-width: 460px;
+    margin-left: auto; margin-right: auto;
+  }
+  .cause-hero .desc code {
+    font-family: var(--mono); padding: 0 5px;
+    background: var(--hull-3); border: 1px solid var(--crimson-dim);
+    color: var(--crimson); font-size: 11.5px;
+  }
+  .cause-hero .desc em { font-style: normal; color: var(--magenta); }
+
+  /* boss state strip */
+  .boss-state {
+    margin: 16px -20px;
+    padding: 14px 20px;
+    border-top: 1px solid var(--crimson);
+    border-bottom: 1px solid var(--crimson);
+    background: linear-gradient(90deg, var(--crimson-ink), var(--magenta-ink), var(--crimson-ink));
+    position: relative;
+    overflow: hidden;
+  }
+  .boss-state::before {
+    content: ""; position: absolute; top: 0; left: 0; right: 0; height: 1px;
+    background: linear-gradient(90deg, transparent, var(--crimson), var(--magenta), var(--crimson), transparent);
+    background-size: 200% 100%;
+    animation: holo 3s linear infinite;
+  }
+  @keyframes holo { from { background-position: 0 0; } to { background-position: 200% 0; } }
+
+  .boss-row {
+    display: grid;
+    grid-template-columns: 44px 1fr auto;
+    gap: 14px; align-items: center;
+  }
+  .boss-portrait {
+    width: 44px; height: 44px;
+    background: linear-gradient(135deg, #1a0a14, #18060a);
+    border: 1px solid var(--crimson);
+    display: grid; place-items: center;
+    font-family: var(--display); font-weight: 700; font-size: 22px;
+    color: var(--crimson);
+    clip-path: polygon(22% 0, 100% 0, 100% 78%, 78% 100%, 0 100%, 0 22%);
+    text-shadow: -1.5px 0 var(--magenta), 1.5px 0 var(--crimson);
+    box-shadow: 0 0 14px rgba(255,94,108,0.4);
+    animation: ping 2s ease-out infinite;
+  }
+  .boss-info { min-width: 0; }
+  .boss-info .label {
+    font-family: var(--mono); font-size: 9.5px;
+    color: var(--crimson); letter-spacing: 0.18em; text-transform: uppercase;
+    text-shadow: 0 0 4px rgba(255,94,108,0.5);
+  }
+  .boss-info .name {
+    font-family: var(--display); font-weight: 600; font-size: 14px;
+    color: var(--frost); letter-spacing: 0.05em; text-transform: uppercase;
+    margin-top: 2px;
+    text-shadow: -1px 0 var(--crimson), 1px 0 var(--magenta);
+  }
+  .boss-info .sub {
+    margin-top: 3px;
+    font-family: var(--mono); font-size: 10px;
+    color: var(--steel); letter-spacing: 0.04em;
+  }
+  .boss-info .sub b { color: var(--crimson); font-weight: 600; }
+  .boss-info .sub em { font-style: normal; color: var(--magenta); }
+
+  /* hp bar — boss still has HP */
+  .boss-hp-block {
+    margin-top: 12px;
+  }
+  .boss-hp-row {
+    display: flex; justify-content: space-between;
+    font-family: var(--display); font-size: 9px;
+    letter-spacing: 0.22em; text-transform: uppercase;
+    color: var(--steel); margin-bottom: 4px;
+  }
+  .boss-hp-row .v { color: var(--crimson); font-family: var(--mono); letter-spacing: 0.05em; font-size: 11px; text-transform: none; text-shadow: 0 0 4px rgba(255,94,108,0.5); }
+  .hp-bar {
+    height: 9px; background: var(--hull-3);
+    border: 1px solid var(--crimson-dim);
+    position: relative;
+    clip-path: polygon(3px 0, 100% 0, 100% calc(100% - 3px), calc(100% - 3px) 100%, 0 100%, 0 3px);
+  }
+  .hp-fill {
+    height: 100%; width: 41%;
+    background: linear-gradient(90deg, var(--crimson), var(--magenta));
+    box-shadow: 0 0 12px rgba(255,94,108,0.5);
+    position: relative;
+  }
+  .hp-fill::after {
+    content: ""; position: absolute; right: 0; top: 0; bottom: 0; width: 6px;
+    background: var(--frost); opacity: 0.7;
+    box-shadow: 0 0 10px var(--frost);
+  }
+
+  /* agent block */
+  .agent-block {
+    margin-top: 14px;
+    display: grid;
+    grid-template-columns: 64px 1fr;
+    gap: 14px;
+    align-items: center;
+    padding: 12px;
+    background: var(--hull-1);
+    border: 1px solid var(--rule-2);
+    clip-path: polygon(10px 0, 100% 0, 100% calc(100% - 10px), calc(100% - 10px) 100%, 0 100%, 0 10px);
+  }
+  .portrait {
+    width: 56px; height: 56px;
+    background: linear-gradient(135deg, #18060a, #061418);
+    border: 1px solid var(--crimson);
+    display: grid; place-items: center;
+    font-family: var(--display); font-weight: 700; font-size: 28px;
+    color: var(--cyan);
+    clip-path: polygon(22% 0, 100% 0, 100% 78%, 78% 100%, 0 100%, 0 22%);
+    text-shadow: -2px 0 var(--magenta), 2px 0 var(--cyan), 0 0 10px rgba(86,212,224,0.4);
+    box-shadow: 0 0 14px rgba(255,94,108,0.35);
+    filter: saturate(0.7);
+    position: relative;
+  }
+  .portrait::after {
+    content: "DOWN";
+    position: absolute; bottom: -4px; left: 50%;
+    transform: translateX(-50%) rotate(-4deg);
+    font-family: var(--display); font-weight: 700; font-size: 9px;
+    letter-spacing: 0.18em;
+    color: var(--crimson);
+    background: var(--void);
+    padding: 1px 6px;
+    border: 1px solid var(--crimson);
+    text-shadow: 0 0 4px rgba(255,94,108,0.5);
+  }
+  .agent-info .name {
+    font-family: var(--display); font-weight: 600; font-size: 14px;
+    color: var(--frost); letter-spacing: 0.08em; text-transform: uppercase;
+    text-shadow: -0.5px 0 var(--crimson), 0.5px 0 var(--cyan);
+  }
+  .agent-info .class {
+    margin-top: 3px;
+    font-family: var(--mono); font-size: 10px;
+    color: var(--cyan); letter-spacing: 0.18em; text-transform: uppercase;
+  }
+  .agent-info .class em { color: var(--crimson); font-style: normal; margin-right: 4px; }
+  .agent-info .streak {
+    margin-top: 5px;
+    font-family: var(--mono); font-size: 10px;
+    color: var(--crimson); letter-spacing: 0.05em;
+    text-shadow: 0 0 4px rgba(255,94,108,0.4);
+  }
+  .agent-info .streak.amber { color: var(--amber); text-shadow: 0 0 4px rgba(255,181,71,0.4); }
+
+  /* failure detail card */
+  .fail-detail {
+    margin-top: 14px;
+    padding: 14px;
+    background: var(--hull-1);
+    border: 1px solid var(--crimson);
+    box-shadow: 0 0 18px rgba(255,94,108,0.18);
+    clip-path: polygon(10px 0, 100% 0, 100% calc(100% - 10px), calc(100% - 10px) 100%, 0 100%, 0 10px);
+    position: relative;
+  }
+  .fail-detail::before {
+    content: ""; position: absolute; top: 0; left: 0; right: 0; height: 1px;
+    background: linear-gradient(90deg, transparent, var(--crimson), transparent);
+  }
+  .fail-detail .head {
+    font-family: var(--display); font-size: 9.5px;
+    letter-spacing: 0.22em; text-transform: uppercase;
+    color: var(--crimson); font-weight: 600;
+    margin-bottom: 8px;
+    text-shadow: 0 0 4px rgba(255,94,108,0.4);
+  }
+  .fail-detail .err {
+    font-family: var(--mono); font-size: 11px;
+    color: var(--mist); letter-spacing: 0.02em;
+    line-height: 1.65;
+  }
+  .fail-detail .err code {
+    font-family: var(--mono); padding: 0 4px;
+    background: var(--hull-3); border: 1px solid var(--rule-2);
+    color: var(--cyan); font-size: 11px;
+  }
+  .fail-detail .err strong { color: var(--crimson); font-weight: 600; }
+  .fail-detail .err em { font-style: normal; color: var(--magenta); }
+
+  /* ─── R: salvage / lessons / recovery ─── */
+  .salvage-row {
+    margin-bottom: 10px;
+    display: grid;
+    grid-template-columns: 36px 1fr auto;
+    gap: 12px; align-items: center;
+    padding: 10px 12px;
+    background: var(--hull-2);
+    border: 1px solid var(--rule-2);
+    clip-path: polygon(8px 0, 100% 0, 100% calc(100% - 8px), calc(100% - 8px) 100%, 0 100%, 0 8px);
+  }
+  .salvage-row.kept { border-color: var(--plasma-dim); background: rgba(108,255,170,0.05); }
+  .salvage-row.lesson { border-color: var(--cyan-dim); background: var(--cyan-ink); }
+  .salvage-row.lost { border-color: var(--crimson-dim); background: var(--crimson-ink); }
+
+  .salvage-row .ico {
+    width: 28px; height: 28px;
+    border: 1px solid currentColor;
+    display: grid; place-items: center;
+    font-family: var(--display); font-weight: 700; font-size: 14px;
+    background: var(--hull-3);
+    clip-path: polygon(20% 0, 100% 0, 100% 80%, 80% 100%, 0 100%, 0 20%);
+  }
+  .salvage-row.kept .ico { color: var(--plasma); box-shadow: 0 0 8px rgba(108,255,170,0.4); }
+  .salvage-row.lesson .ico { color: var(--cyan); box-shadow: 0 0 8px rgba(86,212,224,0.4); }
+  .salvage-row.lost .ico { color: var(--crimson); box-shadow: 0 0 8px rgba(255,94,108,0.4); }
+
+  .salvage-body { min-width: 0; }
+  .salvage-body .name {
+    font-family: var(--display); font-weight: 600; font-size: 11px;
+    color: var(--frost); letter-spacing: 0.06em; text-transform: uppercase;
+  }
+  .salvage-body .desc {
+    margin-top: 2px;
+    font-family: var(--mono); font-size: 9.5px;
+    color: var(--mist); letter-spacing: 0.02em;
+    line-height: 1.4;
+  }
+  .salvage-body .desc code {
+    font-family: var(--mono); padding: 0 3px;
+    background: var(--hull-3); border: 1px solid var(--rule-2);
+    color: var(--cyan); font-size: 9.5px;
+  }
+  .salvage-tag {
+    font-family: var(--mono); font-size: 9px;
+    padding: 2px 7px; letter-spacing: 0.1em;
+    text-transform: uppercase;
+    border: 1px solid currentColor;
+  }
+  .salvage-row.kept .salvage-tag { color: var(--plasma); }
+  .salvage-row.lesson .salvage-tag { color: var(--cyan); }
+  .salvage-row.lost .salvage-tag { color: var(--crimson); }
+
+  /* lesson learned */
+  .lesson-block {
+    margin-top: 14px;
+    padding-top: 14px;
+    border-top: 1px dashed var(--rule-2);
+  }
+  .lesson {
+    padding: 10px 12px;
+    background: var(--cyan-ink);
+    border-left: 2px solid var(--cyan);
+    font-family: var(--mono); font-size: 11px;
+    line-height: 1.65; color: var(--mist);
+    letter-spacing: 0.02em;
+  }
+  .lesson::before {
+    content: "// agent post-mortem · auto-recorded";
+    display: block;
+    font-size: 9px; letter-spacing: 0.18em; text-transform: uppercase;
+    color: var(--cyan); margin-bottom: 6px;
+    font-weight: 500; opacity: 0.75;
+  }
+  .lesson em { font-style: normal; color: var(--cyan); }
+  .lesson strong { color: var(--magenta); font-weight: 600; }
+
+  /* worktree status */
+  .worktree-status {
+    margin-top: 14px;
+    padding: 10px 12px;
+    background: var(--amber-ink);
+    border: 1px solid var(--amber-dim);
+    font-family: var(--mono); font-size: 10.5px;
+    color: var(--mist); letter-spacing: 0.02em;
+    line-height: 1.55;
+    clip-path: polygon(8px 0, 100% 0, 100% calc(100% - 8px), calc(100% - 8px) 100%, 0 100%, 0 8px);
+  }
+  .worktree-status .tag {
+    display: inline-block;
+    font-family: var(--display); font-size: 9px;
+    letter-spacing: 0.18em; text-transform: uppercase;
+    color: var(--amber); font-weight: 600;
+    text-shadow: 0 0 4px rgba(255,181,71,0.4);
+    margin-bottom: 4px;
+  }
+  .worktree-status code {
+    font-family: var(--mono); padding: 0 4px;
+    background: var(--hull-3); border: 1px solid var(--rule-2);
+    color: var(--cyan);
+  }
+
+  /* ─── decision bar ─── */
+  .decision {
+    max-width: 1280px;
+    margin: 24px auto 0;
+    padding: 18px 22px;
+    background: linear-gradient(180deg, var(--hull-2), var(--hull-1));
+    border: 1px solid var(--crimson);
+    box-shadow: 0 0 28px rgba(255,94,108,0.22);
+    display: grid;
+    grid-template-columns: 1fr auto;
+    gap: 22px; align-items: center;
+    clip-path: polygon(14px 0, 100% 0, 100% calc(100% - 14px), calc(100% - 14px) 100%, 0 100%, 0 14px);
+    position: relative;
+  }
+  .decision::before {
+    content: ""; position: absolute; top: 0; left: 0; right: 0; height: 2px;
+    background: linear-gradient(90deg, transparent, var(--crimson), var(--magenta), var(--amber), transparent);
+    background-size: 200% 100%;
+    animation: holo 4s linear infinite;
+  }
+  .decision-info {
+    font-family: var(--mono); font-size: 11px;
+    color: var(--mist); letter-spacing: 0.04em;
+    line-height: 1.6;
+  }
+  .decision-info .h {
+    font-family: var(--display); font-size: 11px; font-weight: 600;
+    letter-spacing: 0.22em; text-transform: uppercase;
+    color: var(--crimson);
+    text-shadow: 0 0 8px rgba(255,94,108,0.5);
+    display: block; margin-bottom: 4px;
+  }
+  .decision-info b { color: var(--cyan); font-weight: 500; }
+  .decision-info em { font-style: normal; color: var(--magenta); }
+  .decision-info .grace {
+    color: var(--amber); font-weight: 600;
+    text-shadow: 0 0 4px rgba(255,181,71,0.4);
+  }
+
+  .decision-actions {
+    display: flex; gap: 8px; align-items: center;
+  }
+  .btn {
+    display: inline-flex; align-items: center; gap: 8px;
+    padding: 11px 18px;
+    font-family: var(--display); font-size: 11px; font-weight: 500;
+    letter-spacing: 0.16em; text-transform: uppercase;
+    border: 1px solid var(--rule-2);
+    background: var(--hull-3); color: var(--frost);
+    transition: all .15s;
+    clip-path: polygon(8px 0, 100% 0, 100% calc(100% - 8px), calc(100% - 8px) 100%, 0 100%, 0 8px);
+  }
+  .btn:hover { background: var(--hull-4); }
+  .btn svg { width: 12px; height: 12px; }
+  .btn-ghost { background: transparent; color: var(--mist); }
+  .btn-ghost:hover { background: var(--hull-2); color: var(--cyan); }
+  .btn-amber {
+    color: var(--amber); border-color: var(--amber);
+    background: var(--amber-dim);
+    box-shadow: 0 0 12px rgba(255,181,71,0.25);
+    text-shadow: 0 0 6px rgba(255,181,71,0.5);
+  }
+  .btn-amber:hover { background: rgba(255,181,71,0.25); box-shadow: 0 0 18px rgba(255,181,71,0.4); }
+  .btn-danger {
+    color: var(--frost); border-color: var(--magenta);
+    background:
+      repeating-linear-gradient(135deg, rgba(255,46,136,0.18) 0 8px, rgba(0,0,0,0.4) 8px 16px),
+      var(--crimson-dim);
+    text-shadow: 0 0 8px rgba(255,46,136,0.6);
+    box-shadow: 0 0 12px rgba(255,46,136,0.2);
+  }
+  .btn-retry {
+    padding: 14px 26px;
+    background: linear-gradient(180deg, var(--crimson-2), var(--crimson));
+    color: var(--void); border-color: var(--crimson); font-weight: 700;
+    box-shadow: 0 0 28px rgba(255,94,108,0.55), inset 0 1px 0 rgba(255,255,255,0.2);
+    letter-spacing: 0.2em; font-size: 12px;
+  }
+  .btn-retry:hover {
+    background: linear-gradient(180deg, #ffb0b8, var(--crimson-2));
+    box-shadow: 0 0 40px rgba(255,94,108,0.75), inset 0 1px 0 rgba(255,255,255,0.3);
+  }
+  .btn-retry svg { width: 14px; height: 14px; }
+</style>
+</head>
+<body>
+  <div class="app">
+
+    <!-- hazard tape -->
+    <div class="hazard top"></div>
+    <div class="hazard bottom"></div>
+
+    <!-- glitch shards -->
+    <span class="shard"   style="top: 22%; left: 8%;  animation-delay: 0s;"></span>
+    <span class="shard s2" style="top: 38%; left: 65%; animation-delay: 0.7s;"></span>
+    <span class="shard"   style="top: 54%; left: 18%; animation-delay: 1.4s;"></span>
+    <span class="shard s2" style="top: 71%; left: 72%; animation-delay: 2.1s;"></span>
+    <span class="shard"   style="top: 12%; left: 44%; animation-delay: 1.9s;"></span>
+
+    <div class="layout">
+
+      <!-- titlebar -->
+      <div class="titlebar">
+        <div class="tb-left">
+          <div class="traffic"><i></i><i></i><i></i></div>
+          <div class="brand">
+            <div class="brand-mark">S</div>
+            <span class="brand-name">Sandcastle</span>
+            <span class="brand-sep">/</span>
+            <span class="brand-ctx">SANDCASTLE</span>
+            <span class="brand-sep">·</span>
+            <span class="brand-ctx" style="color: var(--crimson); border-color: rgba(255,94,108,0.3);">main</span>
+          </div>
+        </div>
+
+        <span class="alert-pill"><span class="gl"></span>RUN FAILED · RUN-042 · BOSS HEALTHY</span>
+
+        <div class="tb-right">
+          <button class="icon-btn" title="Diff"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M5 12h14M12 5v14"/><circle cx="12" cy="12" r="9"/></svg></button>
+          <button class="icon-btn" title="Logs"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M3 12a9 9 0 1 0 9-9"/><path d="M3 4v5h5"/></svg></button>
+          <button class="icon-btn" title="Close"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M5 5l14 14M19 5L5 19"/></svg></button>
+        </div>
+      </div>
+
+      <!-- stage -->
+      <main class="stage">
+
+        <!-- HERO -->
+        <div class="hero">
+          <div class="hero-eyebrow">
+            <span class="dot">▸</span>
+            <span>QUEST FAILED</span>
+            <span style="color: var(--gunmetal);">·</span>
+            <span class="id">RUN-042</span>
+            <span style="color: var(--gunmetal);">·</span>
+            <span>9 m 51 s</span>
+            <span style="color: var(--gunmetal);">·</span>
+            <span>2 / 5 PHASES</span>
+            <span class="dot">◂</span>
+          </div>
+
+          <h1 class="hero-title"><em>DEFEAT</em></h1>
+
+          <div class="hero-subtitle">
+            BOSS · <em>The Auth Refresh Loop</em> · STILL HOSTILE
+          </div>
+
+          <div class="hero-cause">
+            CAUSE OF DEATH ·
+            <b>API GUARD VIOLATED</b>
+            · public signature drift in <code style="font-family: var(--mono); padding: 0 4px; background: var(--hull-3); border: 1px solid var(--crimson-dim); color: var(--crimson); margin: 0 4px;">refreshToken()</code>
+          </div>
+
+          <div class="hero-meta">
+            <span><span class="v cy">π PI · KAGE</span></span>
+            <span class="sep">/</span>
+            <span><span class="v cr">2 / 5</span> phases</span>
+            <span class="sep">/</span>
+            <span><span class="v cr">−40 XP</span></span>
+            <span class="sep">/</span>
+            <span><span class="v am">STREAK BROKEN</span></span>
+            <span class="sep">/</span>
+            <span><span class="v am">GRACE USED</span></span>
+          </div>
+        </div>
+
+        <!-- GRID -->
+        <div class="grid">
+
+          <!-- L: phase recap -->
+          <div class="panel left-card">
+            <div class="panel-eyebrow">
+              <span class="hex cr">0x01</span>
+              PHASE LOG
+              <span class="line"></span>
+              <span class="hex cr">2 / 5</span>
+            </div>
+
+            <div class="phase-recap cleared">
+              <div class="marker">I</div>
+              <div class="phase-recap-body">
+                <div class="name">Reproduce the loop</div>
+                <div class="meta"><span class="ok">CLEARED</span> · 1m 12s · vitest green</div>
+              </div>
+              <div class="xp">+50</div>
+            </div>
+
+            <div class="phase-recap cleared">
+              <div class="marker">II</div>
+              <div class="phase-recap-body">
+                <div class="name">Diagnose race condition</div>
+                <div class="meta"><span class="ok">CLEARED</span> · 2m 04s · root-cause noted</div>
+              </div>
+              <div class="xp">+75</div>
+            </div>
+
+            <div class="phase-recap failed">
+              <div class="marker">III</div>
+              <div class="phase-recap-body">
+                <div class="name">Patch · serialize callers</div>
+                <div class="meta"><span class="fail">FAILED</span> · 6m 35s · guard tripped on <code>refreshToken()</code></div>
+              </div>
+              <div class="xp">−40</div>
+            </div>
+
+            <div class="phase-recap locked">
+              <div class="marker">IV</div>
+              <div class="phase-recap-body">
+                <div class="name">Regression · 50 callers</div>
+                <div class="meta">LOCKED · prerequisite phase failed</div>
+              </div>
+              <div class="xp">+0</div>
+            </div>
+
+            <div class="phase-recap locked">
+              <div class="marker">V</div>
+              <div class="phase-recap-body">
+                <div class="name">Commit · changeset · API stable</div>
+                <div class="meta">LOCKED · prerequisite phase failed</div>
+              </div>
+              <div class="xp">+0</div>
+            </div>
+
+            <div class="tally-block">
+              <div class="tally-row">
+                <span class="lbl"><span class="gl p"></span>EARNED</span>
+                <span class="v p">+ 125</span>
+              </div>
+              <div class="tally-row">
+                <span class="lbl"><span class="gl cr"></span>FORFEITED · RISK ×2</span>
+                <span class="v cr">− 165</span>
+              </div>
+              <div class="tally-row">
+                <span class="lbl"><span class="gl cr"></span>STREAK PENALTY</span>
+                <span class="v cr">× 0.85</span>
+              </div>
+              <div class="tally-row" style="padding-top: 10px; margin-top: 8px; border-top: 1px solid var(--rule-2);">
+                <span class="lbl"><span class="gl cr"></span><b style="color: var(--crimson);">NET XP</b></span>
+                <span class="v cr" style="font-size: 14px;">− 40</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- CENTER: cause + boss + agent -->
+          <div class="panel center">
+            <div class="panel-eyebrow">
+              <span class="hex cr">0x02</span>
+              CAUSE OF DEATH
+              <span class="line"></span>
+              <span class="hex cr">GUARD TRIPPED</span>
+            </div>
+
+            <div class="cause-hero">
+              <div class="lbl">FAILURE MODE</div>
+              <div class="v">API GUARD VIOLATED</div>
+              <div class="desc">
+                Patch in phase III altered the <code>refreshToken()</code> signature from
+                <code>(s: Session) =&gt; Promise&lt;Session&gt;</code> to
+                <code>(s, opts?) =&gt; Promise&lt;Session | null&gt;</code> —
+                <em>guard rule</em> <code>public API ≡ before</code> tripped, run halted.
+              </div>
+            </div>
+
+            <div class="boss-state">
+              <div class="boss-row">
+                <div class="boss-portrait">⚠</div>
+                <div class="boss-info">
+                  <div class="label">BOSS · TIER III · #42 · STILL HOSTILE</div>
+                  <div class="name">The Refresh Loop · <span style="color: var(--magenta);">enraged</span></div>
+                  <div class="sub">Survived with <b>205 / 500 HP</b> · <em>+18% Rage</em> · drops back to <em>SRC/AUTH</em> region</div>
+                </div>
+              </div>
+
+              <div class="boss-hp-block">
+                <div class="boss-hp-row"><span>HP REMAINING</span><span class="v">205 / 500 · 41 %</span></div>
+                <div class="hp-bar"><div class="hp-fill"></div></div>
+              </div>
+            </div>
+
+            <div class="agent-block">
+              <div class="portrait">π</div>
+              <div class="agent-info">
+                <div class="name">PI · KAGE</div>
+                <div class="class"><em>⌬</em>SURGEON · CL.II</div>
+                <div class="streak">▸ STREAK ×3 → ×0 · BROKEN</div>
+                <div class="streak amber" style="margin-top: 3px;">▸ 1ST-REVERT GRACE · CONSUMED · NEXT REVERT WITHIN 7D = −1 LVL</div>
+              </div>
+            </div>
+
+            <div class="fail-detail">
+              <div class="head">▸ ERROR LOG · LAST FRAME</div>
+              <div class="err">
+                <strong>typecheck</strong> ✗ <code>src/auth/refresh.ts:43</code><br/>
+                <em>TS2322:</em> Type <code>Session | null</code> is not assignable to type <code>Session</code>.<br/>
+                <em>guard:</em> public API surface differs from baseline — <code>refreshToken</code> return type drift detected.<br/>
+                <strong>tests</strong> ✗ <em>1 failed</em> · <code>refreshToken returns session shape</code> · expected <code>Session</code>, got <code>null</code>
+              </div>
+            </div>
+
+          </div>
+
+          <!-- R: salvage + lesson + worktree -->
+          <div class="panel right-card">
+            <div class="panel-eyebrow">
+              <span class="hex am">0x03</span>
+              SALVAGE
+              <span class="line"></span>
+              <span class="hex am">3 KEPT · 1 LOST</span>
+            </div>
+
+            <div class="salvage-row kept">
+              <div class="ico">⌬</div>
+              <div class="salvage-body">
+                <div class="name">Reproduction Test · KEPT</div>
+                <div class="desc">phase I deliverable preserved · <code>refresh.test.ts:loop</code></div>
+              </div>
+              <span class="salvage-tag">+1 WARD</span>
+            </div>
+
+            <div class="salvage-row kept">
+              <div class="ico">π</div>
+              <div class="salvage-body">
+                <div class="name">Diagnostic Note · KEPT</div>
+                <div class="desc">root-cause analysis attached to issue <code>#42</code></div>
+              </div>
+              <span class="salvage-tag">INSIGHT</span>
+            </div>
+
+            <div class="salvage-row lesson">
+              <div class="ico">∇</div>
+              <div class="salvage-body">
+                <div class="name">Tactic Card · UNLOCKED</div>
+                <div class="desc">"<em>API surface lock</em>" — pre-run guard auto-extracts current signatures.</div>
+              </div>
+              <span class="salvage-tag">+1 TACTIC</span>
+            </div>
+
+            <div class="salvage-row lost">
+              <div class="ico">✗</div>
+              <div class="salvage-body">
+                <div class="name">Patch Diff · DISCARDED</div>
+                <div class="desc">phase III commit reverted · drift in <code>refreshToken()</code></div>
+              </div>
+              <span class="salvage-tag">−40 XP</span>
+            </div>
+
+            <div class="lesson-block">
+              <div class="panel-eyebrow" style="margin-bottom: 10px;">
+                <span class="hex">0x04</span>
+                POST-MORTEM
+                <span class="line"></span>
+              </div>
+              <div class="lesson">
+                Boss adapted: when <em>inflight</em> map returned a stale promise on first call, π switched to a
+                <strong>nullable return</strong> to bail safely — but that broke the public contract. Next attempt:
+                serialize via <em>queue, not nullable</em>; keep <code>Promise&lt;Session&gt;</code> shape.
+              </div>
+            </div>
+
+            <div class="worktree-status">
+              <span class="tag">▸ WORKTREE PRESERVED</span><br/>
+              Branch <code>agent/fix-auth-refresh</code> retained at <code>.sandcastle/wt-42</code><br/>
+              5 files modified · diff intact · main untouched · safe to inspect or retry.
+            </div>
+          </div>
+        </div>
+
+        <!-- DECISION BAR -->
+        <div class="decision">
+          <div class="decision-info">
+            <span class="h">▸ DECISION · RECOVER OR ABANDON</span>
+            <span>3 of 5 phases salvageable · <b>worktree preserved</b> · main untouched · <em>π Pi · streak broken</em><br/>
+            <span class="grace">⚠ first-revert grace consumed · second revert within 7d will cost a level</span></span>
+          </div>
+          <div class="decision-actions">
+            <button class="btn btn-ghost">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M3 12a9 9 0 1 0 9-9"/><path d="M3 4v5h5"/></svg>
+              Replay
+            </button>
+            <button class="btn">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><circle cx="12" cy="8" r="4"/><path d="M4 21c0-4 4-7 8-7s8 3 8 7"/></svg>
+              Swap Operative
+            </button>
+            <button class="btn btn-amber">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M3 21l3-1L19 7l-2-2L4 18l-1 3z"/></svg>
+              Revise Plan
+            </button>
+            <button class="btn btn-danger">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><circle cx="12" cy="12" r="9"/><path d="M9 9l6 6M15 9l-6 6"/></svg>
+              Abandon
+            </button>
+            <button class="btn btn-retry">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 12a9 9 0 1 0 9-9"/><path d="M3 4v5h5"/></svg>
+              Re-engage
+            </button>
+          </div>
+        </div>
+
+      </main>
+    </div>
+  </div>
+
+<!-- ─── INJECTED · FLEET DOCK + DEPLOY CHORD ─── -->
+<style>
+  .app { height: calc(100vh - 88px) !important; }
+  .sc-dock { position: fixed; left: 0; right: 0; bottom: 0; height: 88px; z-index: 80;
+    display: grid; grid-template-columns: auto 1fr auto; gap: 12px; align-items: center; padding: 10px 14px;
+    background: linear-gradient(180deg, rgba(10,16,24,0.95), rgba(3,6,10,0.98)); backdrop-filter: blur(20px);
+    border-top: 1px solid var(--cyan-dim); box-shadow: 0 -16px 40px rgba(0,0,0,0.6) }
+  .sc-dock::before { content: ""; position: absolute; top: 0; left: 0; right: 0; height: 1px;
+    background: linear-gradient(90deg, transparent 5%, var(--magenta) 25%, var(--cyan) 75%, transparent 95%);
+    opacity: 0.6; filter: blur(0.4px) }
+  .sc-dock-head { display: flex; flex-direction: column; justify-content: center; padding-right: 14px;
+    border-right: 1px solid var(--rule-2); min-width: 150px; cursor: pointer }
+  .sc-dock-head:hover { background: rgba(86,212,224,0.05) }
+  .sc-dock-head .lbl { font-family: var(--display); font-size: 8.5px; letter-spacing: 0.28em;
+    text-transform: uppercase; color: var(--steel); font-weight: 500 }
+  .sc-dock-head .v { font-family: var(--display); font-weight: 700; font-size: 18px; color: var(--cyan);
+    letter-spacing: 0.05em; line-height: 1; margin-top: 3px; text-shadow: 0 0 8px rgba(86,212,224,0.4) }
+  .sc-dock-head .v em { font-style: normal; color: var(--magenta); text-shadow: 0 0 6px rgba(255,46,136,0.4); font-weight: 700 }
+  .sc-dock-head .v small { font-size: 9px; color: var(--steel); letter-spacing: 0.18em; display: block;
+    margin-top: 2px; text-shadow: none; font-weight: 500 }
+  .sc-cells { display: flex; gap: 8px; overflow-x: auto; padding: 2px 0 }
+  .sc-cells::-webkit-scrollbar { height: 4px } .sc-cells::-webkit-scrollbar-thumb { background: var(--hull-3) }
+  .sc-cell { display: grid; grid-template-columns: 46px 1fr; gap: 10px; align-items: center; padding: 8px 12px;
+    background: var(--hull-2); border: 1px solid var(--rule-2); min-width: 262px; flex-shrink: 0;
+    clip-path: polygon(8px 0, 100% 0, 100% calc(100% - 8px), calc(100% - 8px) 100%, 0 100%, 0 8px);
+    transition: all .2s; cursor: pointer; position: relative; color: inherit; font-family: inherit; text-align: left }
+  .sc-cell:hover { background: var(--hull-3) }
+  .sc-cell.casting { border-color: var(--cyan); background: var(--cyan-ink); box-shadow: 0 0 16px rgba(86,212,224,0.20) }
+  .sc-cell.striking { border-color: var(--cyan); box-shadow: 0 0 18px rgba(86,212,224,0.30) }
+  .sc-cell.boss { border-color: var(--magenta); box-shadow: 0 0 18px rgba(255,46,136,0.25) }
+  .sc-cell.win-pending { border-color: var(--plasma); background: rgba(108,255,170,0.06); animation: scWin 2.4s ease-in-out infinite }
+  @keyframes scWin { 0%, 100% { box-shadow: 0 0 22px rgba(108,255,170,0.30) } 50% { box-shadow: 0 0 36px rgba(108,255,170,0.55) } }
+  .sc-cell.fail-pending { border-color: var(--crimson); background: var(--crimson-dim); animation: scFail 1.8s ease-in-out infinite }
+  @keyframes scFail { 0%, 100% { box-shadow: 0 0 18px rgba(255,94,108,0.25) } 50% { box-shadow: 0 0 32px rgba(255,94,108,0.5) } }
+  .sc-cell.is-current { outline: 1px dashed var(--crimson); outline-offset: 4px }
+  .sc-av { position: relative; width: 46px; height: 46px;
+    background: linear-gradient(135deg, #1a0a14, #061218); border: 1px solid currentColor;
+    display: grid; place-items: center; color: var(--cyan);
+    clip-path: polygon(20% 0, 100% 0, 100% 80%, 80% 100%, 0 100%, 0 20%) }
+  .sc-av .glyph { font-family: var(--display); font-weight: 700; font-size: 18px; color: currentColor;
+    text-shadow: -1px 0 var(--magenta), 1px 0 currentColor, 0 0 6px currentColor }
+  .sc-av .lvl { position: absolute; bottom: -3px; right: -3px; font-family: var(--mono); font-size: 8px;
+    color: var(--magenta); background: var(--void); padding: 1px 4px; border: 1px solid var(--magenta-dim);
+    letter-spacing: 0; text-shadow: 0 0 3px rgba(255,46,136,0.5) }
+  .sc-cell.casting .sc-av { color: var(--cyan) } .sc-cell.boss .sc-av { color: var(--magenta) }
+  .sc-cell.win-pending .sc-av { color: var(--plasma) } .sc-cell.fail-pending .sc-av { color: var(--crimson) }
+  .sc-eye { position: absolute; top: 9px; left: 50%; transform: translateX(-50%); width: 4px; height: 4px;
+    border-radius: 50%; background: var(--magenta); box-shadow: 0 0 4px var(--magenta);
+    animation: scEye 2.6s ease-in-out infinite }
+  @keyframes scEye { 0%, 100% { opacity: 1 } 50% { opacity: 0.5 } }
+  .sc-cell.casting .sc-eye { animation: scEyeCast 0.4s steps(2) infinite }
+  @keyframes scEyeCast { 0%, 100% { opacity: 1 } 50% { opacity: 0.3 } }
+  .sc-body { min-width: 0; display: flex; flex-direction: column; gap: 3px }
+  .sc-row1 { display: flex; align-items: center; gap: 6px; font-family: var(--display); font-size: 10.5px;
+    font-weight: 600; letter-spacing: 0.05em; color: var(--frost); text-transform: uppercase;
+    overflow: hidden; text-overflow: ellipsis; white-space: nowrap }
+  .sc-row1 .sep { color: var(--gunmetal); font-weight: 400 }
+  .sc-row1 .phase { color: var(--cyan); font-family: var(--mono); font-size: 9.5px; letter-spacing: 0.05em; text-transform: none }
+  .sc-cell.boss .sc-row1 .phase { color: var(--magenta) }
+  .sc-cell.win-pending .sc-row1 .phase { color: var(--plasma) }
+  .sc-cell.fail-pending .sc-row1 .phase { color: var(--crimson) }
+  .sc-row2 { display: flex; align-items: center; gap: 8px; font-family: var(--mono); font-size: 9.5px;
+    color: var(--steel); letter-spacing: 0.04em }
+  .sc-row2 .ico { font-family: var(--display); font-weight: 700; font-size: 9px; color: currentColor }
+  .sc-cell.casting .sc-row2 { color: var(--cyan) } .sc-cell.boss .sc-row2 { color: var(--magenta) }
+  .sc-cell.win-pending .sc-row2 { color: var(--plasma) }
+  .sc-prog { height: 2px; background: var(--hull-3); position: relative; margin-top: 2px }
+  .sc-prog i { display: block; height: 100%; background: linear-gradient(90deg, var(--cyan), var(--magenta));
+    box-shadow: 0 0 4px rgba(86,212,224,0.5) }
+  .sc-cell.win-pending .sc-prog i { width: 100% !important; background: linear-gradient(90deg, var(--plasma), var(--cyan)) }
+  .sc-cell.fail-pending .sc-prog i { width: 100% !important; background: linear-gradient(90deg, var(--crimson), var(--magenta)) }
+  .sc-warn { position: absolute; top: -6px; right: -6px; width: 18px; height: 18px;
+    color: var(--void); display: grid; place-items: center;
+    font-family: var(--display); font-weight: 700; font-size: 11px;
+    transform: rotate(45deg); z-index: 6 }
+  .sc-warn span { transform: rotate(-45deg); display: block }
+  .sc-warn.win { background: var(--plasma); box-shadow: 0 0 8px var(--plasma) }
+  .sc-warn.fail { background: var(--crimson); box-shadow: 0 0 8px var(--crimson) }
+  .sc-dock-right { display: flex; align-items: center; gap: 10px; padding-left: 14px; border-left: 1px solid var(--rule-2) }
+  .sc-bulk { display: inline-flex; align-items: center; gap: 6px; padding: 8px 12px;
+    font-family: var(--display); font-size: 10px; font-weight: 600;
+    letter-spacing: 0.16em; text-transform: uppercase; border: 1px solid; cursor: pointer;
+    clip-path: polygon(6px 0, 100% 0, 100% calc(100% - 6px), calc(100% - 6px) 100%, 0 100%, 0 6px);
+    transition: all .15s; background: var(--hull-3); color: var(--frost); border-color: var(--rule-2) }
+  .sc-bulk svg { width: 11px; height: 11px }
+  .sc-bulk.gated { opacity: 0.5; cursor: not-allowed; color: var(--steel) }
+  .sc-bulk.deploy { color: var(--void); background: linear-gradient(180deg, var(--magenta-2), var(--magenta));
+    border-color: var(--magenta); font-weight: 700;
+    box-shadow: 0 0 18px rgba(255,46,136,0.45), inset 0 1px 0 rgba(255,255,255,0.2); letter-spacing: 0.2em }
+  .sc-bulk.deploy:hover { box-shadow: 0 0 26px rgba(255,46,136,0.6) }
+  .sc-bulk .kc { font-family: var(--mono); font-size: 9px; padding: 1px 4px;
+    background: rgba(0,0,0,0.25); letter-spacing: 0; border-radius: 2px }
+  .sc-chord-bg { position: fixed; inset: 0; background: rgba(3,6,10,0.55); backdrop-filter: blur(8px);
+    z-index: 200; display: none; align-items: flex-start; justify-content: center; padding-top: 18vh }
+  .sc-chord-bg.is-open { display: flex }
+  .sc-chord { width: 780px; max-width: calc(100vw - 32px);
+    background: linear-gradient(180deg, var(--hull-2), var(--hull-1));
+    border: 1px solid var(--magenta);
+    box-shadow: 0 0 48px rgba(255,46,136,0.30), 0 32px 64px -16px rgba(0,0,0,0.7);
+    clip-path: polygon(16px 0, 100% 0, 100% calc(100% - 16px), calc(100% - 16px) 100%, 0 100%, 0 16px);
+    position: relative }
+  .sc-chord::before { content: ""; position: absolute; top: 0; left: 0; right: 0; height: 2px;
+    background: linear-gradient(90deg, transparent 5%, var(--magenta) 25%, var(--cyan) 75%, transparent 95%);
+    background-size: 200% 100%; animation: scHolo 3s linear infinite }
+  @keyframes scHolo { from { background-position: 0 0 } to { background-position: 200% 0 } }
+  .sc-chord-head { display: flex; align-items: center; justify-content: space-between;
+    padding: 14px 22px; border-bottom: 1px solid var(--rule) }
+  .sc-chord-head .lbl { font-family: var(--display); font-size: 11px; font-weight: 700;
+    letter-spacing: 0.28em; text-transform: uppercase; color: var(--magenta);
+    text-shadow: 0 0 6px rgba(255,46,136,0.5); display: flex; align-items: center; gap: 10px }
+  .sc-chord-head .lbl svg { width: 14px; height: 14px }
+  .sc-chord-head .esc { font-family: var(--mono); font-size: 10px; color: var(--steel); letter-spacing: 0.05em;
+    display: flex; align-items: center; gap: 6px }
+  .sc-chord-row { display: grid; grid-template-columns: auto auto auto auto auto 1fr; gap: 14px;
+    align-items: center; padding: 18px 22px 14px;
+    font-family: var(--mono); font-size: 14px; color: var(--mist); letter-spacing: 0.02em }
+  .sc-chord-row .verb { font-family: var(--display); font-weight: 700; font-size: 14px;
+    letter-spacing: 0.18em; text-transform: uppercase; color: var(--magenta);
+    text-shadow: 0 0 6px rgba(255,46,136,0.5) }
+  .sc-chord-row .conn { color: var(--steel); font-family: var(--display); font-size: 11px;
+    letter-spacing: 0.18em; text-transform: uppercase }
+  .sc-cf { display: flex; align-items: center; gap: 6px; padding: 6px 10px;
+    background: var(--hull-2); border: 1px solid var(--cyan-dim); color: var(--cyan);
+    font-family: var(--mono); font-size: 13px; letter-spacing: 0.04em;
+    clip-path: polygon(5px 0, 100% 0, 100% calc(100% - 5px), calc(100% - 5px) 100%, 0 100%, 0 5px);
+    text-shadow: 0 0 4px rgba(86,212,224,0.3) }
+  .sc-cf svg { width: 11px; height: 11px; color: var(--cyan-dim) }
+  .sc-cf.targets { background: var(--magenta-ink); border-color: var(--magenta-dim); color: var(--magenta);
+    text-shadow: 0 0 4px rgba(255,46,136,0.3) }
+  .sc-cf .chip { padding: 2px 6px; background: rgba(0,0,0,0.3); font-size: 11px; letter-spacing: 0.05em;
+    border: 1px solid currentColor; color: currentColor; border-radius: 2px }
+  .sc-chord-dir { display: grid; grid-template-columns: auto 1fr auto; gap: 14px; align-items: center;
+    padding: 12px 22px 18px; border-top: 1px dashed var(--rule-2) }
+  .sc-chord-dir .k { font-family: var(--display); font-size: 10px; font-weight: 600;
+    letter-spacing: 0.22em; text-transform: uppercase; color: var(--steel) }
+  .sc-chord-dir input { flex: 1; font-family: var(--mono); font-size: 14px; color: var(--frost);
+    letter-spacing: 0.02em; padding: 6px 0; border: 0; border-bottom: 1px solid var(--cyan-dim);
+    background: transparent; outline: 0; min-width: 0; width: 100% }
+  .sc-chord-dir input::placeholder { color: var(--steel); font-style: italic }
+  .sc-chord-dir .send { font-family: var(--display); font-size: 10px; font-weight: 700;
+    letter-spacing: 0.18em; text-transform: uppercase; color: var(--void);
+    padding: 8px 16px; background: linear-gradient(180deg, var(--magenta-2), var(--magenta));
+    border: 1px solid var(--magenta);
+    box-shadow: 0 0 18px rgba(255,46,136,0.5), inset 0 1px 0 rgba(255,255,255,0.2);
+    clip-path: polygon(6px 0, 100% 0, 100% calc(100% - 6px), calc(100% - 6px) 100%, 0 100%, 0 6px); cursor: pointer }
+  .sc-chord-dir .send .kc { font-family: var(--mono); font-size: 9px; padding: 1px 4px;
+    background: rgba(0,0,0,0.3); letter-spacing: 0; border-radius: 2px; margin-left: 6px }
+  .sc-chord-foot { display: flex; align-items: center; gap: 14px; padding: 10px 22px;
+    border-top: 1px solid var(--rule); background: var(--hull-1);
+    font-family: var(--mono); font-size: 9.5px; color: var(--steel); letter-spacing: 0.05em }
+  .sc-chord-foot .sep { color: var(--gunmetal) }
+  .sc-chord-foot .k { padding: 1px 5px; border: 1px solid var(--rule-2); color: var(--mist);
+    letter-spacing: 0; border-radius: 2px }
+</style>
+
+<div class="sc-dock">
+  <div class="sc-dock-head" onclick="document.getElementById('scChord').classList.add('is-open')">
+    <div class="lbl">FLEET</div>
+    <div class="v">2 <em>/ 5</em><small>π · BUDGET</small></div>
+  </div>
+  <div class="sc-cells">
+    <button class="sc-cell fail-pending is-current">
+      <span class="sc-warn fail"><span>!</span></span>
+      <div class="sc-av"><span class="glyph">π</span><span class="lvl">L8</span></div>
+      <div class="sc-body">
+        <div class="sc-row1"><span>Sandcastle Prime</span><span class="sep">·</span><span class="phase">DEFEAT · API guard</span></div>
+        <div class="sc-row2"><span class="ico">−40</span><span>XP · 2/5 · worktree kept</span></div>
+        <div class="sc-prog"><i></i></div>
+      </div>
+    </button>
+    <button class="sc-cell striking">
+      <div class="sc-av"><span class="glyph">π</span><span class="sc-eye"></span><span class="lvl">L8</span></div>
+      <div class="sc-body">
+        <div class="sc-row1"><span>Helix-IV</span><span class="sep">·</span><span class="phase">phase II · diagnose</span></div>
+        <div class="sc-row2"><span class="ico">⚔</span><span>RUN-091 · striking · T+04:11</span></div>
+        <div class="sc-prog"><i style="width:38%"></i></div>
+      </div>
+    </button>
+    <button class="sc-cell casting">
+      <div class="sc-av"><span class="glyph">π</span><span class="sc-eye"></span><span class="lvl">L8</span></div>
+      <div class="sc-body">
+        <div class="sc-row1"><span>Mira-Doc</span><span class="sep">·</span><span class="phase">phase I · reproduce</span></div>
+        <div class="sc-row2"><span class="ico">▸</span><span>RUN-073 · casting · T+02:14</span></div>
+        <div class="sc-prog"><i style="width:18%"></i></div>
+      </div>
+    </button>
+  </div>
+  <div class="sc-dock-right">
+    <button class="sc-bulk gated" title="Gated until all pending runs are green-verified">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12l5 5L20 7"/></svg>
+      Merge all green <span class="kc">⌘ ⇧ M</span>
+    </button>
+    <button class="sc-bulk deploy" onclick="document.getElementById('scChord').classList.add('is-open')">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 4l14 8-14 8V4z"/></svg>
+      Deploy <span class="kc">⌘ D</span>
+    </button>
+  </div>
+</div>
+
+<div class="sc-chord-bg" id="scChord" onclick="if(event.target===this)this.classList.remove('is-open')">
+  <div class="sc-chord">
+    <div class="sc-chord-head">
+      <span class="lbl">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 4l14 8-14 8V4z"/></svg>
+        DEPLOY · CHORD
+      </span>
+      <span class="esc"><span class="k">esc</span> to dismiss</span>
+    </div>
+    <div class="sc-chord-row">
+      <span class="verb">DEPLOY</span>
+      <span class="sc-cf"><span class="chip">π</span> PI · KAGE
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="m6 9 6 6 6-6"/></svg></span>
+      <span class="conn">to</span>
+      <span class="sc-cf targets"><span class="chip">3</span> Sandcastle, Helix, Forge
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="m6 9 6 6 6-6"/></svg></span>
+      <span class="conn">·</span>
+      <span style="font-family:var(--mono);font-size:11px;color:var(--steel);letter-spacing:0.05em">multi-target</span>
+    </div>
+    <div class="sc-chord-dir">
+      <span class="k">DIRECTIVE</span>
+      <input type="text" placeholder="triage open issues, fix the first high-priority one, commit…" />
+      <button class="send" onclick="document.getElementById('scChord').classList.remove('is-open')">
+        DEPLOY <span class="kc">⌘ ↵</span>
+      </button>
+    </div>
+    <div class="sc-chord-foot">
+      <span><span class="k">tab</span> next</span>
+      <span class="sep">·</span>
+      <span><span class="k">,</span> add target</span>
+      <span class="sep">·</span>
+      <span><span class="k">⌘ ↵</span> deploy all</span>
+      <span class="sep">·</span>
+      <span style="margin-left:auto;color:var(--magenta);text-shadow:0 0 4px rgba(255,46,136,0.4)">▸ Pi · Kage at 3/5 focus budget</span>
+    </div>
+  </div>
+</div>
+
+<script>
+  document.addEventListener('keydown', (e) => {
+    if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'd') {
+      e.preventDefault();
+      document.getElementById('scChord').classList.add('is-open');
+    }
+    if (e.key === 'Escape') document.getElementById('scChord').classList.remove('is-open');
+  });
+</script>
+
+</body>
+</html>

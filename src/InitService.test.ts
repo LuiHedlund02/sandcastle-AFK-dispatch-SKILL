@@ -71,7 +71,7 @@ describe("Agent registry", () => {
     const agent = getAgent("pi");
     expect(agent).toBeDefined();
     expect(agent!.name).toBe("pi");
-    expect(agent!.defaultModel).toBe("claude-sonnet-4-6");
+    expect(agent!.defaultModel).toBe("openai-codex/gpt-5.5");
     expect(agent!.factoryImport).toBe("pi");
     expect(agent!.dockerfileTemplate).toContain("FROM");
     expect(agent!.dockerfileTemplate).toContain(
@@ -162,8 +162,8 @@ describe("InitService scaffold", () => {
     },
     {
       agent: piAgent,
-      expectedKey: "ANTHROPIC_API_KEY=",
-      unexpectedKey: "OPENAI_KEY=",
+      expectedKey: "openai-codex/gpt-5.5",
+      unexpectedKey: "ANTHROPIC_API_KEY=",
       expectIssue191Link: false,
     },
     {

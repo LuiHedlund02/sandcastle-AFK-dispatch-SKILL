@@ -1,0 +1,57 @@
+.root {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 9999;
+  opacity: 0.5;
+  background:
+    repeating-linear-gradient(
+      0deg,
+      rgba(0, 0, 0, 0) 0 2px,
+      rgba(180, 220, 235, 0.035) 2px 3px
+    ),
+    linear-gradient(
+      180deg,
+      rgba(255, 46, 136, 0.018),
+      rgba(86, 212, 224, 0.022) 50%,
+      rgba(255, 46, 136, 0.018)
+    );
+  animation: crt 5.5s steps(60) infinite;
+}
+
+.absolute {
+  position: absolute;
+  z-index: 5;
+}
+
+@keyframes crt {
+  0%,
+  96%,
+  100% {
+    opacity: 0.5;
+  }
+  97% {
+    opacity: 0.32;
+  }
+  97.5% {
+    opacity: 0.62;
+  }
+  98% {
+    opacity: 0.4;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .root,
+  .absolute {
+    animation: none;
+    opacity: 0.32;
+  }
+}
+
+@media (prefers-contrast: more) {
+  .root,
+  .absolute {
+    display: none;
+  }
+}

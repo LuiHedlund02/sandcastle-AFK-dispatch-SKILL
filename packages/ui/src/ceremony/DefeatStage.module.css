@@ -1,0 +1,282 @@
+/*
+ * DefeatStage choreography — values copied from docs/mockups/defeat.html.
+ * Hazard tape, glitch keyframes, cause-of-death callout, recovery actions.
+ */
+
+.stage {
+  position: relative;
+  isolation: isolate;
+}
+
+/* radial darkening — defeat has crimson body::before raster overlay */
+.stage::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 0;
+  background:
+    radial-gradient(
+      ellipse 60% 50% at 50% 30%,
+      rgba(255, 94, 108, 0.08),
+      transparent 70%
+    ),
+    radial-gradient(
+      ellipse 80% 90% at 50% 100%,
+      rgba(20, 6, 8, 0.6),
+      transparent 60%
+    );
+}
+
+/* Hazard tape stripes — top + bottom of the stage.
+ * Copied from .hazard in defeat.html: repeating-linear-gradient(135deg,
+ * var(--amber) 0 14px, var(--void) 14px 28px). */
+.hazard {
+  position: absolute;
+  left: 0;
+  right: 0;
+  height: 6px;
+  background: repeating-linear-gradient(
+    135deg,
+    var(--sc-amber, #ffb547) 0 14px,
+    var(--sc-void, #03060a) 14px 28px
+  );
+  pointer-events: none;
+  z-index: 4;
+  opacity: 0.85;
+  box-shadow: 0 0 12px rgba(255, 181, 71, 0.4);
+}
+.hazardTop {
+  top: 0;
+}
+.hazardBottom {
+  bottom: 0;
+}
+
+/* DEFEAT hero title — copied from defeat.html .hero-title (lines 290-323) */
+.heroTitle {
+  position: relative;
+  display: inline-block;
+  font-family: var(--sc-display, "Chakra Petch", sans-serif);
+  font-weight: 800;
+  font-size: clamp(56px, 9vw, 92px);
+  line-height: 0.95;
+  letter-spacing: 0.04em;
+  color: var(--sc-frost, #dceaf3);
+  text-transform: uppercase;
+  text-shadow:
+    -5px 0 rgba(255, 46, 136, 0.65),
+    5px 0 rgba(255, 94, 108, 0.65),
+    0 0 36px rgba(255, 94, 108, 0.55);
+  animation:
+    sc-defeat-chroma 3.2s ease-in-out infinite,
+    sc-defeat-glitch 4.4s steps(1) infinite;
+}
+.heroTitle em {
+  font-style: normal;
+  color: var(--sc-crimson, #ff5e6c);
+  text-shadow:
+    -5px 0 var(--sc-magenta, #ff2e88),
+    5px 0 var(--sc-crimson, #ff5e6c),
+    0 0 40px rgba(255, 94, 108, 0.7);
+}
+@keyframes sc-defeat-chroma {
+  0%,
+  100% {
+    text-shadow:
+      -5px 0 rgba(255, 46, 136, 0.65),
+      5px 0 rgba(255, 94, 108, 0.65),
+      0 0 36px rgba(255, 94, 108, 0.55);
+  }
+  50% {
+    text-shadow:
+      -7px 0 rgba(255, 46, 136, 0.7),
+      7px 0 rgba(255, 94, 108, 0.7),
+      0 0 48px rgba(255, 94, 108, 0.65);
+  }
+}
+@keyframes sc-defeat-glitch {
+  0%,
+  88%,
+  100% {
+    transform: translate(0);
+    clip-path: inset(0 0 0 0);
+  }
+  89% {
+    transform: translate(-5px, 1px);
+    clip-path: inset(20% 0 30% 0);
+  }
+  90% {
+    transform: translate(5px, -1px);
+    clip-path: inset(45% 0 5% 0);
+  }
+  91% {
+    transform: translate(-2px, 0);
+    clip-path: inset(0 0 60% 0);
+  }
+  92% {
+    transform: translate(3px, 0);
+    clip-path: inset(70% 0 10% 0);
+  }
+  93% {
+    transform: translate(0);
+    clip-path: inset(0 0 0 0);
+  }
+}
+
+/* Cause-of-death callout — defeat.html .hero-cause */
+.cause {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  padding: 6px 14px;
+  font-family: var(--sc-mono, ui-monospace, monospace);
+  font-size: 11px;
+  color: var(--sc-crimson, #ff5e6c);
+  border: 1px solid var(--sc-crimson, #ff5e6c);
+  background: rgba(255, 94, 108, 0.14);
+  letter-spacing: 0.06em;
+  text-shadow: 0 0 6px rgba(255, 94, 108, 0.5);
+  text-transform: uppercase;
+}
+.causeLabel {
+  color: var(--sc-frost, #dceaf3);
+  font-weight: 600;
+  text-shadow:
+    -0.5px 0 var(--sc-crimson, #ff5e6c),
+    0.5px 0 var(--sc-magenta, #ff2e88);
+}
+
+/* Streak-broken banner — mockup .streak / .grace */
+.streakRow {
+  margin-top: 14px;
+  display: inline-flex;
+  flex-direction: column;
+  gap: 4px;
+  font-family: var(--sc-mono, ui-monospace, monospace);
+  font-size: 10.5px;
+  color: var(--sc-magenta, #ff2e88);
+  letter-spacing: 0.05em;
+  text-shadow: 0 0 4px rgba(255, 46, 136, 0.4);
+  text-transform: uppercase;
+}
+.streakAmber {
+  color: var(--sc-amber, #ffb547);
+  text-shadow: 0 0 4px rgba(255, 181, 71, 0.4);
+}
+
+/* Recovery actions — mockup .decision-actions */
+.recoveryRow {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-top: 4px;
+  align-items: center;
+  padding: 14px 16px;
+  background: rgba(17, 24, 31, 0.7);
+  border: 1px solid rgba(255, 94, 108, 0.25);
+  position: relative;
+}
+.recoveryRow::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background: linear-gradient(
+    90deg,
+    transparent,
+    var(--sc-crimson, #ff5e6c),
+    var(--sc-magenta, #ff2e88),
+    transparent
+  );
+  background-size: 200% 100%;
+  animation: sc-defeat-holo 4s linear infinite;
+}
+@keyframes sc-defeat-holo {
+  from {
+    background-position: 0 0;
+  }
+  to {
+    background-position: 200% 0;
+  }
+}
+
+.recoveryHeading {
+  flex: 0 0 100%;
+  font-family: var(--sc-display, sans-serif);
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  color: var(--sc-crimson, #ff5e6c);
+  text-shadow: 0 0 8px rgba(255, 94, 108, 0.5);
+  margin-bottom: 4px;
+}
+
+.btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 11px 18px;
+  font-family: var(--sc-display, sans-serif);
+  font-size: 11px;
+  font-weight: 500;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  cursor: pointer;
+  border: 1px solid rgba(120, 200, 220, 0.13);
+  background: rgba(26, 35, 44, 0.9);
+  color: var(--sc-frost, #dceaf3);
+  transition: all 0.15s;
+}
+.btn:hover {
+  background: rgba(36, 49, 64, 0.95);
+}
+.btnGhost {
+  background: transparent;
+  color: var(--sc-mist, #9eb3c2);
+}
+.btnGhost:hover {
+  background: rgba(17, 24, 31, 0.8);
+  color: var(--sc-cyan, #56d4e0);
+}
+.btnAmber {
+  color: var(--sc-amber, #ffb547);
+  border-color: rgba(255, 181, 71, 0.3);
+  background: rgba(255, 181, 71, 0.14);
+}
+.btnAmber:hover {
+  background: rgba(255, 181, 71, 0.2);
+}
+.btnDanger {
+  color: var(--sc-frost, #dceaf3);
+  border-color: var(--sc-magenta, #ff2e88);
+  background:
+    repeating-linear-gradient(
+      135deg,
+      rgba(255, 46, 136, 0.18) 0 8px,
+      rgba(0, 0, 0, 0.4) 8px 16px
+    ),
+    rgba(255, 94, 108, 0.14);
+  text-shadow: 0 0 8px rgba(255, 46, 136, 0.6);
+  box-shadow: 0 0 12px rgba(255, 46, 136, 0.2);
+}
+.btnRetry {
+  color: var(--sc-crimson, #ff5e6c);
+  border-color: var(--sc-crimson, #ff5e6c);
+  background: rgba(255, 94, 108, 0.14);
+  font-weight: 700;
+  box-shadow: 0 0 16px rgba(255, 94, 108, 0.3);
+}
+.btnRetry:hover {
+  background: rgba(255, 94, 108, 0.24);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .heroTitle,
+  .recoveryRow::before {
+    animation: none;
+  }
+}

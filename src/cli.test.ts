@@ -83,12 +83,12 @@ describe("sandcastle CLI", () => {
     expect(stdout).toContain("--model");
   });
 
-  it("init --help exposes non-interactive scaffold flags", async () => {
+  it("init --help exposes non-interactive selection flags", async () => {
     const { stdout } = await runCli("init --help", process.cwd());
     expect(stdout).toContain("--sandbox-provider");
     expect(stdout).toContain("--backlog-manager");
-    expect(stdout).toContain("--skip-label");
-    expect(stdout).toContain("--skip-build");
+    expect(stdout).toContain("--no-create-label");
+    expect(stdout).toContain("--no-build-image");
   });
 
   it("init can scaffold pi-codex non-interactively", async () => {
@@ -96,7 +96,7 @@ describe("sandcastle CLI", () => {
     await initRepo(hostDir);
 
     await runCli(
-      "init --agent pi-codex --model openai-codex/gpt-5.5 --sandbox-provider docker --backlog-manager beads --template blank --skip-build",
+      "init --agent pi-codex --model openai-codex/gpt-5.5 --sandbox-provider docker --backlog-manager beads --template blank --no-build-image",
       hostDir,
     );
 
@@ -197,5 +197,43 @@ describe("sandcastle CLI", () => {
       expect(output).toContain("nonexistent");
       expect(output).toContain("claude-code");
     }
+  });
+
+  it("init can scaffold pi non-interactively", async () => {
+    const hostDir = await mkdtemp(join(tmpdir(), "cli-host-"));
+    await initRepo(hostDir);
+    await commitFile(
+      hostDir,
+      "package.json",
+      '{"type":"module"}',
+      "initial commit",
+    );
+
+    await runCli(
+      "init --agent pi --template blank --sandbox-provider docker --backlog-manager beads --no-build-image",
+      hostDir,
+    );
+
+    const mainTs = await readFile(
+      join(hostDir, ".sandcastle", "main.ts"),
+      "utf-8",
+    );
+    expect(mainTs).toContain('pi("openai-codex/gpt-5.5")');
+    expect(mainTs).not.toContain("claudeCode");
+
+    const dockerfile = await readFile(
+      join(hostDir, ".sandcastle", "Dockerfile"),
+      "utf-8",
+    );
+    expect(dockerfile).toContain("@mariozechner/pi-coding-agent");
+
+    const envExample = await readFile(
+      join(hostDir, ".sandcastle", ".env.example"),
+      "utf-8",
+    );
+    expect(envExample).toContain("openai-codex/gpt-5.5");
+    expect(envExample).toContain("~/.pi/agent/auth.json");
+    expect(envExample).not.toContain("ANTHROPIC_API_KEY=");
+    expect(envExample).not.toContain("GH_TOKEN=");
   });
 });

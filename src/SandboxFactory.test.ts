@@ -39,7 +39,30 @@ const mockHasUncommittedChanges = vi.mocked(
   WorktreeManager.hasUncommittedChanges,
 );
 
-const normalizePath = (value: string) => value.replace(/\\/g, "/");
+const fwd = (path: string): string => path.replace(/\\/g, "/");
+
+const expectedHostMountPath = (path: string): string =>
+  process.platform === "win32" ? fwd(path) : path;
+
+const expectedSandboxMountPath = (
+  sandboxPath: string,
+  worktreeHostPath: string,
+): string => {
+  if (process.platform !== "win32") return sandboxPath;
+
+  const normalizedSandboxPath = fwd(sandboxPath);
+  const normalizedWorktreeHostPath = fwd(worktreeHostPath);
+
+  if (normalizedSandboxPath === normalizedWorktreeHostPath) {
+    return SANDBOX_REPO_DIR;
+  }
+  if (normalizedSandboxPath.startsWith(`${normalizedWorktreeHostPath}/`)) {
+    return `${SANDBOX_REPO_DIR}${normalizedSandboxPath.slice(
+      normalizedWorktreeHostPath.length,
+    )}`;
+  }
+  return normalizedSandboxPath;
+};
 
 /** Create a mock sandbox provider that records calls and delegates to a no-op handle. */
 const makeMockProvider = (): {
@@ -245,21 +268,16 @@ describe("WorktreeDockerSandboxFactory", () => {
 
     expect(mockProvider.createCalls).toHaveLength(1);
     const opts = mockProvider.createCalls[0];
-    const mounts = opts.mounts.map(
-      (mount: { hostPath: string; sandboxPath: string }) => ({
-        hostPath: normalizePath(mount.hostPath),
-        sandboxPath: normalizePath(mount.sandboxPath),
-      }),
-    );
     // Should include worktree mount
-    expect(mounts).toContainEqual({
-      hostPath: normalizePath(worktreePath),
+    expect(opts.mounts).toContainEqual({
+      hostPath: expectedHostMountPath(worktreePath),
       sandboxPath: SANDBOX_REPO_DIR,
     });
     // Should include git mount
-    expect(mounts).toContainEqual({
-      hostPath: normalizePath(`${hostRepoDir}/.git`),
-      sandboxPath: normalizePath(`${hostRepoDir}/.git`),
+    const gitPath = `${hostRepoDir}/.git`;
+    expect(opts.mounts).toContainEqual({
+      hostPath: expectedHostMountPath(gitPath),
+      sandboxPath: expectedSandboxMountPath(gitPath, worktreePath),
     });
   });
 
@@ -607,19 +625,14 @@ describe("WorktreeDockerSandboxFactory", () => {
 
       expect(mockProvider.createCalls).toHaveLength(1);
       const opts = mockProvider.createCalls[0];
-      const mounts = opts.mounts.map(
-        (mount: { hostPath: string; sandboxPath: string }) => ({
-          hostPath: normalizePath(mount.hostPath),
-          sandboxPath: normalizePath(mount.sandboxPath),
-        }),
-      );
-      expect(mounts).toContainEqual({
-        hostPath: normalizePath(hostRepoDir),
+      expect(opts.mounts).toContainEqual({
+        hostPath: expectedHostMountPath(hostRepoDir),
         sandboxPath: SANDBOX_REPO_DIR,
       });
-      expect(mounts).toContainEqual({
-        hostPath: normalizePath(`${hostRepoDir}/.git`),
-        sandboxPath: `${SANDBOX_REPO_DIR}/.git`,
+      const gitPath = `${hostRepoDir}/.git`;
+      expect(opts.mounts).toContainEqual({
+        hostPath: expectedHostMountPath(gitPath),
+        sandboxPath: expectedSandboxMountPath(gitPath, hostRepoDir),
       });
     });
 

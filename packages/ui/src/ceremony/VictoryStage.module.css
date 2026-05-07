@@ -1,0 +1,423 @@
+/*
+ * VictoryStage choreography — values copied from docs/mockups/victory.html.
+ * Keyframes are not paraphrased; clip-path / transform / text-shadow values
+ * mirror the mockup byte-for-byte where practical.
+ */
+
+.stage {
+  position: relative;
+  isolation: isolate;
+}
+
+/* radial-flash background — copied from body::after of victory.html */
+.stage::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 0;
+  background:
+    radial-gradient(
+      ellipse 70% 60% at 50% 35%,
+      rgba(108, 255, 170, 0.08),
+      transparent 70%
+    ),
+    radial-gradient(
+      ellipse 50% 50% at 50% 35%,
+      rgba(86, 212, 224, 0.06),
+      transparent 60%
+    );
+}
+
+/* Concentric pulse rings — origin at hero, scale 0.2 → 1.0, 3.6s loop */
+.rings {
+  position: absolute;
+  top: 18%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: min(1400px, 120%);
+  aspect-ratio: 1 / 1;
+  pointer-events: none;
+  z-index: 0;
+  opacity: 0.45;
+}
+.ring {
+  position: absolute;
+  inset: 0;
+  border: 1px solid var(--sc-plasma, #6cffaa);
+  border-radius: 50%;
+  opacity: 0;
+  animation: sc-victory-ring 3.6s ease-out infinite;
+}
+.ring:nth-child(1) {
+  animation-delay: 0s;
+}
+.ring:nth-child(2) {
+  animation-delay: 1.2s;
+}
+.ring:nth-child(3) {
+  animation-delay: 2.4s;
+}
+@keyframes sc-victory-ring {
+  0% {
+    transform: scale(0.2);
+    opacity: 0;
+  }
+  20% {
+    opacity: 0.4;
+  }
+  100% {
+    transform: scale(1);
+    opacity: 0;
+  }
+}
+
+/* HERO TITLE — text-shadow + chroma + glitch keyframes copied verbatim
+ * from docs/mockups/victory.html lines ~302–333. */
+.heroTitle {
+  position: relative;
+  display: inline-block;
+  font-family: var(--sc-display, "Chakra Petch", sans-serif);
+  font-weight: 800;
+  font-size: clamp(56px, 9vw, 92px);
+  line-height: 0.95;
+  letter-spacing: 0.02em;
+  color: var(--sc-frost, #dceaf3);
+  text-transform: uppercase;
+  text-shadow:
+    -4px 0 rgba(255, 46, 136, 0.5),
+    4px 0 rgba(86, 212, 224, 0.5),
+    0 0 32px rgba(108, 255, 170, 0.5);
+  animation:
+    sc-victory-chroma 4s ease-in-out infinite,
+    sc-victory-glitch 7s steps(1) infinite;
+}
+.heroTitle em {
+  font-style: normal;
+  color: var(--sc-plasma, #6cffaa);
+  text-shadow:
+    -4px 0 var(--sc-magenta, #ff2e88),
+    4px 0 var(--sc-cyan, #56d4e0),
+    0 0 36px rgba(108, 255, 170, 0.7);
+}
+@keyframes sc-victory-chroma {
+  0%,
+  100% {
+    text-shadow:
+      -4px 0 rgba(255, 46, 136, 0.5),
+      4px 0 rgba(86, 212, 224, 0.5),
+      0 0 32px rgba(108, 255, 170, 0.5);
+  }
+  50% {
+    text-shadow:
+      -5px 0 rgba(255, 46, 136, 0.55),
+      5px 0 rgba(86, 212, 224, 0.55),
+      0 0 44px rgba(108, 255, 170, 0.6);
+  }
+}
+@keyframes sc-victory-glitch {
+  0%,
+  96%,
+  100% {
+    transform: translate(0);
+    clip-path: inset(0 0 0 0);
+  }
+  96.5% {
+    transform: translate(-3px, 0);
+    clip-path: inset(20% 0 30% 0);
+  }
+  97% {
+    transform: translate(3px, 0);
+    clip-path: inset(45% 0 5% 0);
+  }
+  97.5% {
+    transform: translate(-1px, 0);
+    clip-path: inset(0 0 60% 0);
+  }
+  98% {
+    transform: translate(0);
+    clip-path: inset(0 0 0 0);
+  }
+}
+
+/* LEVEL-UP RIBBON — mockup .levelup */
+.levelup {
+  margin: 14px 0 0;
+  padding: 14px 18px;
+  border-top: 1px solid var(--sc-plasma, #6cffaa);
+  border-bottom: 1px solid var(--sc-plasma, #6cffaa);
+  background: linear-gradient(
+    90deg,
+    rgba(108, 255, 170, 0.16),
+    rgba(86, 212, 224, 0.06) 50%,
+    rgba(255, 46, 136, 0.06)
+  );
+  position: relative;
+  overflow: hidden;
+}
+.levelup::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background: linear-gradient(
+    90deg,
+    transparent,
+    var(--sc-plasma, #6cffaa),
+    var(--sc-cyan, #56d4e0),
+    var(--sc-magenta, #ff2e88),
+    transparent
+  );
+  background-size: 200% 100%;
+  animation: sc-victory-holo 3s linear infinite;
+}
+@keyframes sc-victory-holo {
+  from {
+    background-position: 0 0;
+  }
+  to {
+    background-position: 200% 0;
+  }
+}
+
+.levelupHead {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+}
+.levelupLabel {
+  font-family: var(--sc-display, sans-serif);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.32em;
+  text-transform: uppercase;
+  color: var(--sc-plasma, #6cffaa);
+  text-shadow: 0 0 8px rgba(108, 255, 170, 0.6);
+}
+.levelupRanks {
+  font-family: var(--sc-display, sans-serif);
+  font-weight: 800;
+  font-size: 20px;
+  color: var(--sc-frost, #dceaf3);
+  letter-spacing: 0.05em;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.levelupFrom {
+  color: var(--sc-steel, #5b6b7a);
+  text-decoration: line-through;
+  text-decoration-color: var(--sc-magenta, #ff2e88);
+}
+.levelupArrow {
+  color: var(--sc-plasma, #6cffaa);
+  font-size: 16px;
+}
+.levelupTo {
+  color: var(--sc-plasma, #6cffaa);
+  text-shadow:
+    -1.5px 0 var(--sc-magenta, #ff2e88),
+    1.5px 0 var(--sc-cyan, #56d4e0),
+    0 0 14px rgba(108, 255, 170, 0.6);
+}
+
+.unlock {
+  margin-top: 12px;
+  padding: 10px 12px;
+  border: 1px solid var(--sc-magenta, #ff2e88);
+  background: rgba(255, 46, 136, 0.06);
+  display: grid;
+  grid-template-columns: 32px 1fr;
+  gap: 12px;
+  align-items: center;
+  box-shadow: 0 0 18px rgba(255, 46, 136, 0.18);
+  animation: sc-victory-unlock-pulse 2s ease-in-out infinite;
+}
+@keyframes sc-victory-unlock-pulse {
+  0%,
+  100% {
+    box-shadow: 0 0 18px rgba(255, 46, 136, 0.18);
+  }
+  50% {
+    box-shadow: 0 0 28px rgba(255, 46, 136, 0.35);
+  }
+}
+.unlockGlyph {
+  width: 28px;
+  height: 28px;
+  border: 1px solid var(--sc-magenta, #ff2e88);
+  background: var(--sc-magenta, #ff2e88);
+  color: var(--sc-void, #03060a);
+  display: grid;
+  place-items: center;
+  font-family: var(--sc-display, sans-serif);
+  font-weight: 700;
+  font-size: 14px;
+  box-shadow: 0 0 12px rgba(255, 46, 136, 0.5);
+}
+.unlockLbl {
+  font-family: var(--sc-mono, ui-monospace, monospace);
+  font-size: 9.5px;
+  color: var(--sc-magenta, #ff2e88);
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  text-shadow: 0 0 4px rgba(255, 46, 136, 0.5);
+}
+.unlockName {
+  font-family: var(--sc-display, sans-serif);
+  font-weight: 600;
+  font-size: 13px;
+  color: var(--sc-frost, #dceaf3);
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  margin-top: 2px;
+}
+
+/* LOOT TILES — mockup .loot-tile */
+.lootGrid {
+  display: grid;
+  gap: 10px;
+}
+.lootTile {
+  display: grid;
+  grid-template-columns: 44px 1fr auto;
+  gap: 12px;
+  align-items: center;
+  padding: 10px 12px;
+  background: rgba(17, 24, 31, 0.7);
+  border: 1px solid rgba(120, 200, 220, 0.13);
+  position: relative;
+  overflow: hidden;
+}
+.lootEpic {
+  border-color: var(--sc-magenta, #ff2e88);
+  background: linear-gradient(
+    180deg,
+    rgba(255, 46, 136, 0.08),
+    rgba(17, 24, 31, 0.7)
+  );
+  box-shadow: 0 0 18px rgba(255, 46, 136, 0.2);
+  animation: sc-loot-shimmer 3s ease-in-out infinite;
+}
+@keyframes sc-loot-shimmer {
+  0%,
+  100% {
+    box-shadow: 0 0 18px rgba(255, 46, 136, 0.2);
+  }
+  50% {
+    box-shadow: 0 0 28px rgba(255, 46, 136, 0.4);
+  }
+}
+.lootRare {
+  border-color: rgba(86, 212, 224, 0.4);
+  background: rgba(86, 212, 224, 0.06);
+}
+.lootCommon {
+  border-color: rgba(108, 255, 170, 0.4);
+  background: rgba(108, 255, 170, 0.06);
+}
+.lootIcon {
+  width: 36px;
+  height: 36px;
+  background: rgba(26, 35, 44, 0.9);
+  border: 1px solid currentColor;
+  display: grid;
+  place-items: center;
+  font-family: var(--sc-display, sans-serif);
+  font-weight: 700;
+  font-size: 18px;
+}
+.lootEpic .lootIcon {
+  color: var(--sc-magenta, #ff2e88);
+  box-shadow: 0 0 12px rgba(255, 46, 136, 0.4);
+  text-shadow: 0 0 8px rgba(255, 46, 136, 0.5);
+}
+.lootRare .lootIcon {
+  color: var(--sc-cyan, #56d4e0);
+  box-shadow: 0 0 10px rgba(86, 212, 224, 0.4);
+  text-shadow: 0 0 6px rgba(86, 212, 224, 0.5);
+}
+.lootCommon .lootIcon {
+  color: var(--sc-plasma, #6cffaa);
+  box-shadow: 0 0 10px rgba(108, 255, 170, 0.4);
+  text-shadow: 0 0 6px rgba(108, 255, 170, 0.5);
+}
+.lootName {
+  font-family: var(--sc-display, sans-serif);
+  font-weight: 600;
+  font-size: 12px;
+  color: var(--sc-frost, #dceaf3);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+.lootDesc {
+  margin-top: 2px;
+  font-family: var(--sc-mono, ui-monospace, monospace);
+  font-size: 9.5px;
+  color: var(--sc-mist, #9eb3c2);
+}
+.lootRarity {
+  font-family: var(--sc-mono, ui-monospace, monospace);
+  font-size: 9px;
+  padding: 2px 7px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+.lootEpic .lootRarity {
+  color: var(--sc-magenta, #ff2e88);
+  border: 1px solid var(--sc-magenta, #ff2e88);
+}
+.lootRare .lootRarity {
+  color: var(--sc-cyan, #56d4e0);
+  border: 1px solid rgba(86, 212, 224, 0.4);
+}
+.lootCommon .lootRarity {
+  color: var(--sc-plasma, #6cffaa);
+  border: 1px solid rgba(108, 255, 170, 0.3);
+}
+
+/* MERGE-TO-MAIN button — mockup .btn-merge */
+.btnMerge {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 14px 26px;
+  font-family: var(--sc-display, sans-serif);
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  cursor: pointer;
+  background: linear-gradient(
+    180deg,
+    var(--sc-plasma-2, #a4ffce),
+    var(--sc-plasma, #6cffaa)
+  );
+  color: var(--sc-void, #03060a);
+  border: 1px solid var(--sc-plasma, #6cffaa);
+  box-shadow:
+    0 0 28px rgba(108, 255, 170, 0.55),
+    inset 0 1px 0 rgba(255, 255, 255, 0.2);
+}
+.btnMerge:hover {
+  background: linear-gradient(180deg, #c5ffdd, var(--sc-plasma-2, #a4ffce));
+  box-shadow:
+    0 0 40px rgba(108, 255, 170, 0.75),
+    inset 0 1px 0 rgba(255, 255, 255, 0.3);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .heroTitle,
+  .levelup::before,
+  .unlock,
+  .lootEpic,
+  .ring {
+    animation: none;
+  }
+  .ring {
+    opacity: 0;
+  }
+}

@@ -1,0 +1,50 @@
+/*
+ * ConfettiSpray — ~12 confetti dots launched from the centre.
+ * Pure CSS keyframes; no JS animation loop. Static under reduced motion.
+ */
+
+.root {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  overflow: hidden;
+}
+
+.piece {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 8px;
+  height: 12px;
+  background: var(--sc-plasma, #6cffaa);
+  transform: translate(-50%, -50%);
+  opacity: 0;
+  animation: confetti-burst 1900ms cubic-bezier(0.18, 0.74, 0.31, 1) forwards;
+}
+
+/* Twelve trajectories — each piece gets its own --tx / --ty / --rot / --hue
+ * via inline style; the keyframe interpolates from origin to that endpoint. */
+@keyframes confetti-burst {
+  0% {
+    transform: translate(-50%, -50%) rotate(0deg) scale(0.4);
+    opacity: 0;
+  }
+  10% {
+    opacity: 1;
+  }
+  100% {
+    transform: translate(calc(var(--tx, 0px) - 50%), calc(var(--ty, 0px) - 50%))
+      rotate(var(--rot, 360deg)) scale(0.85);
+    opacity: 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .piece {
+    animation: none;
+    opacity: 0.65;
+    transform: translate(calc(var(--tx, 0px) * 0.35 - 50%),
+      calc(var(--ty, 0px) * 0.35 - 50%));
+  }
+}

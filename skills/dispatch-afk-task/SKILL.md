@@ -30,7 +30,7 @@ Use internal Codex sub-agents for bounded planning and review only. Do not treat
 1. Initialize Sandcastle when `.sandcastle/` is missing:
 
 ```bash
-sandcastle init --agent pi-codex --model openai-codex/gpt-5.5 --sandbox-provider docker --backlog-manager beads --template blank --skip-build
+sandcastle init --agent pi-codex --model openai-codex/gpt-5.5 --sandbox-provider docker --backlog-manager beads --template blank --no-build-image
 ```
 
 2. Build the sandbox image:

@@ -9,7 +9,7 @@ import {
 } from "./errors.js";
 import type { SandboxError } from "./errors.js";
 import type { SandboxService } from "./SandboxFactory.js";
-import { SandboxFactory, SANDBOX_REPO_DIR } from "./SandboxFactory.js";
+import { SandboxFactory } from "./SandboxFactory.js";
 import { withSandboxLifecycle, type SandboxHooks } from "./SandboxLifecycle.js";
 import type { AgentProvider, IterationUsage } from "./AgentProvider.js";
 import { TextDeltaBuffer } from "./TextDeltaBuffer.js";
@@ -250,6 +250,10 @@ export const orchestrate = (
     const label = (msg: string): string =>
       options.name ? `[${options.name}] ${msg}` : msg;
 
+    let toolCallSequence = 0;
+
+    // Helper: check abort signal and bail via defect so run() can
+    // re-throw the signal's reason verbatim (no Sandcastle wrapping).
     const checkAbort = (): Effect.Effect<void> =>
       options.signal?.aborted ? Effect.die(options.signal.reason) : Effect.void;
 
@@ -326,12 +330,35 @@ export const orchestrate = (
                 };
                 const onToolCall = (name: string, formattedArgs: string) => {
                   textBuffer.flush();
+                  const toolCallId = `${i}-${++toolCallSequence}`;
+                  const startedAt = Date.now();
                   Effect.runPromise(display.toolCall(name, formattedArgs));
+                  Effect.runPromise(
+                    streamEmitter.emit({
+                      type: "tool.started",
+                      name,
+                      formattedArgs,
+                      toolCallId,
+                      iteration: i,
+                      timestamp: new Date(),
+                    }),
+                  );
                   Effect.runPromise(
                     streamEmitter.emit({
                       type: "toolCall",
                       name,
                       formattedArgs,
+                      iteration: i,
+                      timestamp: new Date(),
+                    }),
+                  );
+                  Effect.runPromise(
+                    streamEmitter.emit({
+                      type: "tool.finished",
+                      name,
+                      toolCallId,
+                      durationMs: Date.now() - startedAt,
+                      ok: true,
                       iteration: i,
                       timestamp: new Date(),
                     }),

@@ -1,0 +1,15 @@
+.root {
+  display: grid;
+  gap: 12px;
+}
+
+.empty {
+  padding: 22px 18px;
+  text-align: center;
+  font-family: var(--sc-mono);
+  font-size: 11.5px;
+  color: var(--sc-mist);
+  border: 1px dashed var(--sc-rule-2);
+  background: var(--sc-hull-1);
+  letter-spacing: 0.04em;
+}

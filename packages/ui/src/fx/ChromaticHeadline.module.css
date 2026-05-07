@@ -1,0 +1,49 @@
+.root {
+  position: relative;
+  display: inline-block;
+  font-family: var(--sc-display);
+  font-weight: 500;
+  letter-spacing: 0.005em;
+  text-transform: uppercase;
+  color: var(--sc-frost);
+  /* matches docs/mockups/cockpit.html .run-banner h1 base shadow */
+  text-shadow:
+    -1.5px 0 rgba(255, 46, 136, 0.55),
+    1.5px 0 rgba(86, 212, 224, 0.55);
+}
+
+.glitch {
+  animation: chroma-drift 6s ease-in-out infinite;
+}
+
+/* matches @keyframes chroma-drift in docs/mockups/cockpit.html */
+@keyframes chroma-drift {
+  0%,
+  100% {
+    text-shadow:
+      -1.5px 0 rgba(255, 46, 136, 0.55),
+      1.5px 0 rgba(86, 212, 224, 0.55);
+  }
+  50% {
+    text-shadow:
+      -2.5px 0 rgba(255, 46, 136, 0.6),
+      2.5px 0 rgba(86, 212, 224, 0.6);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .glitch {
+    animation: none;
+  }
+}
+
+@media (prefers-contrast: more) {
+  .root {
+    text-shadow: none;
+    color: var(--sc-frost);
+    border-bottom: 1px solid var(--sc-cyan);
+  }
+  .glitch {
+    animation: none;
+  }
+}

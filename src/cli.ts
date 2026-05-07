@@ -90,27 +90,31 @@ const initModelOption = Options.text("model").pipe(
 );
 
 const sandboxProviderOption = Options.text("sandbox-provider").pipe(
-  Options.withDescription(
-    "Sandbox provider to use during init (docker or podman)",
-  ),
+  Options.withDescription("Sandbox provider to use (docker or podman)"),
   Options.optional,
 );
 
 const backlogManagerOption = Options.text("backlog-manager").pipe(
+  Options.withDescription("Backlog manager to use (github-issues or beads)"),
+  Options.optional,
+);
+
+const createLabelOption = Options.boolean("create-label", {
+  ifPresent: true,
+  negationNames: ["no-create-label"],
+}).pipe(
   Options.withDescription(
-    "Backlog manager to scaffold prompts for (github-issues or beads)",
+    'Create the "Sandcastle" GitHub label when using GitHub Issues',
   ),
   Options.optional,
 );
 
-const skipLabelOption = Options.boolean("skip-label").pipe(
-  Options.withDescription(
-    'Skip creating the "Sandcastle" GitHub label during init',
-  ),
-);
-
-const skipBuildOption = Options.boolean("skip-build").pipe(
-  Options.withDescription("Skip building the sandbox image during init"),
+const buildImageNowOption = Options.boolean("build-image", {
+  ifPresent: true,
+  negationNames: ["no-build-image"],
+}).pipe(
+  Options.withDescription("Build the sandbox image during init"),
+  Options.optional,
 );
 
 const initCommand = Command.make(
@@ -122,8 +126,8 @@ const initCommand = Command.make(
     model: initModelOption,
     sandboxProvider: sandboxProviderOption,
     backlogManager: backlogManagerOption,
-    skipLabel: skipLabelOption,
-    skipBuild: skipBuildOption,
+    createLabel: createLabelOption,
+    buildImageNow: buildImageNowOption,
   },
   ({
     imageName: imageNameFlag,
@@ -132,8 +136,8 @@ const initCommand = Command.make(
     model: modelFlag,
     sandboxProvider: sandboxProviderFlag,
     backlogManager: backlogManagerFlag,
-    skipLabel,
-    skipBuild,
+    createLabel: createLabelFlag,
+    buildImageNow: buildImageNowFlag,
   }) =>
     Effect.gen(function* () {
       const d = yield* Display;
@@ -194,7 +198,7 @@ const initCommand = Command.make(
           ? modelFlag.value
           : selectedAgent.defaultModel;
 
-      // Resolve sandbox provider: interactive select (no default — user must choose)
+      // Resolve sandbox provider: CLI flag > interactive select
       const sandboxProviders = listSandboxProviders();
       let selectedSandboxProvider: SandboxProviderEntry;
       if (sandboxProviderFlag._tag === "Some") {
@@ -228,7 +232,7 @@ const initCommand = Command.make(
         selectedSandboxProvider = getSandboxProvider(selected as string)!;
       }
 
-      // Resolve backlog manager: interactive select
+      // Resolve backlog manager: CLI flag > interactive select
       const backlogManagers = listBacklogManagers();
       let selectedBacklogManager: BacklogManagerEntry;
       if (backlogManagerFlag._tag === "Some") {
@@ -289,14 +293,17 @@ const initCommand = Command.make(
 
       // Offer to create the "Sandcastle" label on the repo (skip for non-GitHub backlog managers)
       let shouldCreateLabel: boolean | symbol = false;
-      if (selectedBacklogManager.name === "github-issues" && !skipLabel) {
-        shouldCreateLabel = yield* Effect.promise(() =>
-          clack.confirm({
-            message:
-              'Create a "Sandcastle" GitHub label? (Templates filter issues by this label)',
-            initialValue: true,
-          }),
-        );
+      if (selectedBacklogManager.name === "github-issues") {
+        shouldCreateLabel =
+          createLabelFlag._tag === "Some"
+            ? createLabelFlag.value
+            : yield* Effect.promise(() =>
+                clack.confirm({
+                  message:
+                    'Create a "Sandcastle" GitHub label? (Templates filter issues by this label)',
+                  initialValue: true,
+                }),
+              );
 
         if (shouldCreateLabel === true) {
           yield* Effect.try({
@@ -331,14 +338,15 @@ const initCommand = Command.make(
 
       // Prompt user before building image
       const providerLabel = selectedSandboxProvider.label;
-      const shouldBuild = skipBuild
-        ? false
-        : yield* Effect.promise(() =>
-            clack.confirm({
-              message: `Build the default ${providerLabel} image now?`,
-              initialValue: true,
-            }),
-          );
+      const shouldBuild =
+        buildImageNowFlag._tag === "Some"
+          ? buildImageNowFlag.value
+          : yield* Effect.promise(() =>
+              clack.confirm({
+                message: `Build the default ${providerLabel} image now?`,
+                initialValue: true,
+              }),
+            );
 
       if (shouldBuild === true) {
         const containerfileDir = join(cwd, CONFIG_DIR);

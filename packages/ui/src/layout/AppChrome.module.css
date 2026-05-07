@@ -1,0 +1,123 @@
+.shell {
+  position: relative;
+  display: grid;
+  grid-template-rows: 44px minmax(0, 1fr);
+  height: 100vh;
+  overflow: hidden;
+  background:
+    radial-gradient(900px 360px at 78% -12%, rgba(86, 212, 224, 0.1), transparent 60%),
+    radial-gradient(760px 340px at 8% 110%, rgba(255, 46, 136, 0.08), transparent 60%),
+    linear-gradient(rgba(120, 200, 220, 0.025) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(120, 200, 220, 0.025) 1px, transparent 1px),
+    var(--sc-void);
+  background-size: auto, auto, 80px 80px, 80px 80px, auto;
+}
+
+.titlebar {
+  z-index: 20;
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
+  align-items: center;
+  gap: 16px;
+  border-bottom: 1px solid var(--sc-rule-2);
+  background: linear-gradient(
+    180deg,
+    rgba(10, 16, 24, 0.86),
+    rgba(3, 6, 10, 0.96)
+  );
+  padding: 0 14px;
+  position: relative;
+}
+
+.titlebar::after {
+  content: "";
+  position: absolute;
+  bottom: -1px;
+  left: 0;
+  right: 0;
+  height: 1px;
+  background: linear-gradient(
+    90deg,
+    transparent 5%,
+    var(--sc-cyan-dim) 50%,
+    transparent 95%
+  );
+}
+
+.left,
+.right {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.right {
+  justify-content: flex-end;
+}
+
+.center {
+  font-family: var(--sc-display);
+  text-transform: uppercase;
+  letter-spacing: 0.16em;
+  color: var(--sc-cyan);
+  font-size: 11px;
+}
+
+.traffic {
+  display: flex;
+  gap: 8px;
+}
+
+.traffic i {
+  width: 11px;
+  height: 11px;
+  display: block;
+  transform: rotate(45deg);
+}
+
+.traffic i:nth-child(1) {
+  background: var(--sc-crimson);
+}
+.traffic i:nth-child(2) {
+  background: var(--sc-amber);
+}
+.traffic i:nth-child(3) {
+  background: var(--sc-plasma);
+}
+
+.brandMark {
+  display: grid;
+  width: 23px;
+  height: 23px;
+  place-items: center;
+  border: 1px solid var(--sc-cyan);
+  background: linear-gradient(135deg, #1a0a14, #061418);
+  color: var(--sc-cyan);
+  font-family: var(--sc-display);
+  font-weight: 700;
+  clip-path: var(--sc-clip-avatar);
+  box-shadow:
+    0 0 12px rgba(86, 212, 224, 0.4),
+    -2px 2px 0 rgba(255, 46, 136, 0.5);
+}
+
+.brandWord {
+  font-family: var(--sc-display);
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.16em;
+}
+
+.brandContext {
+  border: 1px solid var(--sc-rule-2);
+  background: var(--sc-hull-1);
+  color: var(--sc-mist);
+  padding: 3px 8px;
+  font-size: 11px;
+}
+
+.main {
+  min-height: 0;
+  overflow: auto;
+  padding: 28px 28px 116px;
+}

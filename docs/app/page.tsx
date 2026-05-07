@@ -1,5 +1,5 @@
-import { redirect } from "next/navigation";
+import { OpsDashboard } from "@/components/ops-dashboard";
 
 export default function HomePage() {
-  redirect("/docs");
+  return <OpsDashboard />;
 }

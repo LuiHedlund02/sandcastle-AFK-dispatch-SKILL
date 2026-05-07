@@ -1,0 +1,801 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>SANDCASTLE :: FLEET</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --void:#03060a; --hull-0:#060a10; --hull-1:#0a1018; --hull-2:#11181f;
+    --hull-3:#1a232c; --hull-4:#243140;
+    --frost:#dceaf3; --mist:#9eb3c2; --steel:#5b6b7a; --gunmetal:#3a4754;
+    --rule:rgba(120,200,220,0.07); --rule-2:rgba(120,200,220,0.13); --rule-3:rgba(120,200,220,0.22);
+    --cyan:#56d4e0; --cyan-2:#7fe6ef; --cyan-dim:rgba(86,212,224,0.16); --cyan-ink:rgba(86,212,224,0.06);
+    --magenta:#ff2e88; --magenta-2:#ff5ca7; --magenta-dim:rgba(255,46,136,0.16); --magenta-ink:rgba(255,46,136,0.06);
+    --plasma:#6cffaa; --plasma-2:#a4ffce; --plasma-dim:rgba(108,255,170,0.14); --plasma-ink:rgba(108,255,170,0.06);
+    --amber:#ffb547; --amber-dim:rgba(255,181,71,0.14); --amber-ink:rgba(255,181,71,0.06);
+    --crimson:#ff5e6c; --crimson-dim:rgba(255,94,108,0.14); --slate:#6f8aa3;
+    --mono:'JetBrains Mono',ui-monospace,Menlo,Consolas,monospace;
+    --display:'Chakra Petch','Eurostile',system-ui,sans-serif;
+  }
+  *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+  html,body{height:100%;background:var(--void);color:var(--frost);font-family:var(--mono);font-size:12.5px;line-height:1.5;-webkit-font-smoothing:antialiased;overflow:hidden;font-feature-settings:"ss01","cv01","zero"}
+  button,a,input{font:inherit;color:inherit;background:none;border:0;cursor:pointer;text-decoration:none;outline:0}
+  ::selection{background:var(--cyan-dim);color:var(--frost)}
+
+  body::before{content:"";position:fixed;inset:0;pointer-events:none;z-index:9999;opacity:0.5;
+    background:repeating-linear-gradient(0deg,rgba(0,0,0,0) 0 2px,rgba(180,220,235,0.035) 2px 3px),
+    linear-gradient(180deg,rgba(255,46,136,0.018),rgba(86,212,224,0.022) 50%,rgba(255,46,136,0.018));
+    animation:crt 5.5s steps(60) infinite}
+  @keyframes crt{0%,96%,100%{opacity:0.5}97%{opacity:0.32}97.5%{opacity:0.62}98%{opacity:0.40}}
+
+  .app{display:grid;grid-template-rows:44px 1fr 88px;height:100vh;
+    background:radial-gradient(1400px 700px at 50% 50%,rgba(86,212,224,0.10),transparent 65%),
+    radial-gradient(900px 500px at 12% 110%,rgba(255,46,136,0.07),transparent 60%),
+    radial-gradient(900px 500px at 88% -10%,rgba(108,255,170,0.05),transparent 60%),var(--void);position:relative}
+  .app::after{content:"サンドキャッスル ／ FLEET ／ ３ 同時並行 ／ ４ 機 ／ 接続済";
+    position:fixed;top:50%;right:-10px;transform:rotate(-90deg) translateX(50%);transform-origin:right center;
+    font-family:var(--mono);font-size:9.5px;letter-spacing:0.7em;color:var(--magenta);
+    opacity:0.18;pointer-events:none;z-index:1;white-space:nowrap;text-shadow:0 0 6px rgba(255,46,136,0.5)}
+
+  /* titlebar */
+  .titlebar{display:grid;grid-template-columns:1fr auto 1fr;align-items:center;padding:0 14px;
+    border-bottom:1px solid var(--rule-2);background:linear-gradient(180deg,rgba(10,16,24,0.7),rgba(3,6,10,0.95));
+    backdrop-filter:blur(20px);position:relative;z-index:50}
+  .titlebar::after{content:"";position:absolute;bottom:-1px;left:0;right:0;height:1px;
+    background:linear-gradient(90deg,transparent 5%,var(--cyan-dim) 50%,transparent 95%)}
+  .tb-left,.tb-right{display:flex;align-items:center;gap:14px}
+  .tb-right{justify-content:flex-end}
+  .traffic{display:flex;gap:8px;padding-right:6px}
+  .traffic i{width:11px;height:11px;transform:rotate(45deg)}
+  .traffic i:nth-child(1){background:var(--crimson)}
+  .traffic i:nth-child(2){background:var(--amber)}
+  .traffic i:nth-child(3){background:var(--plasma)}
+
+  .brand{display:flex;align-items:center;gap:10px;font-size:11px;color:var(--mist);letter-spacing:0.04em}
+  .brand-mark{width:22px;height:22px;background:linear-gradient(135deg,#1a0a14,#061418);border:1px solid var(--cyan);
+    display:grid;place-items:center;font-family:var(--display);font-weight:700;font-size:12px;color:var(--cyan);
+    clip-path:polygon(20% 0,100% 0,100% 80%,80% 100%,0 100%,0 20%);
+    box-shadow:0 0 12px rgba(86,212,224,0.45),-2px 2px 0 rgba(255,46,136,0.6)}
+  .brand-name{font-family:var(--display);font-weight:600;color:var(--frost);letter-spacing:0.18em;font-size:12px;text-transform:uppercase;
+    text-shadow:-0.5px 0 var(--magenta),0.5px 0 var(--cyan)}
+  .brand-name::after{content:"／ FLEET";margin-left:8px;font-family:var(--mono);font-size:9.5px;color:var(--magenta);letter-spacing:0.15em;opacity:0.75}
+  .brand-sep{color:var(--gunmetal)}
+  .brand-ctx{font-family:var(--mono);font-size:10.5px;color:var(--mist);padding:2px 8px;border:1px solid var(--rule-2);background:var(--hull-1);letter-spacing:0.04em}
+
+  .mode-switch{display:flex;padding:3px;background:var(--hull-1);border:1px solid var(--rule-2);gap:1px;
+    clip-path:polygon(8px 0,calc(100% - 8px) 0,100% 8px,100% calc(100% - 8px),calc(100% - 8px) 100%,8px 100%,0 calc(100% - 8px),0 8px)}
+  .mode{display:inline-flex;align-items:center;gap:7px;padding:5px 14px;font-family:var(--display);font-size:10.5px;font-weight:500;
+    letter-spacing:0.16em;text-transform:uppercase;color:var(--steel)}
+  .mode svg{width:13px;height:13px;opacity:.7}
+  .mode:hover{color:var(--mist)}
+  .mode.is-active{background:linear-gradient(180deg,var(--hull-3),var(--hull-2));color:var(--cyan);
+    box-shadow:inset 0 0 0 0.5px var(--cyan-dim),0 0 14px rgba(86,212,224,0.18)}
+  .mode.is-active svg{opacity:1;color:var(--cyan)}
+
+  .icon-btn{width:28px;height:28px;display:grid;place-items:center;color:var(--mist);border:1px solid transparent}
+  .icon-btn svg{width:14px;height:14px}
+  .icon-btn:hover{background:var(--hull-2);color:var(--cyan);border-color:var(--rule-2)}
+  .kbd{font-family:var(--mono);font-size:10px;color:var(--mist);padding:2px 7px;border:1px solid var(--rule-2);background:var(--hull-1);letter-spacing:0.05em}
+
+  .deploy-cta{display:inline-flex;align-items:center;gap:8px;padding:5px 14px;font-family:var(--display);font-size:10.5px;font-weight:600;
+    letter-spacing:0.18em;text-transform:uppercase;color:var(--void);background:linear-gradient(180deg,var(--magenta-2),var(--magenta));
+    border:1px solid var(--magenta);box-shadow:0 0 16px rgba(255,46,136,0.45),inset 0 1px 0 rgba(255,255,255,0.2);
+    clip-path:polygon(6px 0,100% 0,100% calc(100% - 6px),calc(100% - 6px) 100%,0 100%,0 6px);cursor:pointer}
+  .deploy-cta:hover{background:linear-gradient(180deg,#ff7eb6,var(--magenta-2));box-shadow:0 0 24px rgba(255,46,136,0.6)}
+  .deploy-cta .kc{font-family:var(--mono);font-size:9px;padding:1px 5px;background:rgba(0,0,0,0.25);letter-spacing:0;border-radius:2px}
+
+  /* ─── stage ─── */
+  .stage{display:grid;grid-template-columns:1fr 32px;overflow:hidden;min-height:0;position:relative}
+
+  /* center: galaxy with sun + planets */
+  .galaxy{position:relative;overflow:hidden;background:var(--hull-0)}
+  .galaxy::before{content:"";position:absolute;inset:0;background-image:
+    radial-gradient(circle 1px at 14% 18%,rgba(220,234,243,0.6),transparent 1px),
+    radial-gradient(circle 1px at 32% 8%,rgba(220,234,243,0.5),transparent 1px),
+    radial-gradient(circle 1px at 58% 22%,rgba(86,212,224,0.6),transparent 1px),
+    radial-gradient(circle 1px at 76% 12%,rgba(220,234,243,0.5),transparent 1px),
+    radial-gradient(circle 1px at 88% 28%,rgba(255,46,136,0.5),transparent 1px),
+    radial-gradient(circle 1px at 12% 36%,rgba(220,234,243,0.4),transparent 1px),
+    radial-gradient(circle 1px at 26% 52%,rgba(220,234,243,0.5),transparent 1px),
+    radial-gradient(circle 1px at 48% 60%,rgba(108,255,170,0.5),transparent 1px),
+    radial-gradient(circle 1px at 64% 70%,rgba(220,234,243,0.5),transparent 1px),
+    radial-gradient(circle 1px at 80% 80%,rgba(86,212,224,0.5),transparent 1px),
+    radial-gradient(circle 2px at 70% 40%,rgba(220,234,243,0.7),transparent 2px);
+    background-repeat:no-repeat}
+  .galaxy::after{content:"";position:absolute;top:50%;left:50%;width:1100px;height:1100px;
+    transform:translate(-50%,-50%);border-radius:50%;
+    border:1px solid var(--rule);
+    box-shadow:0 0 0 80px transparent,0 0 0 81px var(--rule),
+      0 0 0 240px transparent,0 0 0 241px var(--rule),
+      0 0 0 360px transparent,0 0 0 361px var(--rule);
+    pointer-events:none;opacity:0.5}
+
+  .sun{position:absolute;top:50%;left:50%;width:60px;height:60px;border-radius:50%;
+    transform:translate(-50%,-50%);
+    background:radial-gradient(circle,#fff7d4 0%,#ffb547 40%,#a85a18 80%,transparent 100%);
+    box-shadow:0 0 60px rgba(255,181,71,0.7),0 0 140px rgba(255,181,71,0.35);z-index:2}
+
+  .galaxy-head{position:absolute;top:18px;left:24px;right:24px;display:flex;justify-content:space-between;align-items:center;z-index:5;pointer-events:none}
+  .crumbs{display:flex;align-items:center;gap:10px;font-size:11px;color:var(--mist);letter-spacing:0.04em;pointer-events:auto}
+  .crumbs .hex{color:var(--cyan);font-family:var(--mono);letter-spacing:0.05em}
+  .crumbs .sep{color:var(--gunmetal)}
+  .crumbs .cur{color:var(--frost);font-family:var(--display);font-weight:600;letter-spacing:0.08em;text-transform:uppercase;
+    text-shadow:-0.5px 0 var(--magenta),0.5px 0 var(--cyan)}
+
+  .galaxy-status{display:inline-flex;align-items:center;gap:9px;font-family:var(--mono);font-size:10px;color:var(--frost);
+    padding:5px 12px;border:1px solid var(--cyan);background:var(--cyan-ink);letter-spacing:0.12em;text-transform:uppercase;
+    clip-path:polygon(8px 0,100% 0,100% calc(100% - 8px),calc(100% - 8px) 100%,0 100%,0 8px);pointer-events:auto}
+  .galaxy-status .dot{width:7px;height:7px;transform:rotate(45deg);background:var(--cyan);box-shadow:0 0 8px var(--cyan);animation:ping 1.4s ease-out infinite}
+  @keyframes ping{0%,100%{opacity:1}50%{opacity:0.4}}
+
+  /* planets */
+  .pl{position:absolute;cursor:pointer;transition:transform .2s;z-index:3}
+  .pl:hover{transform:scale(1.05);z-index:4}
+  .pl .body{border-radius:50%;position:relative}
+  .pl .label{position:absolute;top:calc(100% + 8px);left:50%;transform:translateX(-50%);font-family:var(--display);font-size:10px;
+    font-weight:600;letter-spacing:0.1em;text-transform:uppercase;color:var(--frost);white-space:nowrap;text-shadow:-0.5px 0 var(--magenta),0.5px 0 var(--cyan)}
+  .pl .stage-tag{position:absolute;top:calc(100% + 24px);left:50%;transform:translateX(-50%);font-family:var(--mono);font-size:9px;
+    color:var(--steel);letter-spacing:0.06em;white-space:nowrap}
+  .pl .stage-tag b{color:currentColor;font-weight:500}
+  .pl .ops{position:absolute;width:8px;height:8px;background:var(--cyan);transform:rotate(45deg);
+    box-shadow:0 0 12px var(--cyan),0 0 24px rgba(86,212,224,0.4);z-index:5;top:30%;left:62%}
+  .pl .ops::before{content:"";position:absolute;inset:-5px;border:1px solid var(--cyan);opacity:0.6;animation:ping 1.4s ease-out infinite}
+
+  .pl.live .body{
+    background:radial-gradient(circle at 32% 28%,#15333d 0%,#0a1f28 40%,#03070a 75%,transparent 100%),
+      radial-gradient(circle at 70% 65%,rgba(108,255,170,0.20) 0%,transparent 40%),
+      radial-gradient(circle at 30% 70%,rgba(255,46,136,0.15) 0%,transparent 35%),
+      radial-gradient(circle at 50% 50%,#0e2228 0%,#061218 100%);
+    box-shadow:inset -10px -10px 22px rgba(0,0,0,0.6),inset 8px 8px 18px rgba(108,255,170,0.12),0 0 30px rgba(108,255,170,0.30),0 0 60px rgba(86,212,224,0.20)}
+  .pl.live .stage-tag b{color:var(--plasma);text-shadow:0 0 4px rgba(108,255,170,0.5)}
+  .pl.live .label::after{content:" · LIVE";color:var(--plasma);text-shadow:0 0 6px rgba(108,255,170,0.5);font-family:var(--mono);font-size:9px;letter-spacing:0.18em;margin-left:4px}
+
+  .pl.clear .body{
+    background:radial-gradient(circle at 32% 28%,#1d3d4a 0%,#0a1f28 40%,#03070a 75%,transparent 100%),
+      radial-gradient(circle at 70% 75%,rgba(86,212,224,0.18) 0%,transparent 40%),
+      radial-gradient(circle at 50% 50%,#0e2530 0%,#06141c 100%);
+    box-shadow:inset -10px -10px 22px rgba(0,0,0,0.6),0 0 22px rgba(86,212,224,0.18)}
+  .pl.clear .stage-tag b{color:var(--cyan)}
+
+  .pl.warm .body{
+    background:radial-gradient(circle at 32% 28%,#3d2f18 0%,#241a0c 40%,#06030a 75%,transparent 100%),
+      radial-gradient(circle at 70% 65%,rgba(255,181,71,0.18) 0%,transparent 40%),
+      radial-gradient(circle at 50% 50%,#2a1d10 0%,#1c1108 100%);
+    box-shadow:inset -10px -10px 22px rgba(0,0,0,0.6),0 0 22px rgba(255,181,71,0.20)}
+  .pl.warm .stage-tag b{color:var(--amber);text-shadow:0 0 4px rgba(255,181,71,0.4)}
+
+  .pl.idle .body{
+    background:radial-gradient(circle at 32% 28%,#202830 0%,#0e1218 40%,#03060a 75%,transparent 100%),
+      radial-gradient(circle at 50% 50%,#161c22 0%,#0a0e14 100%);
+    box-shadow:inset -8px -8px 18px rgba(0,0,0,0.7);filter:saturate(0.5)}
+  .pl.idle .stage-tag b{color:var(--steel)}
+
+  /* deploy beam — visual link from sun out to a planet under fire */
+  .beam{position:absolute;top:50%;left:50%;height:2px;transform-origin:left center;pointer-events:none;z-index:2;opacity:0.7;
+    background:linear-gradient(90deg,rgba(255,46,136,0.9),rgba(86,212,224,0.5),transparent);filter:blur(0.4px);
+    animation:beam-pulse 1.4s ease-in-out infinite}
+  @keyframes beam-pulse{0%,100%{opacity:0.65}50%{opacity:1}}
+
+  /* coordination link between two planets */
+  .coord{position:absolute;height:1px;transform-origin:left center;pointer-events:none;z-index:2;
+    background:linear-gradient(90deg,var(--magenta),var(--magenta-dim),var(--magenta));background-size:8px 100%;
+    animation:coord-pulse 1.6s linear infinite;opacity:0.6}
+  @keyframes coord-pulse{from{background-position:0 0}to{background-position:16px 0}}
+
+  /* zoom on right edge of stage */
+  .zoom{position:absolute;bottom:18px;right:54px;display:flex;flex-direction:column;gap:4px;z-index:10}
+  .zoom button{width:30px;height:30px;background:rgba(10,16,24,0.85);border:1px solid var(--rule-2);color:var(--mist);
+    display:grid;place-items:center;backdrop-filter:blur(8px)}
+  .zoom button:hover{color:var(--cyan);border-color:var(--cyan-dim)}
+  .zoom button svg{width:14px;height:14px}
+
+  /* ─── activity feed (right edge collapsed strip) ─── */
+  .feed-strip{border-left:1px solid var(--rule-2);background:var(--hull-1);display:flex;flex-direction:column;align-items:center;
+    padding:14px 0;gap:8px;position:relative}
+  .feed-strip::before{content:"";position:absolute;top:0;bottom:0;left:0;width:1px;
+    background:linear-gradient(180deg,transparent,var(--cyan-dim) 30%,var(--cyan-dim) 70%,transparent)}
+  .feed-strip .feed-toggle{width:24px;height:24px;display:grid;place-items:center;color:var(--cyan);border:1px solid var(--cyan-dim);
+    background:var(--cyan-ink);clip-path:polygon(4px 0,100% 0,100% calc(100% - 4px),calc(100% - 4px) 100%,0 100%,0 4px);cursor:pointer}
+  .feed-strip .feed-toggle svg{width:13px;height:13px}
+  .feed-strip .lbl{font-family:var(--mono);font-size:9px;letter-spacing:0.4em;color:var(--steel);writing-mode:vertical-rl;
+    text-orientation:mixed;text-transform:uppercase;margin-top:8px}
+  .feed-strip .ev{width:8px;height:8px;transform:rotate(45deg);box-shadow:0 0 4px currentColor}
+  .feed-strip .ev.p{background:var(--plasma);color:var(--plasma)}
+  .feed-strip .ev.cy{background:var(--cyan);color:var(--cyan)}
+  .feed-strip .ev.am{background:var(--amber);color:var(--amber)}
+  .feed-strip .ev.cr{background:var(--crimson);color:var(--crimson)}
+  .feed-strip .ev.m{background:var(--magenta);color:var(--magenta)}
+
+  /* ─── fleet dock (bottom 88px) ─── */
+  .dock{display:grid;grid-template-columns:auto 1fr auto;gap:12px;align-items:center;padding:10px 14px;
+    background:linear-gradient(180deg,rgba(10,16,24,0.95),rgba(3,6,10,0.98));backdrop-filter:blur(20px);
+    border-top:1px solid var(--cyan-dim);box-shadow:0 -16px 40px rgba(0,0,0,0.6),0 -1px 0 rgba(86,212,224,0.2);
+    position:relative;z-index:40}
+  .dock::before{content:"";position:absolute;top:0;left:0;right:0;height:1px;
+    background:linear-gradient(90deg,transparent 5%,var(--magenta) 25%,var(--cyan) 75%,transparent 95%);opacity:0.6;filter:blur(0.4px)}
+
+  /* dock head */
+  .dock-head{display:flex;flex-direction:column;justify-content:center;padding-right:14px;border-right:1px solid var(--rule-2);min-width:130px}
+  .dock-head .lbl{font-family:var(--display);font-size:8.5px;letter-spacing:0.28em;text-transform:uppercase;color:var(--steel);font-weight:500}
+  .dock-head .v{font-family:var(--display);font-weight:700;font-size:18px;color:var(--cyan);letter-spacing:0.05em;line-height:1;margin-top:3px;
+    text-shadow:0 0 8px rgba(86,212,224,0.4)}
+  .dock-head .v em{font-style:normal;color:var(--magenta);text-shadow:0 0 6px rgba(255,46,136,0.4);font-weight:700}
+  .dock-head .v small{font-size:9px;color:var(--steel);letter-spacing:0.18em;display:block;margin-top:2px;text-shadow:none;font-weight:500}
+
+  /* dock cells */
+  .dock-cells{display:flex;gap:8px;overflow-x:auto;padding:2px 0}
+  .dock-cells::-webkit-scrollbar{height:4px}.dock-cells::-webkit-scrollbar-thumb{background:var(--hull-3)}
+
+  .cell{display:grid;grid-template-columns:46px 1fr;gap:10px;align-items:center;padding:8px 12px;
+    background:var(--hull-2);border:1px solid var(--rule-2);min-width:262px;flex-shrink:0;
+    clip-path:polygon(8px 0,100% 0,100% calc(100% - 8px),calc(100% - 8px) 100%,0 100%,0 8px);
+    transition:all .2s;cursor:pointer;position:relative}
+  .cell:hover{border-color:var(--cyan-dim);background:var(--hull-3)}
+  .cell.casting{border-color:var(--cyan);background:var(--cyan-ink);box-shadow:0 0 16px rgba(86,212,224,0.20)}
+  .cell.casting .av-glow{box-shadow:0 0 12px rgba(86,212,224,0.55)}
+  .cell.striking{border-color:var(--cyan);box-shadow:0 0 18px rgba(86,212,224,0.30)}
+  .cell.boss{border-color:var(--magenta);box-shadow:0 0 18px rgba(255,46,136,0.25)}
+  .cell.win-pending{border-color:var(--plasma);background:var(--plasma-ink);box-shadow:0 0 22px rgba(108,255,170,0.30);
+    animation:win-pulse 2.4s ease-in-out infinite}
+  @keyframes win-pulse{0%,100%{box-shadow:0 0 22px rgba(108,255,170,0.30)}50%{box-shadow:0 0 36px rgba(108,255,170,0.55)}}
+  .cell.fail-pending{border-color:var(--crimson);background:var(--crimson-dim);box-shadow:0 0 22px rgba(255,94,108,0.25);
+    animation:fail-pulse 1.8s ease-in-out infinite}
+  @keyframes fail-pulse{0%,100%{box-shadow:0 0 18px rgba(255,94,108,0.25)}50%{box-shadow:0 0 32px rgba(255,94,108,0.5)}}
+  .cell.coord{border-color:var(--magenta-dim);background:linear-gradient(90deg,var(--magenta-ink),var(--hull-2))}
+
+  /* avatar mini */
+  .av-mini{position:relative;width:46px;height:46px;background:linear-gradient(135deg,#1a0a14,#061218);
+    border:1px solid currentColor;display:grid;place-items:center;color:var(--cyan);
+    clip-path:polygon(20% 0,100% 0,100% 80%,80% 100%,0 100%,0 20%)}
+  .av-mini .glyph{font-family:var(--display);font-weight:700;font-size:18px;color:currentColor;
+    text-shadow:-1px 0 var(--magenta),1px 0 currentColor,0 0 6px currentColor}
+  .av-mini .lvl{position:absolute;bottom:-3px;right:-3px;font-family:var(--mono);font-size:8px;color:var(--magenta);
+    background:var(--void);padding:1px 4px;border:1px solid var(--magenta-dim);letter-spacing:0;
+    text-shadow:0 0 3px rgba(255,46,136,0.5)}
+  .cell.casting .av-mini{color:var(--cyan)}
+  .cell.boss .av-mini{color:var(--magenta)}
+  .cell.win-pending .av-mini{color:var(--plasma)}
+  .cell.fail-pending .av-mini{color:var(--crimson)}
+
+  /* eye flicker on casting */
+  .av-mini .eye-mini{position:absolute;top:9px;left:50%;transform:translateX(-50%);width:4px;height:4px;border-radius:50%;background:var(--magenta);box-shadow:0 0 4px var(--magenta);
+    animation:eye-mini 2.6s ease-in-out infinite}
+  @keyframes eye-mini{0%,100%{opacity:1}50%{opacity:0.5}}
+  .cell.casting .av-mini .eye-mini{animation:eye-cast 0.4s steps(2) infinite}
+  @keyframes eye-cast{0%,100%{opacity:1}50%{opacity:0.3}}
+
+  .cell-body{min-width:0;display:flex;flex-direction:column;gap:3px}
+  .cell-row1{display:flex;align-items:center;gap:6px;font-family:var(--display);font-size:10.5px;font-weight:600;letter-spacing:0.05em;
+    color:var(--frost);text-transform:uppercase;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .cell-row1 .planet{color:var(--frost)}
+  .cell-row1 .sep{color:var(--gunmetal);font-weight:400}
+  .cell-row1 .phase{color:var(--cyan);font-family:var(--mono);font-size:9.5px;letter-spacing:0.05em;text-transform:none}
+  .cell.boss .cell-row1 .phase{color:var(--magenta)}
+  .cell.win-pending .cell-row1 .phase{color:var(--plasma)}
+  .cell.fail-pending .cell-row1 .phase{color:var(--crimson)}
+
+  .cell-row2{display:flex;align-items:center;gap:8px;font-family:var(--mono);font-size:9.5px;color:var(--steel);letter-spacing:0.04em}
+  .cell-row2 .ico{font-family:var(--display);font-weight:700;font-size:9px;color:currentColor}
+  .cell.casting .cell-row2{color:var(--cyan)}
+  .cell.boss .cell-row2{color:var(--magenta)}
+  .cell.win-pending .cell-row2{color:var(--plasma)}
+
+  .cell-progress{height:2px;background:var(--hull-3);position:relative;margin-top:2px}
+  .cell-progress i{display:block;height:100%;background:linear-gradient(90deg,var(--cyan),var(--magenta));box-shadow:0 0 4px rgba(86,212,224,0.5)}
+  .cell.win-pending .cell-progress i{width:100%;background:linear-gradient(90deg,var(--plasma),var(--cyan))}
+  .cell.fail-pending .cell-progress i{width:100%;background:linear-gradient(90deg,var(--crimson),var(--magenta))}
+
+  /* mini decision card popping above a win-pending cell */
+  .decision-pop{position:absolute;bottom:calc(100% + 12px);left:0;right:0;background:linear-gradient(180deg,var(--hull-2),var(--hull-1));
+    border:1px solid var(--plasma);box-shadow:0 0 28px rgba(108,255,170,0.35);
+    clip-path:polygon(10px 0,100% 0,100% calc(100% - 10px),calc(100% - 10px) 100%,0 100%,0 10px);
+    padding:10px 12px;font-family:var(--mono);z-index:50;animation:pop 0.3s ease-out}
+  @keyframes pop{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:translateY(0)}}
+  .decision-pop::after{content:"";position:absolute;bottom:-7px;left:24px;width:12px;height:12px;background:linear-gradient(135deg,var(--hull-1) 50%,transparent 50%);
+    border-right:1px solid var(--plasma);border-bottom:1px solid var(--plasma);transform:rotate(45deg)}
+  .decision-pop .head{display:flex;justify-content:space-between;align-items:center;font-family:var(--display);font-size:9px;
+    letter-spacing:0.22em;text-transform:uppercase;color:var(--plasma);margin-bottom:6px;text-shadow:0 0 4px rgba(108,255,170,0.4)}
+  .decision-pop .head .xp{color:var(--plasma);font-family:var(--mono);font-size:11px;letter-spacing:0.05em}
+  .decision-pop .verify{display:flex;gap:8px;margin-bottom:8px;font-size:9.5px;color:var(--mist);letter-spacing:0.04em}
+  .decision-pop .verify .ok{color:var(--plasma)}
+  .decision-pop .verify .warn{color:var(--amber)}
+  .decision-pop .acts{display:grid;grid-template-columns:1fr 1fr;gap:6px}
+  .decision-pop .a{padding:6px 10px;font-family:var(--display);font-size:9.5px;letter-spacing:0.16em;text-transform:uppercase;font-weight:600;
+    border:1px solid;cursor:pointer;text-align:center;
+    clip-path:polygon(5px 0,100% 0,100% calc(100% - 5px),calc(100% - 5px) 100%,0 100%,0 5px)}
+  .decision-pop .a.merge{color:var(--void);background:linear-gradient(180deg,var(--plasma-2),var(--plasma));border-color:var(--plasma);
+    box-shadow:0 0 12px rgba(108,255,170,0.4);font-weight:700}
+  .decision-pop .a.revise{color:var(--amber);border-color:var(--amber);background:var(--amber-dim)}
+
+  /* warning glyph */
+  .warn-badge{position:absolute;top:-6px;right:-6px;width:18px;height:18px;background:var(--amber);color:var(--void);
+    display:grid;place-items:center;font-family:var(--display);font-weight:700;font-size:11px;
+    transform:rotate(45deg);box-shadow:0 0 8px var(--amber);z-index:6}
+  .warn-badge span{transform:rotate(-45deg)}
+
+  /* dock right: bulk actions */
+  .dock-right{display:flex;align-items:center;gap:10px;padding-left:14px;border-left:1px solid var(--rule-2)}
+  .bulk-btn{display:inline-flex;align-items:center;gap:6px;padding:8px 12px;font-family:var(--display);font-size:10px;font-weight:600;
+    letter-spacing:0.16em;text-transform:uppercase;border:1px solid;cursor:pointer;
+    clip-path:polygon(6px 0,100% 0,100% calc(100% - 6px),calc(100% - 6px) 100%,0 100%,0 6px);transition:all .15s}
+  .bulk-btn.merge-all{color:var(--void);background:linear-gradient(180deg,var(--plasma-2),var(--plasma));border-color:var(--plasma);
+    font-weight:700;box-shadow:0 0 18px rgba(108,255,170,0.45),inset 0 1px 0 rgba(255,255,255,0.2)}
+  .bulk-btn.merge-all:hover{box-shadow:0 0 28px rgba(108,255,170,0.7)}
+  .bulk-btn.merge-all svg{width:11px;height:11px}
+  .bulk-btn.merge-all.gated{opacity:0.5;cursor:not-allowed;background:var(--hull-3);color:var(--steel);border-color:var(--rule-2);box-shadow:none;font-weight:600}
+  .bulk-btn .kc{font-family:var(--mono);font-size:9px;padding:1px 4px;background:rgba(0,0,0,0.25);letter-spacing:0;border-radius:2px}
+  .bulk-btn.recall{color:var(--cyan);border-color:var(--cyan-dim);background:var(--cyan-ink)}
+  .bulk-btn.recall:hover{background:rgba(86,212,224,0.18);border-color:var(--cyan)}
+
+  /* ─── deploy chord overlay ─── */
+  .chord-bg{position:fixed;inset:0;background:rgba(3,6,10,0.55);backdrop-filter:blur(8px);z-index:100;
+    display:flex;align-items:flex-start;justify-content:center;padding-top:18vh}
+  .chord{width:780px;max-width:calc(100vw - 32px);background:linear-gradient(180deg,var(--hull-2),var(--hull-1));
+    border:1px solid var(--magenta);box-shadow:0 0 48px rgba(255,46,136,0.30),0 32px 64px -16px rgba(0,0,0,0.7);
+    clip-path:polygon(16px 0,100% 0,100% calc(100% - 16px),calc(100% - 16px) 100%,0 100%,0 16px);position:relative}
+  .chord::before{content:"";position:absolute;top:0;left:0;right:0;height:2px;
+    background:linear-gradient(90deg,transparent 5%,var(--magenta) 25%,var(--cyan) 75%,transparent 95%);
+    background-size:200% 100%;animation:holo 3s linear infinite}
+  @keyframes holo{from{background-position:0 0}to{background-position:200% 0}}
+
+  .chord-head{display:flex;align-items:center;justify-content:space-between;padding:14px 22px;border-bottom:1px solid var(--rule)}
+  .chord-head .lbl{font-family:var(--display);font-size:11px;font-weight:700;letter-spacing:0.28em;text-transform:uppercase;color:var(--magenta);
+    text-shadow:0 0 6px rgba(255,46,136,0.5);display:flex;align-items:center;gap:10px}
+  .chord-head .lbl svg{width:14px;height:14px}
+  .chord-head .esc{font-family:var(--mono);font-size:10px;color:var(--steel);letter-spacing:0.05em;display:flex;align-items:center;gap:6px}
+
+  /* chord input row */
+  .chord-row{display:grid;grid-template-columns:auto auto auto auto auto 1fr;gap:14px;align-items:center;
+    padding:18px 22px 14px;font-family:var(--mono);font-size:14px;color:var(--mist);letter-spacing:0.02em}
+  .chord-row .verb{font-family:var(--display);font-weight:700;font-size:14px;letter-spacing:0.18em;text-transform:uppercase;color:var(--magenta);
+    text-shadow:0 0 6px rgba(255,46,136,0.5)}
+  .chord-row .conn{color:var(--steel);font-family:var(--display);font-size:11px;letter-spacing:0.18em;text-transform:uppercase}
+  .chord-field{display:flex;align-items:center;gap:6px;padding:6px 10px;background:var(--hull-2);border:1px solid var(--cyan-dim);
+    color:var(--cyan);font-family:var(--mono);font-size:13px;letter-spacing:0.04em;
+    clip-path:polygon(5px 0,100% 0,100% calc(100% - 5px),calc(100% - 5px) 100%,0 100%,0 5px);text-shadow:0 0 4px rgba(86,212,224,0.3)}
+  .chord-field svg{width:11px;height:11px;color:var(--cyan-dim)}
+  .chord-field.targets{background:var(--magenta-ink);border-color:var(--magenta-dim);color:var(--magenta);text-shadow:0 0 4px rgba(255,46,136,0.3)}
+  .chord-field .chip{padding:2px 6px;background:rgba(0,0,0,0.3);font-size:11px;letter-spacing:0.05em;border:1px solid currentColor;color:currentColor;border-radius:2px}
+
+  /* directive line */
+  .chord-directive{display:grid;grid-template-columns:auto 1fr auto;gap:14px;align-items:center;padding:12px 22px 18px;border-top:1px dashed var(--rule-2)}
+  .chord-directive .k{font-family:var(--display);font-size:10px;font-weight:600;letter-spacing:0.22em;text-transform:uppercase;color:var(--steel)}
+  .chord-directive input{flex:1;font-family:var(--mono);font-size:14px;color:var(--frost);letter-spacing:0.02em;padding:6px 0;
+    border-bottom:1px solid var(--cyan-dim);min-width:0;width:100%}
+  .chord-directive input::placeholder{color:var(--steel);font-style:italic}
+  .chord-directive .send{font-family:var(--display);font-size:10px;font-weight:700;letter-spacing:0.18em;text-transform:uppercase;color:var(--void);
+    padding:8px 16px;background:linear-gradient(180deg,var(--magenta-2),var(--magenta));border:1px solid var(--magenta);
+    box-shadow:0 0 18px rgba(255,46,136,0.5),inset 0 1px 0 rgba(255,255,255,0.2);
+    clip-path:polygon(6px 0,100% 0,100% calc(100% - 6px),calc(100% - 6px) 100%,0 100%,0 6px);cursor:pointer}
+  .chord-directive .send .kc{font-family:var(--mono);font-size:9px;padding:1px 4px;background:rgba(0,0,0,0.3);letter-spacing:0;border-radius:2px;margin-left:6px}
+
+  /* preview strip — what's about to happen */
+  .chord-preview{padding:14px 22px;background:rgba(86,212,224,0.04);border-top:1px solid var(--rule)}
+  .chord-preview .head{font-family:var(--display);font-size:9px;letter-spacing:0.24em;text-transform:uppercase;color:var(--steel);font-weight:500;margin-bottom:10px;
+    display:flex;align-items:center;gap:10px}
+  .chord-preview .head .hex{color:var(--cyan);font-family:var(--mono);letter-spacing:0.05em}
+  .chord-preview .head .line{flex:1;height:1px;background:var(--rule-2)}
+  .chord-preview .grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
+  .preview-card{padding:10px 12px;background:var(--hull-2);border:1px solid var(--rule-2);
+    clip-path:polygon(7px 0,100% 0,100% calc(100% - 7px),calc(100% - 7px) 100%,0 100%,0 7px)}
+  .preview-card .pc-head{display:flex;align-items:center;gap:8px;font-family:var(--display);font-size:10px;font-weight:600;
+    letter-spacing:0.06em;text-transform:uppercase;color:var(--frost);margin-bottom:6px}
+  .preview-card .pc-head .mini-pl{width:14px;height:14px;border-radius:50%;
+    background:radial-gradient(circle at 32% 28%,#1a3d4a 0%,#0a2030 60%,#03070a 100%);box-shadow:inset -2px -2px 4px rgba(0,0,0,0.6),0 0 4px rgba(86,212,224,0.3)}
+  .preview-card .pc-head .mini-pl.warm{background:radial-gradient(circle at 32% 28%,#3d2c14 0%,#241a0c 60%,#03070a 100%);box-shadow:inset -2px -2px 4px rgba(0,0,0,0.6),0 0 4px rgba(255,181,71,0.3)}
+  .preview-card .meta{font-family:var(--mono);font-size:9.5px;color:var(--steel);letter-spacing:0.04em;line-height:1.55}
+  .preview-card .meta b{color:var(--cyan);font-weight:500}
+  .preview-card .meta em{font-style:normal;color:var(--magenta)}
+  .preview-card.overlap{border-color:var(--amber);background:var(--amber-ink)}
+  .preview-card.overlap::before{content:"⚠ scope overlap";display:block;font-family:var(--mono);font-size:9px;color:var(--amber);letter-spacing:0.12em;
+    margin-bottom:4px;text-shadow:0 0 4px rgba(255,181,71,0.4)}
+  .preview-card.overlap .resolve{margin-top:8px;display:flex;gap:4px}
+  .preview-card.overlap .r{padding:3px 7px;font-family:var(--display);font-size:8.5px;letter-spacing:0.12em;text-transform:uppercase;
+    border:1px solid var(--rule-2);color:var(--mist);cursor:pointer;
+    clip-path:polygon(3px 0,100% 0,100% calc(100% - 3px),calc(100% - 3px) 100%,0 100%,0 3px)}
+  .preview-card.overlap .r:hover{color:var(--cyan);border-color:var(--cyan-dim)}
+  .preview-card.overlap .r.is-on{color:var(--magenta);border-color:var(--magenta);background:var(--magenta-ink);text-shadow:0 0 4px rgba(255,46,136,0.4)}
+
+  /* chord foot — keystroke hints */
+  .chord-foot{display:flex;align-items:center;gap:14px;padding:10px 22px;border-top:1px solid var(--rule);
+    background:var(--hull-1);font-family:var(--mono);font-size:9.5px;color:var(--steel);letter-spacing:0.05em}
+  .chord-foot .sep{color:var(--gunmetal)}
+  .chord-foot .k{padding:1px 5px;border:1px solid var(--rule-2);color:var(--mist);letter-spacing:0;border-radius:2px}
+</style>
+</head>
+<body>
+  <div class="app">
+
+    <!-- titlebar -->
+    <div class="titlebar">
+      <div class="tb-left">
+        <div class="traffic"><i></i><i></i><i></i></div>
+        <div class="brand">
+          <div class="brand-mark">S</div>
+          <span class="brand-name">Sandcastle</span>
+          <span class="brand-sep">/</span>
+          <span class="brand-ctx" style="color:var(--amber);border-color:rgba(255,181,71,0.3)">SOL-7</span>
+        </div>
+      </div>
+
+      <div class="mode-switch">
+        <button class="mode is-active"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="12" cy="12" r="3"/><circle cx="12" cy="12" r="9"/></svg>Galaxy</button>
+        <button class="mode"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="12" cy="12" r="9"/><ellipse cx="12" cy="12" rx="9" ry="3"/></svg>Planet</button>
+        <button class="mode"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="12" cy="12" r="3"/><circle cx="12" cy="12" r="9" stroke-dasharray="2 4"/></svg>Cockpit</button>
+        <button class="mode"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="12" cy="9" r="3"/><circle cx="12" cy="9" r="6"/><path d="M6 21v-2a4 4 0 0 1 4-4h4a4 4 0 0 1 4 4v2"/></svg>Roster</button>
+      </div>
+
+      <div class="tb-right">
+        <button class="deploy-cta" onclick="document.getElementById('chord').style.display='flex'">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 4l14 8-14 8V4z"/></svg>
+          Deploy
+          <span class="kc">⌘ D</span>
+        </button>
+        <button class="icon-btn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/></svg></button>
+      </div>
+    </div>
+
+    <!-- stage: galaxy + activity feed strip -->
+    <div class="stage">
+      <main class="galaxy">
+        <div class="galaxy-head">
+          <div class="crumbs">
+            <span class="hex">0x01</span>
+            <span>GALAXY</span>
+            <span class="sep">/</span>
+            <span class="cur">System Sol-7</span>
+            <span class="sep">·</span>
+            <span style="color:var(--cyan)">3 LIVE · 1 DEPLOYING · 4 FLEET</span>
+          </div>
+          <div class="galaxy-status">
+            <span class="dot"></span>
+            <span>FLEET ACTIVE · 3 PARALLEL · NO CONFLICTS</span>
+          </div>
+        </div>
+
+        <!-- sun -->
+        <div class="sun"></div>
+
+        <!-- deploy beams from sun to active planets -->
+        <div class="beam" style="top:50%;left:50%;width:340px;transform:translateY(-50%) rotate(-32deg)"></div>
+        <div class="beam" style="top:50%;left:50%;width:300px;transform:translateY(-50%) rotate(18deg)"></div>
+        <div class="beam" style="top:50%;left:50%;width:380px;transform:translateY(-50%) rotate(50deg)"></div>
+
+        <!-- coordination link between two planets sharing scope -->
+        <div class="coord" style="top:36%;left:60%;width:170px;transform:rotate(28deg)"></div>
+
+        <!-- planets -->
+        <div class="pl live" style="top:38%;left:62%">
+          <div class="body" style="width:78px;height:78px"></div>
+          <div class="ops"></div>
+          <div class="label">Sandcastle Prime</div>
+          <div class="stage-tag">stage III · <b>habitable</b></div>
+        </div>
+
+        <div class="pl live" style="top:32%;left:30%">
+          <div class="body" style="width:64px;height:64px"></div>
+          <div class="ops" style="background:var(--plasma);box-shadow:0 0 12px var(--plasma),0 0 24px rgba(108,255,170,0.4)"></div>
+          <div class="label">Helix-IV</div>
+          <div class="stage-tag">stage IV · <b>life-bearing</b></div>
+        </div>
+
+        <div class="pl live" style="top:62%;left:74%">
+          <div class="body" style="width:54px;height:54px"></div>
+          <div class="ops" style="background:var(--magenta);box-shadow:0 0 12px var(--magenta),0 0 24px rgba(255,46,136,0.4)"></div>
+          <div class="label">Astral-Forge</div>
+          <div class="stage-tag">stage III · <b>warm</b></div>
+        </div>
+
+        <div class="pl warm" style="top:24%;left:78%">
+          <div class="body" style="width:50px;height:50px"></div>
+          <div class="label">Vercel-Bridge</div>
+          <div class="stage-tag">stage II · <b>warm</b></div>
+        </div>
+
+        <div class="pl clear" style="top:68%;left:28%">
+          <div class="body" style="width:46px;height:46px"></div>
+          <div class="label">Mira-Doc</div>
+          <div class="stage-tag">stage II · <b>atmosphere</b></div>
+        </div>
+
+        <div class="pl idle" style="top:80%;left:54%">
+          <div class="body" style="width:42px;height:42px"></div>
+          <div class="label">Old-Spec</div>
+          <div class="stage-tag">stage I · <b>dormant</b></div>
+        </div>
+
+        <div class="zoom">
+          <button title="Zoom in"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14M5 12h14"/></svg></button>
+          <button title="Zoom out"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14"/></svg></button>
+          <button title="Recenter"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3"/></svg></button>
+        </div>
+      </main>
+
+      <!-- activity feed strip -->
+      <aside class="feed-strip" title="Activity feed (collapsed) — click to expand">
+        <button class="feed-toggle"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 6h16M4 12h16M4 18h10"/></svg></button>
+        <span class="ev p"></span>
+        <span class="ev cy"></span>
+        <span class="ev m"></span>
+        <span class="ev p"></span>
+        <span class="ev am"></span>
+        <span class="ev cy"></span>
+        <span class="ev p"></span>
+        <span class="ev cr"></span>
+        <span class="lbl">FEED</span>
+      </aside>
+    </div>
+
+    <!-- ─── FLEET DOCK ─── -->
+    <div class="dock">
+
+      <!-- dock head -->
+      <div class="dock-head">
+        <div class="lbl">FLEET</div>
+        <div class="v">
+          3 <em>/ 5</em>
+          <small>π · BUDGET</small>
+        </div>
+      </div>
+
+      <!-- dock cells -->
+      <div class="dock-cells">
+
+        <!-- 1. casting on Sandcastle Prime -->
+        <button class="cell casting">
+          <div class="av-mini">
+            <span class="glyph">π</span>
+            <span class="eye-mini"></span>
+            <span class="lvl">L8</span>
+          </div>
+          <div class="cell-body">
+            <div class="cell-row1">
+              <span class="planet">Sandcastle Prime</span>
+              <span class="sep">·</span>
+              <span class="phase">phase III · serialize</span>
+            </div>
+            <div class="cell-row2">
+              <span class="ico">▸</span>
+              <span>RUN-042 · casting · T+12:04</span>
+            </div>
+            <div class="cell-progress"><i style="width:62%"></i></div>
+          </div>
+        </button>
+
+        <!-- 2. striking on Helix-IV -->
+        <button class="cell striking">
+          <div class="av-mini">
+            <span class="glyph">π</span>
+            <span class="eye-mini"></span>
+            <span class="lvl">L8</span>
+          </div>
+          <div class="cell-body">
+            <div class="cell-row1">
+              <span class="planet">Helix-IV</span>
+              <span class="sep">·</span>
+              <span class="phase">phase II · diagnose</span>
+            </div>
+            <div class="cell-row2">
+              <span class="ico">⚔</span>
+              <span>RUN-091 · striking · T+04:11</span>
+            </div>
+            <div class="cell-progress"><i style="width:38%"></i></div>
+          </div>
+        </button>
+
+        <!-- 3. boss fight on Astral-Forge — coordinating -->
+        <button class="cell boss coord">
+          <div class="av-mini">
+            <span class="glyph">π</span>
+            <span class="eye-mini"></span>
+            <span class="lvl">L8</span>
+          </div>
+          <div class="cell-body">
+            <div class="cell-row1">
+              <span class="planet">Astral-Forge</span>
+              <span class="sep">·</span>
+              <span class="phase">⚠ boss fight · TIER II</span>
+            </div>
+            <div class="cell-row2">
+              <span class="ico">∇</span>
+              <span>RUN-128 · coord w/ Helix-IV · T+02:30</span>
+            </div>
+            <div class="cell-progress"><i style="width:24%"></i></div>
+          </div>
+        </button>
+
+        <!-- 4. WIN PENDING on Mira-Doc with decision pop -->
+        <button class="cell win-pending">
+          <span class="warn-badge" style="background:var(--plasma);box-shadow:0 0 8px var(--plasma)"><span>✓</span></span>
+          <div class="av-mini">
+            <span class="glyph">π</span>
+            <span class="lvl">L8</span>
+          </div>
+          <div class="cell-body">
+            <div class="cell-row1">
+              <span class="planet">Mira-Doc</span>
+              <span class="sep">·</span>
+              <span class="phase">VICTORY · awaiting merge</span>
+            </div>
+            <div class="cell-row2">
+              <span class="ico">+ 175</span>
+              <span>XP · 5/5 phases · ~ 9 m</span>
+            </div>
+            <div class="cell-progress"><i></i></div>
+          </div>
+
+          <!-- mini decision card popping above -->
+          <div class="decision-pop">
+            <div class="head">
+              <span>▸ READY TO MERGE</span>
+              <span class="xp">+ 175 XP</span>
+            </div>
+            <div class="verify">
+              <span><span class="ok">✓</span> tests 8/0</span>
+              <span><span class="ok">✓</span> typecheck</span>
+              <span><span class="ok">✓</span> API guard</span>
+              <span><span class="warn">▲</span> 1 lint</span>
+            </div>
+            <div class="acts">
+              <button class="a merge">MERGE</button>
+              <button class="a revise">REVISE</button>
+            </div>
+          </div>
+        </button>
+
+        <!-- 5. fail-pending on Vercel-Bridge -->
+        <button class="cell fail-pending">
+          <span class="warn-badge" style="background:var(--crimson)"><span>!</span></span>
+          <div class="av-mini">
+            <span class="glyph">π</span>
+            <span class="lvl">L8</span>
+          </div>
+          <div class="cell-body">
+            <div class="cell-row1">
+              <span class="planet">Vercel-Bridge</span>
+              <span class="sep">·</span>
+              <span class="phase">DEFEAT · API guard violated</span>
+            </div>
+            <div class="cell-row2">
+              <span class="ico">−40</span>
+              <span>XP · 2/5 phases · worktree kept</span>
+            </div>
+            <div class="cell-progress"><i></i></div>
+          </div>
+        </button>
+
+      </div>
+
+      <!-- dock right: bulk -->
+      <div class="dock-right">
+        <button class="bulk-btn merge-all gated" title="Gated until all pending runs are green-verified">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12l5 5L20 7"/></svg>
+          Merge all green
+          <span class="kc">⌘ ⇧ M</span>
+        </button>
+        <button class="bulk-btn recall">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M3 12a9 9 0 1 0 9-9"/><path d="M3 4v5h5"/></svg>
+          Recall
+        </button>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ─── DEPLOY CHORD OVERLAY ─── -->
+  <div class="chord-bg" id="chord" style="display:none" onclick="if(event.target===this)this.style.display='none'">
+    <div class="chord">
+
+      <div class="chord-head">
+        <span class="lbl">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 4l14 8-14 8V4z"/></svg>
+          DEPLOY · CHORD
+        </span>
+        <span class="esc"><span class="k">esc</span> to dismiss</span>
+      </div>
+
+      <!-- chord inputs -->
+      <div class="chord-row">
+        <span class="verb">DEPLOY</span>
+        <span class="chord-field">
+          <span class="chip">π</span>
+          PI · KAGE
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="m6 9 6 6 6-6"/></svg>
+        </span>
+        <span class="conn">to</span>
+        <span class="chord-field targets">
+          <span class="chip">3</span>
+          Sandcastle, Helix, Forge
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="m6 9 6 6 6-6"/></svg>
+        </span>
+        <span class="conn">·</span>
+        <span style="font-family:var(--mono);font-size:11px;color:var(--steel);letter-spacing:0.05em">multi-target</span>
+      </div>
+
+      <!-- directive -->
+      <div class="chord-directive">
+        <span class="k">DIRECTIVE</span>
+        <input type="text" placeholder="triage open issues marked needs-agent and propose work for the highest priority…" value="triage open issues marked needs-agent and propose work for the highest priority" />
+        <button class="send" onclick="document.getElementById('chord').style.display='none'">
+          DEPLOY
+          <span class="kc">⌘ ↵</span>
+        </button>
+      </div>
+
+      <!-- preview strip — three planet cards showing what will land -->
+      <div class="chord-preview">
+        <div class="head">
+          <span class="hex">0x01</span>
+          <span>PREVIEW · 3 PLANETS · 3 PARALLEL RUNS</span>
+          <span class="line"></span>
+          <span style="color:var(--plasma);text-shadow:0 0 4px rgba(108,255,170,0.4)">est. ~ 10–14 m total</span>
+        </div>
+        <div class="grid">
+          <div class="preview-card">
+            <div class="pc-head">
+              <span class="mini-pl"></span>
+              <span>Sandcastle Prime</span>
+            </div>
+            <div class="meta">
+              mode <em>Surgical</em> · <b>3 cards</b> available · branch <b>auto/triage</b><br/>
+              cost ~ <em>3.2k ctx</em> · <b>Pi · Kage</b> · cl. II
+            </div>
+          </div>
+          <div class="preview-card">
+            <div class="pc-head">
+              <span class="mini-pl"></span>
+              <span>Helix-IV</span>
+            </div>
+            <div class="meta">
+              mode <em>Architect</em> · <b>5 cards</b> available · branch <b>auto/triage</b><br/>
+              cost ~ <em>4.1k ctx</em> · <b>Pi · Kage</b> · cl. II
+            </div>
+          </div>
+          <div class="preview-card overlap">
+            <div class="pc-head">
+              <span class="mini-pl warm"></span>
+              <span>Astral-Forge</span>
+            </div>
+            <div class="meta">
+              touches <em>src/auth</em> · already in run on Helix-IV<br/>
+              cost ~ <em>3.8k ctx</em> · <b>Pi · Kage</b> · cl. II
+            </div>
+            <div class="resolve">
+              <button class="r is-on">COORDINATE</button>
+              <button class="r">PARALLEL</button>
+              <button class="r">WAIT</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="chord-foot">
+        <span><span class="k">tab</span> next field</span>
+        <span class="sep">·</span>
+        <span><span class="k">,</span> add target</span>
+        <span class="sep">·</span>
+        <span><span class="k">⌘ ↵</span> deploy all</span>
+        <span class="sep">·</span>
+        <span><span class="k">⌘ ⇧ ↵</span> deploy &amp; open cockpit</span>
+        <span class="sep">·</span>
+        <span style="margin-left:auto;color:var(--magenta);text-shadow:0 0 4px rgba(255,46,136,0.4)">▸ Pi · Kage at 3/5 focus budget</span>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // open/close chord with ⌘D / Ctrl+D and Escape
+    document.addEventListener('keydown', (e) => {
+      if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'd') {
+        e.preventDefault();
+        document.getElementById('chord').style.display = 'flex';
+      }
+      if (e.key === 'Escape') document.getElementById('chord').style.display = 'none';
+    });
+  </script>
+</body>
+</html>

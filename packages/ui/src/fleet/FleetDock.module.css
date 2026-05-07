@@ -1,0 +1,426 @@
+.decisionStack {
+  position: fixed;
+  z-index: 61;
+  right: 16px;
+  bottom: 100px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  max-width: min(420px, calc(100vw - 32px));
+  pointer-events: auto;
+}
+
+.root {
+  position: fixed;
+  z-index: 60;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  display: grid;
+  grid-template-columns: 154px minmax(0, 1fr) auto;
+  gap: 12px;
+  align-items: center;
+  height: 88px;
+  border-top: 1px solid var(--sc-cyan-dim);
+  background: linear-gradient(
+    180deg,
+    rgba(10, 16, 24, 0.96),
+    rgba(3, 6, 10, 0.99)
+  );
+  padding: 10px 14px;
+  box-shadow: 0 -16px 42px rgba(0, 0, 0, 0.62);
+}
+
+.head {
+  display: grid;
+  gap: 2px;
+  height: 100%;
+  border-right: 1px solid var(--sc-rule-2);
+  background: transparent;
+  color: var(--sc-mist);
+  text-align: left;
+  padding: 0 8px 0 4px;
+  cursor: pointer;
+}
+
+.head span,
+.head small {
+  color: var(--sc-steel);
+  text-transform: uppercase;
+  letter-spacing: 0.2em;
+  font-size: 10px;
+}
+
+.head strong {
+  color: var(--sc-cyan);
+  font-family: var(--sc-display);
+  font-size: 22px;
+}
+
+.head em {
+  color: var(--sc-magenta);
+  font-style: normal;
+}
+
+.cells {
+  display: flex;
+  gap: 8px;
+  min-width: 0;
+  overflow-x: auto;
+  padding: 4px 2px;
+}
+
+.empty,
+.cell {
+  display: grid;
+  grid-template-columns: 46px minmax(0, 1fr);
+  gap: 10px;
+  align-items: center;
+  min-width: 250px;
+  border: 1px solid var(--sc-rule-2);
+  background: var(--sc-hull-2);
+  padding: 8px 11px;
+  color: inherit;
+  text-decoration: none;
+  clip-path: var(--sc-clip-sm);
+  cursor: pointer;
+  transition: transform var(--sc-motion-fast) var(--sc-motion-ease);
+}
+
+.cell:hover,
+.cell:focus-visible {
+  transform: translateY(-1px);
+  box-shadow: 0 0 18px rgba(86, 212, 224, 0.2);
+}
+
+.cell.current {
+  outline: 1px dashed var(--sc-cyan);
+  outline-offset: 3px;
+}
+
+.avatar {
+  position: relative;
+  display: grid;
+  width: 46px;
+  height: 46px;
+  place-items: center;
+  border: 1px solid currentColor;
+  background: linear-gradient(135deg, #1a0a14, #061218);
+  color: var(--sc-cyan);
+  font-family: var(--sc-display);
+  font-size: 19px;
+  font-weight: 800;
+  clip-path: var(--sc-clip-avatar);
+}
+
+/* Mini eye dot — sourced from fleet.html .av-mini .eye-mini. */
+.eye {
+  position: absolute;
+  top: 9px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 4px;
+  height: 4px;
+  border-radius: 50%;
+  background: var(--sc-magenta);
+  box-shadow: 0 0 4px var(--sc-magenta);
+  pointer-events: none;
+}
+@media (prefers-reduced-motion: no-preference) {
+  .eye {
+    animation: eye-mini 2.6s ease-in-out infinite;
+  }
+}
+@keyframes eye-mini {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.5;
+  }
+}
+
+/* Non-color glyph rendered inside the avatar corner to convey the
+ * micro-state without relying on color or animation. Sits outside any
+ * `prefers-reduced-motion` block so users with motion disabled still
+ * see it. Uses `currentColor` so it inherits the cell border / state
+ * color and stays distinguishable in grayscale.
+ */
+.stateGlyph {
+  position: absolute;
+  right: 2px;
+  bottom: 1px;
+  min-width: 12px;
+  height: 12px;
+  padding: 0 2px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-family: var(--sc-mono);
+  font-size: 10px;
+  font-weight: 700;
+  line-height: 1;
+  color: currentColor;
+  background: rgba(3, 6, 10, 0.85);
+  border: 1px solid currentColor;
+  border-radius: 2px;
+  pointer-events: none;
+}
+
+/* Visually-hidden live region. Used to politely announce micro-state
+ * transitions ("casting", "critical strike", …) without visually
+ * flooding the cell. */
+.srOnly {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+.cell.victory .avatar,
+.cell.win-pending .avatar {
+  color: var(--sc-plasma);
+}
+.cell.defeat .avatar,
+.cell.aborted .avatar,
+.cell.fail-pending .avatar {
+  color: var(--sc-crimson);
+}
+.cell.verifying .avatar {
+  color: var(--sc-amber);
+}
+
+.body {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+}
+
+.title {
+  display: block;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-weight: 600;
+  color: var(--sc-frost);
+}
+
+.meta {
+  display: block;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: var(--sc-steel);
+  font-size: 11px;
+}
+
+.actions {
+  display: flex;
+  gap: 8px;
+  border-left: 1px solid var(--sc-rule-2);
+  padding-left: 12px;
+}
+
+.button {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 36px;
+  border: 1px solid var(--sc-rule-3);
+  background: var(--sc-hull-2);
+  color: var(--sc-frost);
+  padding: 8px 13px;
+  cursor: pointer;
+  clip-path: polygon(
+    7px 0,
+    100% 0,
+    100% calc(100% - 7px),
+    calc(100% - 7px) 100%,
+    0 100%,
+    0 7px
+  );
+  transition:
+    background var(--sc-motion-fast) var(--sc-motion-ease),
+    color var(--sc-motion-fast) var(--sc-motion-ease);
+}
+
+.button[disabled] {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.button-deploy {
+  border-color: var(--sc-magenta);
+  background: linear-gradient(180deg, #ff6bdd, var(--sc-magenta));
+  color: var(--sc-void);
+  font-weight: 800;
+}
+
+.button-merge {
+  opacity: 0.55;
+  border-color: var(--sc-plasma);
+  color: var(--sc-plasma);
+  background: var(--sc-plasma-ink);
+}
+.button-merge:not([disabled]) {
+  opacity: 1;
+}
+
+.button-merge-flash-ok {
+  background: var(--sc-plasma-ink);
+  box-shadow: 0 0 16px rgba(108, 255, 170, 0.55);
+  animation: merge-flash-ok 1.4s ease-in-out;
+}
+
+.button-merge-flash-mixed {
+  border-color: var(--sc-amber, #f7b955);
+  color: var(--sc-amber, #f7b955);
+  background: rgba(247, 185, 85, 0.08);
+  animation: merge-flash-mixed 1.4s ease-in-out;
+}
+
+@keyframes merge-flash-ok {
+  0% {
+    box-shadow: 0 0 24px rgba(108, 255, 170, 0.85);
+  }
+  100% {
+    box-shadow: 0 0 16px rgba(108, 255, 170, 0.55);
+  }
+}
+
+@keyframes merge-flash-mixed {
+  0% {
+    box-shadow: 0 0 24px rgba(247, 185, 85, 0.65);
+  }
+  100% {
+    box-shadow: 0 0 12px rgba(247, 185, 85, 0.45);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .button-merge-flash-ok,
+  .button-merge-flash-mixed {
+    animation: none;
+  }
+}
+
+@media (max-width: 1080px) {
+  .root {
+    grid-template-columns: 110px minmax(0, 1fr);
+  }
+  .actions {
+    display: none;
+  }
+}
+
+/* ── reactive micro-states for dock cells ── */
+/* Mirrors fleet.html .cell.casting / .cell.striking colour stops. */
+.cell[data-state="casting"] {
+  border-color: var(--sc-cyan);
+  background: var(--sc-cyan-ink, rgba(86, 212, 224, 0.06));
+  box-shadow: 0 0 16px rgba(86, 212, 224, 0.2);
+}
+.cell[data-state="casting"] .avatar {
+  color: var(--sc-cyan);
+}
+.cell[data-state="striking"] {
+  border-color: var(--sc-cyan);
+  box-shadow: 0 0 18px rgba(86, 212, 224, 0.3);
+}
+.cell[data-state="striking"] .avatar {
+  color: var(--sc-cyan);
+}
+.cell[data-state="crit"] {
+  border-color: var(--sc-plasma);
+  box-shadow: 0 0 22px rgba(108, 255, 170, 0.35);
+}
+.cell[data-state="crit"] .avatar {
+  color: var(--sc-plasma);
+}
+.cell[data-state="hit"] {
+  border-color: var(--sc-crimson);
+  box-shadow: 0 0 20px rgba(255, 94, 108, 0.35);
+}
+.cell[data-state="hit"] .avatar {
+  color: var(--sc-crimson);
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  /* Eye flickers fast while text/tool events are streaming. */
+  .cell[data-state="casting"] .eye,
+  .cell[data-state="striking"] .eye {
+    animation: eye-cast 0.4s steps(2) infinite;
+  }
+  .cell[data-state="hit"] {
+    animation: cell-hit-shake 0.4s steps(4);
+  }
+  .cell[data-state="crit"] {
+    animation: cell-crit-flash 0.5s ease-out;
+  }
+}
+@keyframes eye-cast {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.3;
+  }
+}
+@keyframes cell-hit-shake {
+  0% {
+    transform: translateX(0);
+  }
+  25% {
+    transform: translateX(-2px);
+  }
+  50% {
+    transform: translateX(2px);
+  }
+  75% {
+    transform: translateX(-1px);
+  }
+  100% {
+    transform: translateX(0);
+  }
+}
+@keyframes cell-crit-flash {
+  0% {
+    box-shadow: 0 0 8px rgba(108, 255, 170, 0.2);
+  }
+  40% {
+    box-shadow: 0 0 32px rgba(108, 255, 170, 0.7);
+  }
+  100% {
+    box-shadow: 0 0 22px rgba(108, 255, 170, 0.35);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .cell,
+  .button {
+    transition: none;
+  }
+  .cell:hover,
+  .cell:focus-visible {
+    transform: none;
+  }
+  .eye {
+    animation: none;
+  }
+  .cell[data-state="casting"] .eye,
+  .cell[data-state="striking"] .eye {
+    animation: none;
+  }
+  .cell[data-state="hit"],
+  .cell[data-state="crit"] {
+    animation: none;
+  }
+}
