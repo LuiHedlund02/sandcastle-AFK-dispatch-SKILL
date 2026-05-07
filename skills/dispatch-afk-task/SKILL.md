@@ -28,21 +28,29 @@ Use internal Codex sub-agents for bounded planning and review only. Do not treat
 
 ## Dispatch
 
-1. Initialize Sandcastle when `.sandcastle/` is missing:
+Prefer the one-command AFK path for normal dispatch:
+
+```bash
+sandcastle afk --prompt-file .sandcastle/prompt.md --name <task-slug> --branch codex/<task-slug>
+```
+
+Use `--prompt "..."` for a short inline task, `--max-iterations <N>` for longer plans, `--worktree-root <path>` on Windows, and `--no-run` when you only want to prepare config without starting.
+
+If you need to customize the generated runner first, initialize Sandcastle manually:
 
 ```bash
 sandcastle init --agent pi-codex --model openai-codex/gpt-5.5 --sandbox-provider docker --backlog-manager beads --template blank --no-build-image
 ```
 
-2. Build the sandbox image:
+Then build the sandbox image:
 
 ```bash
 sandcastle docker build-image
 ```
 
-3. Inspect `.sandcastle/main.ts` or `.sandcastle/main.mts` and the prompt files.
-4. Put the task in the relevant `.sandcastle/*.md` prompt or pass a focused inline prompt through the existing script. Include branch/slice names when running multiple branches.
-5. Start the run with the repo's configured script, usually:
+Inspect `.sandcastle/main.ts` or `.sandcastle/main.mts` and the prompt files.
+Put the task in the relevant `.sandcastle/*.md` prompt or pass a focused inline prompt through the existing script. Include branch/slice names when running multiple branches.
+Start the run with the repo's configured script, usually:
 
 ```bash
 npm run sandcastle

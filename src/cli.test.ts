@@ -34,8 +34,8 @@ describe("sandcastle CLI", () => {
     const { stdout } = await runCli("--help", process.cwd());
     expect(stdout).toContain("sandcastle");
     expect(stdout).toContain("docker");
+    expect(stdout).toContain("afk");
     expect(stdout).toContain("init");
-    expect(stdout).not.toContain("run");
     expect(stdout).not.toContain("interactive");
     // build-image and remove-image are namespaced under docker, not top-level
     expect(stdout).toContain("docker build-image");
@@ -71,6 +71,38 @@ describe("sandcastle CLI", () => {
   it("init --help shows --template flag", async () => {
     const { stdout } = await runCli("init --help", process.cwd());
     expect(stdout).toContain("--template");
+  });
+
+  it("afk --help exposes the one-command AFK workflow flags", async () => {
+    const { stdout } = await runCli("afk --help", process.cwd());
+    expect(stdout).toContain("--prompt");
+    expect(stdout).toContain("--prompt-file");
+    expect(stdout).toContain("--branch");
+    expect(stdout).toContain("--max-iterations");
+    expect(stdout).toContain("--worktree-root");
+    expect(stdout).toContain("--no-run");
+  });
+
+  it("afk can prepare a Pi/Codex config non-interactively without running", async () => {
+    const hostDir = await mkdtemp(join(tmpdir(), "cli-host-"));
+    await initRepo(hostDir);
+
+    await runCli(
+      'afk --prompt "Implement the tracer bullet" --name tracer-bullet --no-build-image --no-run',
+      hostDir,
+    );
+
+    const main = await readFile(
+      join(hostDir, ".sandcastle", "main.mts"),
+      "utf-8",
+    );
+    const prompt = await readFile(
+      join(hostDir, ".sandcastle", "prompt.md"),
+      "utf-8",
+    );
+    expect(main).toContain('pi("openai-codex/gpt-5.5")');
+    expect(main).toContain('branch: "codex/sandcastle-afk-task"');
+    expect(prompt).toBe("Implement the tracer bullet");
   });
 
   it("init --help exposes --agent flag", async () => {

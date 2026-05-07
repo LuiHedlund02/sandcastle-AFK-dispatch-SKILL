@@ -4,10 +4,16 @@ import { Effect } from "effect";
 import * as clack from "@clack/prompts";
 import { execSync } from "node:child_process";
 import { createRequire } from "node:module";
+import { existsSync } from "node:fs";
+import { writeFile } from "node:fs/promises";
 import { join } from "node:path";
 import { styleText } from "node:util";
 
 import { Display } from "./Display.js";
+import { run as runSandcastle } from "./run.js";
+import { pi } from "./AgentProvider.js";
+import { docker } from "./sandboxes/docker.js";
+import { podman } from "./sandboxes/podman.js";
 import { buildImage, removeImage } from "./DockerLifecycle.js";
 import {
   buildImage as podmanBuildImage,
@@ -114,6 +120,14 @@ const buildImageNowOption = Options.boolean("build-image", {
   negationNames: ["no-build-image"],
 }).pipe(
   Options.withDescription("Build the sandbox image during init"),
+  Options.optional,
+);
+
+const runNowOption = Options.boolean("run", {
+  ifPresent: true,
+  negationNames: ["no-run"],
+}).pipe(
+  Options.withDescription("Start the AFK run after setup"),
   Options.optional,
 );
 
@@ -381,6 +395,237 @@ const initCommand = Command.make(
     }),
 );
 
+// --- AFK command ---
+
+const afkPromptOption = Options.text("prompt").pipe(
+  Options.withDescription(
+    "Inline prompt to write to .sandcastle/prompt.md before running",
+  ),
+  Options.optional,
+);
+
+const afkPromptFileOption = Options.file("prompt-file").pipe(
+  Options.withDescription(
+    "Prompt file to run. Defaults to .sandcastle/prompt.md",
+  ),
+  Options.optional,
+);
+
+const afkBranchOption = Options.text("branch").pipe(
+  Options.withDescription(
+    "Review branch for the AFK run. Defaults to codex/<name-or-afk-task>",
+  ),
+  Options.optional,
+);
+
+const afkNameOption = Options.text("name").pipe(
+  Options.withDescription("Run name used for logs and default branch slug"),
+  Options.optional,
+);
+
+const afkMaxIterationsOption = Options.text("max-iterations").pipe(
+  Options.withDescription("Maximum agent iterations. Default: 8"),
+  Options.optional,
+);
+
+const afkWorktreeRootOption = Options.text("worktree-root").pipe(
+  Options.withDescription(
+    "Optional host directory for Sandcastle worktrees, useful for short Windows paths",
+  ),
+  Options.optional,
+);
+
+const slugify = (value: string): string => {
+  const slug = value
+    .trim()
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "");
+  return slug || "afk-task";
+};
+
+const parseMaxIterations = (value: string | undefined): number => {
+  if (value === undefined) return 8;
+  const parsed = Number.parseInt(value, 10);
+  if (!Number.isFinite(parsed) || parsed < 1) {
+    throw new InitError({
+      message: `--max-iterations must be a positive integer, got "${value}"`,
+    });
+  }
+  return parsed;
+};
+
+const piAuthMount = [
+  { hostPath: "~/.pi/agent", sandboxPath: "/home/agent/.pi/agent" },
+] as const;
+
+const afkCommand = Command.make(
+  "afk",
+  {
+    prompt: afkPromptOption,
+    promptFile: afkPromptFileOption,
+    branch: afkBranchOption,
+    name: afkNameOption,
+    model: initModelOption,
+    maxIterations: afkMaxIterationsOption,
+    sandboxProvider: sandboxProviderOption,
+    imageName: imageNameOption,
+    buildImageNow: buildImageNowOption,
+    runNow: runNowOption,
+    worktreeRoot: afkWorktreeRootOption,
+  },
+  ({
+    prompt,
+    promptFile,
+    branch,
+    name,
+    model,
+    maxIterations,
+    sandboxProvider: sandboxProviderFlag,
+    imageName: imageNameFlag,
+    buildImageNow,
+    runNow,
+    worktreeRoot,
+  }) =>
+    Effect.gen(function* () {
+      const d = yield* Display;
+      const cwd = process.cwd();
+      const selectedAgent = getAgent("pi-codex")!;
+      const selectedBacklogManager = getBacklogManager("beads")!;
+      const selectedSandboxProvider =
+        sandboxProviderFlag._tag === "Some"
+          ? getSandboxProvider(sandboxProviderFlag.value)
+          : getSandboxProvider("docker");
+
+      if (!selectedSandboxProvider) {
+        const names = listSandboxProviders()
+          .map((p) => p.name)
+          .join(", ");
+        yield* Effect.fail(
+          new InitError({
+            message: `Unknown sandbox provider "${sandboxProviderFlag._tag === "Some" ? sandboxProviderFlag.value : ""}". Available: ${names}`,
+          }),
+        );
+      }
+
+      const selectedModel =
+        model._tag === "Some" ? model.value : selectedAgent.defaultModel;
+      const selectedName = name._tag === "Some" ? name.value : "afk-task";
+      const selectedBranch =
+        branch._tag === "Some"
+          ? branch.value
+          : `codex/${slugify(selectedName)}`;
+      const selectedMaxIterations = parseMaxIterations(
+        maxIterations._tag === "Some" ? maxIterations.value : undefined,
+      );
+      const imageName = resolveImageName(imageNameFlag, cwd);
+      const hasConfig = existsSync(join(cwd, CONFIG_DIR));
+      if (!hasConfig) {
+        yield* d.spinner(
+          "Scaffolding Pi/Codex AFK config...",
+          scaffold(cwd, {
+            agent: selectedAgent,
+            model: selectedModel,
+            templateName: "blank",
+            createLabel: false,
+            backlogManager: selectedBacklogManager,
+            sandboxProvider: selectedSandboxProvider!,
+          }).pipe(
+            Effect.mapError(
+              (e) =>
+                new InitError({
+                  message: `${e instanceof Error ? e.message : e}`,
+                }),
+            ),
+          ),
+        );
+      }
+
+      const promptPath =
+        promptFile._tag === "Some"
+          ? promptFile.value
+          : join(cwd, CONFIG_DIR, "prompt.md");
+
+      if (prompt._tag === "Some") {
+        yield* Effect.tryPromise({
+          try: () => writeFile(promptPath, prompt.value),
+          catch: (e) =>
+            new InitError({
+              message: `Failed to write prompt file ${promptPath}: ${e instanceof Error ? e.message : String(e)}`,
+            }),
+        });
+      }
+
+      if (!existsSync(promptPath)) {
+        yield* Effect.fail(
+          new InitError({
+            message: `Prompt file not found: ${promptPath}. Pass --prompt or --prompt-file.`,
+          }),
+        );
+      }
+
+      const shouldBuild =
+        buildImageNow._tag === "Some" ? buildImageNow.value : true;
+      if (shouldBuild) {
+        const containerfileDir = join(cwd, CONFIG_DIR);
+        if (selectedSandboxProvider!.name === "podman") {
+          yield* d.spinner(
+            `Building Podman image '${imageName}'...`,
+            podmanBuildImage(imageName, containerfileDir),
+          );
+        } else {
+          yield* d.spinner(
+            `Building Docker image '${imageName}'...`,
+            buildImage(imageName, containerfileDir),
+          );
+        }
+      }
+
+      const shouldRun = runNow._tag === "Some" ? runNow.value : true;
+      if (!shouldRun) {
+        yield* d.status("AFK config prepared.", "success");
+        yield* d.text(
+          styleText(
+            "dim",
+            `Run when ready: sandcastle afk --prompt-file ${promptPath} --branch ${selectedBranch} --no-build-image`,
+          ),
+        );
+        return;
+      }
+
+      const sandbox =
+        selectedSandboxProvider!.name === "podman"
+          ? podman({ imageName, mounts: piAuthMount })
+          : docker({ imageName, mounts: piAuthMount });
+
+      const result = yield* Effect.tryPromise({
+        try: () =>
+          runSandcastle({
+            agent: pi(selectedModel),
+            sandbox,
+            promptFile: promptPath,
+            name: selectedName,
+            maxIterations: selectedMaxIterations,
+            branchStrategy: { type: "branch", branch: selectedBranch },
+            worktreeRoot:
+              worktreeRoot._tag === "Some" ? worktreeRoot.value : undefined,
+          }),
+        catch: (e) =>
+          new InitError({
+            message: e instanceof Error ? e.message : String(e),
+          }),
+      });
+
+      yield* d.status(
+        `AFK run finished on ${result.branch} with ${result.commits.length} commit(s).`,
+        "success",
+      );
+      if (result.logFilePath) {
+        yield* d.text(styleText("dim", `Log: ${result.logFilePath}`));
+      }
+    }),
+);
+
 // --- Build-image command ---
 
 const dockerfileOption = Options.file("dockerfile").pipe(
@@ -536,7 +781,12 @@ const rootCommand = Command.make("sandcastle", {}, () =>
 );
 
 export const sandcastle = rootCommand.pipe(
-  Command.withSubcommands([initCommand, dockerCommand, podmanCommand]),
+  Command.withSubcommands([
+    initCommand,
+    afkCommand,
+    dockerCommand,
+    podmanCommand,
+  ]),
 );
 
 export const cli = Command.run(sandcastle, {

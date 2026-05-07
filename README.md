@@ -67,31 +67,34 @@ On Windows, avoid deep OneDrive-backed paths for large AFK work. Prefer a short 
 
 ## Quick Start
 
-Initialize Sandcastle in the repo you want Codex to work on:
+For the Pi/Codex AFK workflow, use the one-command path:
 
 ```bash
-npx sandcastle init --agent pi-codex --model openai-codex/gpt-5.5 --sandbox-provider docker
+npx sandcastle afk --prompt-file .sandcastle/prompt.md --name my-afk-task
 ```
 
-Build the sandbox image:
+Or pass a short inline prompt:
 
 ```bash
-npx sandcastle docker build-image
+npx sandcastle afk --prompt "Implement the first tracer bullet and run the targeted tests" --name first-tracer-bullet
 ```
 
-Edit the generated prompt:
+`sandcastle afk` will:
 
-```text
-.sandcastle/prompt.md
-```
+- scaffold `.sandcastle/` when missing
+- default to `pi-codex` and `openai-codex/gpt-5.5`
+- mount `~/.pi/agent` into the sandbox for Pi subscription auth
+- build the Docker/Podman image unless `--no-build-image` is passed
+- run on a named review branch like `codex/my-afk-task`
+- write logs under `.sandcastle/logs/`
 
-Run the generated script:
+Prepare without starting the run:
 
 ```bash
-npx tsx .sandcastle/main.mts
+npx sandcastle afk --prompt-file ./plan.md --name my-afk-task --no-run
 ```
 
-The generated config uses the Pi provider:
+The generated lower-level config still uses the Pi provider:
 
 ```ts
 import { run, pi } from "@ai-hero/sandcastle";
@@ -100,6 +103,7 @@ import { docker } from "@ai-hero/sandcastle/sandboxes/docker";
 await run({
   agent: pi("openai-codex/gpt-5.5"),
   sandbox: docker(),
+  branchStrategy: { type: "branch", branch: "codex/sandcastle-afk-task" },
   promptFile: ".sandcastle/prompt.md",
   maxIterations: 5,
 });
