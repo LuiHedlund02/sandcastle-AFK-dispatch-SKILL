@@ -22,6 +22,8 @@ export const formatErrorMessage = (error: SandboxError): string => {
       return `Git sync failed: ${error.message}`;
     case "WorktreeError":
       return `Git worktree operation failed: ${error.message}`;
+    case "SandboxDirtyError":
+      return error.message;
     case "PromptError":
       return `Failed to resolve prompt: ${error.message}`;
     case "AgentError":
@@ -71,6 +73,7 @@ export const withFriendlyErrors = <A, E, R>(
     PodmanError: showErrorAndExit,
     SyncError: showErrorAndExit,
     WorktreeError: showErrorAndExit,
+    SandboxDirtyError: showErrorAndExit,
     PromptError: showErrorAndExit,
     AgentError: showErrorAndExit,
     ConfigDirError: showErrorAndExit,

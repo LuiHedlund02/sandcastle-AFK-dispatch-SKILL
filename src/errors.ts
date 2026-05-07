@@ -37,6 +37,14 @@ export class WorktreeError extends Data.TaggedError("WorktreeError")<{
   readonly message: string;
 }> {}
 
+/** Sandbox git status was dirty before the agent was allowed to start */
+export class SandboxDirtyError extends Data.TaggedError("SandboxDirtyError")<{
+  readonly message: string;
+  readonly dirtyCount: number;
+  readonly statusSample: string;
+  readonly diagnostics: string;
+}> {}
+
 /** Prompt resolution or preprocessing failed */
 export class PromptError extends Data.TaggedError("PromptError")<{
   readonly message: string;
@@ -191,6 +199,7 @@ export type SandboxError =
   | PodmanError
   | SyncError
   | WorktreeError
+  | SandboxDirtyError
   | PromptError
   | AgentError
   | ConfigDirError

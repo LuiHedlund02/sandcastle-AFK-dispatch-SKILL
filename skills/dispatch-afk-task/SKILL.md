@@ -15,6 +15,7 @@ Use internal Codex sub-agents for bounded planning and review only. Do not treat
 - Prefer `sandcastle init --agent pi-codex --model openai-codex/gpt-5.5` for subscription-backed Codex work.
 - Ensure the user has run `pi /login` on the host and selected the OpenAI/Codex provider.
 - Treat the generated `~/.pi/agent` mount as sensitive: it gives the sandbox access to Pi OAuth tokens.
+- Use a named review branch for AFK implementation work, typically `codex/<task-slug>`. Do not dispatch long AFK implementation in direct head mode unless the user explicitly asks for it.
 - If `sandcastle` is not on PATH, use the local checkout at `C:\Users\miyam\dev\sandcastle tool` with `node "C:\Users\miyam\dev\sandcastle tool\dist\main.js"` after confirming it has been built.
 - On Windows, avoid deep OneDrive paths for large AFK work when possible. Prefer a short clone/workroot such as `C:\src\<repo>` or `C:\work\<repo>` to reduce long-path and cleanup failures.
 
@@ -66,6 +67,7 @@ npx tsx .sandcastle/main.mts
 - For long single-plan runs, expect multiple Sandcastle iterations; steer only with evidence from logs, commits, tests, or review diffs.
 - For sliced work, track each branch independently and record which branches are parallel-safe, blocked, or ready for sequential handoff.
 - If a run fails, inspect the log tail before retrying or changing prompts.
+- If Sandcastle reports `SandboxDirtyError`, treat it as a correct fail-closed preflight. Do not continue that run; fix the Windows/Docker line-ending or file-mode problem, move to WSL/Linux, or retry from a short clean workroot.
 
 ## Recover
 

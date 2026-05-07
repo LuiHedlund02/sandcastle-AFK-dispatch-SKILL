@@ -8,6 +8,7 @@ import {
   GitSetupTimeoutError,
   HookTimeoutError,
   MergeToHostTimeoutError,
+  SandboxDirtyError,
   SyncError,
   withTimeout,
   type SandboxError,
@@ -22,6 +23,7 @@ const GIT_SETUP_TIMEOUT_MS = 10_000;
 const HOOK_TIMEOUT_MS = 60_000;
 const COMMIT_COLLECTION_TIMEOUT_MS = 30_000;
 const MERGE_TO_HOST_TIMEOUT_MS = 30_000;
+const SANDBOX_CLEAN_CHECK_TIMEOUT_MS = 15_000;
 
 const execOk = (
   sandbox: SandboxService,
@@ -57,6 +59,93 @@ const execOkWithGitTimeout = (
   );
 
 const execAsync = promisify(exec);
+
+const countDirtyLines = (status: string): number =>
+  status.split(/\r?\n/).filter((line) => line.trim().length > 0).length;
+
+const collectCleanCheckDiagnostics = (
+  sandbox: SandboxService,
+  sandboxRepoDir: string,
+): Effect.Effect<string, ExecError | GitSetupTimeoutError> =>
+  Effect.gen(function* () {
+    const commands = [
+      ["git config core.autocrlf || true", "core.autocrlf"],
+      ["git config core.filemode || true", "core.filemode"],
+      ["git diff --summary --", "diff summary"],
+      ["git diff --ignore-space-at-eol --stat --", "ignore-space-at-eol stat"],
+    ] as const;
+
+    const sections: string[] = [];
+    for (const [command, label] of commands) {
+      const result = yield* sandbox.exec(command, { cwd: sandboxRepoDir }).pipe(
+        withTimeout(
+          SANDBOX_CLEAN_CHECK_TIMEOUT_MS,
+          () =>
+            new GitSetupTimeoutError({
+              message: `Sandbox clean-check diagnostic timed out after ${SANDBOX_CLEAN_CHECK_TIMEOUT_MS}ms: ${command}`,
+              timeoutMs: SANDBOX_CLEAN_CHECK_TIMEOUT_MS,
+              command,
+            }),
+        ),
+      );
+      const body = `${result.stdout}${result.stderr}`.trim();
+      if (body) {
+        sections.push(`${label}:\n${body}`);
+      }
+    }
+
+    return sections.join("\n\n");
+  });
+
+const assertSandboxCleanBeforeAgent = (
+  sandbox: SandboxService,
+  sandboxRepoDir: string,
+  options: { readonly canResetDisposableWorktree: boolean },
+): Effect.Effect<void, SandboxError> =>
+  Effect.gen(function* () {
+    const statusResult = yield* execOkWithGitTimeout(
+      sandbox,
+      "git -c core.quotepath=false status --porcelain=v1",
+      { cwd: sandboxRepoDir },
+    );
+    const status = statusResult.stdout.trim();
+    if (!status) return;
+
+    const dirtyCount = countDirtyLines(status);
+    const statusSample = status.split(/\r?\n/).slice(0, 40).join("\n");
+    const diagnostics = yield* collectCleanCheckDiagnostics(
+      sandbox,
+      sandboxRepoDir,
+    );
+
+    if (options.canResetDisposableWorktree) {
+      yield* execOkWithGitTimeout(
+        sandbox,
+        "git reset --hard HEAD && git clean -fd",
+        { cwd: sandboxRepoDir },
+      );
+    }
+
+    const cleanupNote = options.canResetDisposableWorktree
+      ? "The disposable Sandcastle worktree was reset before aborting so this pre-agent noise is not preserved as implementation work."
+      : "Sandcastle did not reset this tree because the run is using direct head mode.";
+
+    return yield* Effect.fail(
+      new SandboxDirtyError({
+        dirtyCount,
+        statusSample,
+        diagnostics,
+        message:
+          `Sandbox git tree is dirty before the agent starts (${dirtyCount} file${dirtyCount === 1 ? "" : "s"}).\n` +
+          "Sandcastle aborted before invoking the agent because the resulting branch would not be reviewable.\n\n" +
+          `First changed paths:\n${statusSample}\n\n` +
+          (diagnostics ? `Diagnostics:\n${diagnostics}\n\n` : "") +
+          `${cleanupNote}\n\n` +
+          "Common causes on Windows Docker runs are CRLF normalization, file-mode churn, or bind-mount metadata differences. " +
+          "Retry from a WSL/Linux-native clone, configure a short worktreeRoot, or fix the repo's git attributes before dispatching AFK work.",
+      }),
+    );
+  });
 
 export type SandboxHooks = {
   readonly host?: {
@@ -221,6 +310,11 @@ export const withSandboxLifecycle = <A>(
           "git rev-parse --abbrev-ref HEAD",
           { cwd: sandboxRepoDir },
         )).stdout.trim();
+
+        message("git status --porcelain");
+        yield* assertSandboxCleanBeforeAgent(sandbox, sandboxRepoDir, {
+          canResetDisposableWorktree: hostSideWorktreePath !== hostRepoDir,
+        });
 
         // Run sandbox.onSandboxReady and host.onSandboxReady in parallel
         const sandboxHooks = hooks?.sandbox?.onSandboxReady;

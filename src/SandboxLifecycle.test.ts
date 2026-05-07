@@ -8,7 +8,7 @@ import { describe, expect, it } from "vitest";
 import { type DisplayEntry, SilentDisplay } from "./Display.js";
 import { Sandbox, type SandboxService } from "./SandboxFactory.js";
 import { makeLocalSandboxLayer } from "./testSandbox.js";
-import { ExecError, SyncError } from "./errors.js";
+import { ExecError, SandboxDirtyError, SyncError } from "./errors.js";
 import { withSandboxLifecycle, runHostHooks } from "./SandboxLifecycle.js";
 
 /**
@@ -117,6 +117,39 @@ describe("withSandboxLifecycle (worktree mode)", () => {
           }),
       ).pipe(Effect.provide(Layer.merge(layer, testDisplayLayer))),
     );
+  });
+
+  it("aborts before work when sandbox git status is dirty and resets disposable worktree", async () => {
+    const { hostDir, worktreeDir, layer } = await setupWorktree();
+    await writeFile(join(worktreeDir, "file.txt"), "dirty before agent");
+
+    let workCalled = false;
+    const exit = await Effect.runPromiseExit(
+      withSandboxLifecycle(
+        {
+          hostRepoDir: hostDir,
+          sandboxRepoDir: worktreeDir,
+          hostWorktreePath: worktreeDir,
+        },
+        () => {
+          workCalled = true;
+          return Effect.void;
+        },
+      ).pipe(Effect.provide(Layer.merge(layer, testDisplayLayer))),
+    );
+
+    expect(workCalled).toBe(false);
+    expect(exit._tag).toBe("Failure");
+    if (exit._tag !== "Failure") throw new Error("unreachable");
+    expect(exit.cause._tag).toBe("Fail");
+    if (exit.cause._tag !== "Fail") throw new Error("unreachable");
+    expect(exit.cause.error).toBeInstanceOf(SandboxDirtyError);
+    expect((exit.cause.error as SandboxDirtyError).dirtyCount).toBe(1);
+
+    const status = await execAsync("git status --porcelain=v1", {
+      cwd: worktreeDir,
+    });
+    expect(status.stdout.trim()).toBe("");
   });
 
   it("commits in worktree are cherry-picked onto host's current branch", async () => {
@@ -899,8 +932,7 @@ describe("withSandboxLifecycle (worktree mode)", () => {
     const syncLog = entries.find(
       (e) =>
         e._tag === "taskLog" &&
-        (e.title === "No commits to sync out" ||
-          e.title.startsWith("Syncing")),
+        (e.title === "No commits to sync out" || e.title.startsWith("Syncing")),
     );
     expect(syncLog).toBeUndefined();
   });
@@ -1163,9 +1195,7 @@ describe("withSandboxLifecycle (worktree mode)", () => {
           branch: "sandcastle/test",
           hooks: {
             sandbox: {
-              onSandboxReady: [
-                { command: "slow-install", timeoutMs: 500 },
-              ],
+              onSandboxReady: [{ command: "slow-install", timeoutMs: 500 }],
             },
           },
         },
@@ -1187,9 +1217,7 @@ describe("withSandboxLifecycle (worktree mode)", () => {
           branch: "sandcastle/test",
           hooks: {
             host: {
-              onSandboxReady: [
-                { command: "sleep 2", timeoutMs: 500 },
-              ],
+              onSandboxReady: [{ command: "sleep 2", timeoutMs: 500 }],
             },
           },
         },
@@ -1305,10 +1333,7 @@ describe("runHostHooks", () => {
     // sleep 2 with a 500ms timeout should fail
     await expect(
       Effect.runPromise(
-        runHostHooks(
-          [{ command: "sleep 2", timeoutMs: 500 }],
-          dir,
-        ),
+        runHostHooks([{ command: "sleep 2", timeoutMs: 500 }], dir),
       ),
     ).rejects.toThrow(/timed out/);
   });

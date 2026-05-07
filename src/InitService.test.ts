@@ -339,6 +339,19 @@ describe("InitService scaffold", () => {
     expect(mainTs).toContain("run(");
   });
 
+  it("blank template uses a named review branch instead of direct head mode", async () => {
+    const dir = await makeDir();
+    await runScaffold(dir, { templateName: "blank" });
+
+    const mainTs = await readFile(
+      join(dir, ".sandcastle", "main.mts"),
+      "utf-8",
+    );
+    expect(mainTs).toContain(
+      'branchStrategy: { type: "branch", branch: "codex/sandcastle-afk-task" }',
+    );
+  });
+
   it("blank template produces identical output to default (no template arg)", async () => {
     const dir1 = await makeDir();
     const dir2 = await makeDir();

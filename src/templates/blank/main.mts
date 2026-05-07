@@ -8,5 +8,8 @@ import { docker } from "@ai-hero/sandcastle/sandboxes/docker";
 await run({
   agent: claudeCode("claude-opus-4-6"),
   sandbox: docker(),
+  // AFK runs should land on a review branch instead of writing directly to
+  // the current checkout. Rename this branch for each task.
+  branchStrategy: { type: "branch", branch: "codex/sandcastle-afk-task" },
   promptFile: "./.sandcastle/prompt.md",
 });
