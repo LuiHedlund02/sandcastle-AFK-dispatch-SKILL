@@ -1,1181 +1,380 @@
-<div align="center">
-  <picture>
-    <source media="(prefers-color-scheme: dark)" srcset="https://res.cloudinary.com/total-typescript/image/upload/v1775033787/readme-sandcastle-ondark_2x.png">
-    <source media="(prefers-color-scheme: light)" srcset="https://res.cloudinary.com/total-typescript/image/upload/v1775033787/readme-sandcastle-onlight_2x.png">
-    <img alt="Sandcastle" src="https://res.cloudinary.com/total-typescript/image/upload/v1775033787/readme-sandcastle-onlight_2x.png" height="200" style="margin-bottom: 20px;">
-  </picture>
-</div>
+# Sandcastle Codex Dispatch
 
-## What Is Sandcastle?
+Run long AI coding plans as durable, reviewable AFK work.
 
-A TypeScript library for orchestrating AI coding agents in isolated sandboxes:
+This fork of [mattpocock/sandcastle](https://github.com/mattpocock/sandcastle) is focused on one workflow: foreground Codex coordinates the work, Sandcastle creates the isolated branch/worktree/sandbox lifecycle, and Pi runs an OpenAI Codex subscription-backed coding agent inside that sandbox.
 
-1. You invoke agents with a single `sandcastle.run()`.
-2. Sandcastle handles sandboxing the agent with a configurable branch strategy.
-3. The commits made on the branches get merged back.
+The goal is not to replace Codex subagents. Use subagents for fast scouting, decomposition, critique, and review. Use Sandcastle when the implementation itself needs to keep going after you step away.
 
-Sandcastle is provider-agnostic — it ships with built-in providers for Docker, Podman, and Vercel, and you can create your own. Great for parallelizing multiple AFK agents, creating review pipelines, or even just orchestrating your own agents.
+## Why This Exists
+
+When you give an AI agent a long implementation plan, the common failure mode is that it handles the first few steps and stops. This project makes the long-running part explicit:
+
+- one AFK task gets one durable git branch, worktree, sandbox, log stream, and commit boundary
+- `maxIterations` keeps a cohesive plan moving through multiple agent turns
+- independent slices can still run on separate branches in parallel
+- resulting branches are reviewed and merged by foreground Codex or a human
+- Pi can use your local OpenAI Codex subscription login instead of an OpenAI API key
+
+## Mental Model
+
+```text
+you
+  -> foreground Codex
+      -> Sandcastle
+          -> git branch + worktree
+          -> Docker/Podman sandbox
+          -> Pi CLI
+          -> OpenAI Codex subscription model
+          -> logs + commits + reviewable diffs
+```
+
+Roles:
+
+- **Foreground Codex** plans, dispatches, monitors logs, asks subagents for bounded help, reviews diffs, and decides what to merge.
+- **Codex subagents** enrich the workflow with scoped scouting or review. They are useful, but they are not the durable implementation engine.
+- **Sandcastle AFK jobs** own long-running implementation on real branches.
+- **Pi** runs the subscription-backed coding agent.
+- **Git** is the review and integration boundary.
 
 ## Prerequisites
 
-- [Git](https://git-scm.com/)
-- A sandbox provider — Sandcastle needs an isolated environment to run agents in. Built-in options:
-  - [Docker Desktop](https://www.docker.com/) — most common for local development
-  - [Podman](https://podman.io/) — rootless alternative to Docker
-  - [Vercel](https://vercel.com/) — cloud-based Firecracker microVMs via `@vercel/sandbox`
-  - Or [create your own](#custom-sandbox-providers) using `createBindMountSandboxProvider` or `createIsolatedSandboxProvider`
-
-## Quick start
-
-1. Install the package:
-
-```bash
-npm install --save-dev @ai-hero/sandcastle
-```
-
-2. Run `sandcastle init`. This scaffolds a `.sandcastle` directory with all the files needed.
-
-```bash
-npx sandcastle init
-```
-
-3. Edit `.sandcastle/.env` and fill in the values from `.sandcastle/.env.example`. For Claude Code this usually means `ANTHROPIC_API_KEY`. If you want to use your Claude subscription instead of an API key, see [#191](https://github.com/mattpocock/sandcastle/issues/191). For Pi with an OpenAI Codex subscription, see [Pi with OpenAI Codex subscription](#pi-with-openai-codex-subscription).
-
-```bash
-cp .sandcastle/.env.example .sandcastle/.env
-```
-
-4. Run the `.sandcastle/main.ts` (or `main.mts`) file with `npx tsx`
-
-```bash
-npx tsx .sandcastle/main.ts
-```
-
-```typescript
-// 3. Run the agent via the JS API
-import { run, claudeCode } from "@ai-hero/sandcastle";
-import { docker } from "@ai-hero/sandcastle/sandboxes/docker";
-
-await run({
-  agent: claudeCode("claude-opus-4-6"),
-  sandbox: docker(), // or podman(), vercel(), or your own provider
-  promptFile: ".sandcastle/prompt.md",
-});
-```
-
-### Pi with OpenAI Codex subscription
-
-Sandcastle can scaffold a Pi-backed agent that uses your local Pi OAuth session instead of an OpenAI API key:
+- Git
+- Node.js and npm
+- Docker Desktop or Podman for local sandboxing
+- [Pi CLI](https://github.com/badlogic/pi-mono/tree/main/packages/coding-agent)
+- A host Pi login:
 
 ```bash
 pi /login
-npx sandcastle init --agent pi-codex --model openai-codex/gpt-5.5
 ```
 
-When you select Docker or Podman during init, the generated `main.ts`/`main.mts` mounts `~/.pi/agent` into `/home/agent/.pi/agent` so the sandboxed `pi` CLI can use the host subscription login. This is convenient for local AFK runs, but it also gives the sandbox access to your Pi OAuth tokens. Review the generated script before running it, and use this path only with local sandbox providers you trust.
+Select the OpenAI/Codex provider during login.
 
-## Sandbox Providers
+You can confirm model availability with:
 
-Sandcastle uses a `SandboxProvider` to create isolated environments. The `sandbox` option on `run()` and `createSandbox()` accepts any provider. A no-sandbox option is also available for `interactive()` and `wt.interactive()`. Built-in providers:
+```bash
+pi --list-models openai
+```
 
-| Provider   | Import path                                | Type       | Accepted by                                   |
-| ---------- | ------------------------------------------ | ---------- | --------------------------------------------- |
-| Docker     | `@ai-hero/sandcastle/sandboxes/docker`     | Bind-mount | `run()`, `createSandbox()`, `interactive()`   |
-| Podman     | `@ai-hero/sandcastle/sandboxes/podman`     | Bind-mount | `run()`, `createSandbox()`, `interactive()`   |
-| Vercel     | `@ai-hero/sandcastle/sandboxes/vercel`     | Isolated   | `run()`, `createSandbox()`, `interactive()`   |
-| No-sandbox | `@ai-hero/sandcastle/sandboxes/no-sandbox` | None       | `interactive()`, `wt.interactive()` (default) |
+This workflow defaults to:
 
-Worktree methods (`wt.run()`, `wt.interactive()`, `wt.createSandbox()`) accept the same providers as their top-level counterparts. `wt.interactive()` defaults to `noSandbox()` when no sandbox is specified.
+```text
+openai-codex/gpt-5.5
+```
 
-```typescript
+On Windows, avoid deep OneDrive-backed paths for large AFK work. Prefer a short repo path such as `C:\src\my-repo` or configure a short `worktreeRoot`.
+
+## Quick Start
+
+Initialize Sandcastle in the repo you want Codex to work on:
+
+```bash
+npx sandcastle init --agent pi-codex --model openai-codex/gpt-5.5 --sandbox-provider docker
+```
+
+Build the sandbox image:
+
+```bash
+npx sandcastle docker build-image
+```
+
+Edit the generated prompt:
+
+```text
+.sandcastle/prompt.md
+```
+
+Run the generated script:
+
+```bash
+npx tsx .sandcastle/main.mts
+```
+
+The generated config uses the Pi provider:
+
+```ts
+import { run, pi } from "@ai-hero/sandcastle";
 import { docker } from "@ai-hero/sandcastle/sandboxes/docker";
-import { podman } from "@ai-hero/sandcastle/sandboxes/podman";
-import { vercel } from "@ai-hero/sandcastle/sandboxes/vercel";
-import { noSandbox } from "@ai-hero/sandcastle/sandboxes/no-sandbox";
 
-// Docker, Podman, and Vercel are interchangeable in run() and createSandbox():
 await run({
-  agent: claudeCode("claude-opus-4-6"),
-  sandbox: docker(),
-  prompt: "...",
-});
-
-// No-sandbox runs the agent directly on the host — interactive() only:
-await interactive({
-  agent: claudeCode("claude-opus-4-6"),
-  sandbox: noSandbox(),
-  prompt: "...", // optional — omit to launch the TUI with no initial prompt
-  cwd: "/path/to/other-repo", // optional — defaults to process.cwd()
-});
-```
-
-You can also [create your own provider](#custom-sandbox-providers) using `createBindMountSandboxProvider` or `createIsolatedSandboxProvider`.
-
-## API
-
-Sandcastle exports a programmatic `run()` function for use in scripts, CI pipelines, or custom tooling. The examples below use `docker()`, but any `SandboxProvider` works in its place.
-
-```typescript
-import { run, claudeCode } from "@ai-hero/sandcastle";
-import { docker } from "@ai-hero/sandcastle/sandboxes/docker";
-
-const result = await run({
-  agent: claudeCode("claude-opus-4-6"),
+  agent: pi("openai-codex/gpt-5.5"),
   sandbox: docker(),
   promptFile: ".sandcastle/prompt.md",
+  maxIterations: 5,
 });
-
-console.log(result.iterations.length); // number of iterations executed
-console.log(result.iterations); // per-iteration results with optional sessionId
-console.log(result.commits); // array of { sha } for commits created
-console.log(result.branch); // target branch name
 ```
 
-### All options
+## Install The Codex Skill
 
-```typescript
-import { run, claudeCode } from "@ai-hero/sandcastle";
+This repo includes a Codex skill that teaches foreground Codex how to dispatch, monitor, recover, and review Sandcastle AFK work:
+
+```text
+skills/dispatch-afk-task/SKILL.md
+```
+
+Install it into Codex:
+
+```powershell
+New-Item -ItemType Directory -Force "$env:USERPROFILE\.codex\skills\dispatch-afk-task"
+Copy-Item ".\skills\dispatch-afk-task\SKILL.md" "$env:USERPROFILE\.codex\skills\dispatch-afk-task\SKILL.md" -Force
+```
+
+After installation, ask Codex to use `dispatch-afk-task` when a plan should be implemented AFK through Sandcastle.
+
+## AFK Dispatch Workflow
+
+1. Start from a clean git worktree.
+2. Write the implementation request as an outcome, constraints, validation commands, and merge expectations.
+3. Decide whether the work is one cohesive plan or multiple vertical slices.
+4. Dispatch AFK implementation through Sandcastle.
+5. Monitor `.sandcastle/logs`.
+6. Inspect generated branches and worktrees.
+7. Run validation commands.
+8. Review diffs before merging.
+
+Useful commands:
+
+```bash
+git status --short --branch
+git branch --list "codex/*"
+git worktree list
+git log --oneline --decorate --graph --all --max-count=20
+git diff main...codex/my-afk-task
+```
+
+## Vertical Slice Dispatch
+
+A good AFK plan separates work into vertical slices:
+
+```md
+# Plan AFK vertical slices
+
+Attachment rejection stays failed - AFK
+
+Behavior: an attachment API response like `{ success: false, error: "..." }`
+leaves the voucher in a retryable error state.
+Acceptance: API wrapper throws a formatted error; queue/store tests prove the
+voucher is not marked uploaded.
+Parallelization: parallel-ready; owns API wrapper and attachment tests.
+Validation: npm test -- --runTestsByPath **tests**/api/attachments.test.ts
+
+Voucher sync single-flight guard - AFK
+
+Behavior: concurrent startup/auto/manual sync calls result in one active upload loop.
+Acceptance: concurrent syncQueue() calls with one pending voucher upload once.
+Parallelization: parallel-ready if it owns only the store sync path.
+Validation: targeted store tests plus full test suite.
+
+Tenant-scoped persistence - HITL
+
+Behavior: queues hydrate and persist by account plus tenant.
+Blocked by: migration decision for legacy unstamped vouchers.
+```
+
+Use the labels deliberately:
+
+- **AFK** means Sandcastle can implement it on a branch.
+- **HITL** means Codex should stop and ask for a human decision before implementation.
+- **parallel-ready** means the slice can run beside other slices without sharing files or branch state.
+- **sequenced** means the slice should start from a previous branch after validation.
+
+The important distinction:
+
+- Use **iterations** when one long plan should keep going on the same branch until it is done.
+- Use **parallel branches** when independent slices can be implemented at the same time.
+- Use **subagents** to improve the plan or review the result, not as the durable AFK executor.
+
+## Example: One Long Plan
+
+Use one branch and multiple iterations when the task is cohesive:
+
+```ts
+import { run, pi } from "@ai-hero/sandcastle";
 import { docker } from "@ai-hero/sandcastle/sandboxes/docker";
 
-const result = await run({
-  // Agent provider — required. Pass a model string to claudeCode().
-  // Optional second arg for provider-specific options like effort level.
-  agent: claudeCode("claude-opus-4-6", { effort: "high" }),
-
-  // Sandbox provider — required. Any SandboxProvider works (docker, podman, vercel, or custom).
-  // Provider-specific config (like imageName, mounts) lives inside the provider factory call.
-  sandbox: docker({
-    imageName: "sandcastle:local",
-    // Optional: mount host directories into the sandbox (e.g. package manager caches)
-    // hostPath supports absolute, tilde-expanded (~), and relative paths (resolved from cwd).
-    // sandboxPath supports absolute and relative paths (resolved from the sandbox repo directory).
-    mounts: [
-      { hostPath: "~/.npm", sandboxPath: "/home/agent/.npm", readonly: true },
-      { hostPath: "data", sandboxPath: "data" }, // mounts <cwd>/data → <sandbox-repo>/data
-    ],
-    // Optional: provider-level env vars merged at launch time
-    env: { DOCKER_SPECIFIC: "value" },
-    // Optional: attach container to Docker network(s) — string or string[]
-    network: "my-network",
-  }),
-
-  // Host repo directory — replaces process.cwd() as the anchor for
-  // .sandcastle/ artifacts (worktrees, logs, env, patches) and git operations.
-  // Relative paths resolve against process.cwd(). Defaults to process.cwd().
-  cwd: "../other-repo",
-
-  // Branch strategy — controls how the agent's changes relate to branches.
-  // Defaults to { type: "head" } for bind-mount and { type: "merge-to-head" } for isolated providers.
-  branchStrategy: { type: "branch", branch: "agent/fix-42" },
-
-  // Prompt source — provide one of these, not both.
-  // Note: promptFile resolves against process.cwd(), NOT cwd.
-  promptFile: ".sandcastle/prompt.md", // path to a prompt file
-  // prompt: "Fix issue #42 in this repo", // OR an inline prompt string
-
-  // Values substituted for {{KEY}} placeholders in the prompt.
-  promptArgs: {
-    ISSUE_NUMBER: "42",
+await run({
+  name: "tenant-scoped-persistence",
+  agent: pi("openai-codex/gpt-5.5"),
+  sandbox: docker(),
+  branchStrategy: {
+    type: "branch",
+    branch: "codex/tenant-scoped-persistence",
   },
+  promptFile: ".sandcastle/tenant-scoped-persistence.md",
+  maxIterations: 8,
+});
+```
 
-  // Maximum number of agent iterations to run before stopping. Default: 1
+The same branch, worktree, and sandbox lifecycle are reused across iterations. This is the behavior that lets a long plan continue instead of restarting from scratch every turn.
+
+## Example: Parallel Slices
+
+Use multiple `run()` calls when slices are independent:
+
+```ts
+const slices = [
+  {
+    name: "attachment-logical-failure",
+    branch: "codex/attachment-logical-failure",
+    promptFile: ".sandcastle/prompts/attachment-logical-failure.md",
+  },
+  {
+    name: "voucher-sync-single-flight",
+    branch: "codex/voucher-sync-single-flight",
+    promptFile: ".sandcastle/prompts/voucher-sync-single-flight.md",
+  },
+];
+
+await Promise.all(
+  slices.map((slice) =>
+    run({
+      name: slice.name,
+      agent: pi("openai-codex/gpt-5.5"),
+      sandbox: docker(),
+      branchStrategy: { type: "branch", branch: slice.branch },
+      promptFile: slice.promptFile,
+      maxIterations: 5,
+    }),
+  ),
+);
+```
+
+Run slices sequentially when they touch the same files or one slice depends on another slice's diff.
+
+## Pi Subscription Auth
+
+The `pi-codex` init path avoids API-key setup. Instead, it expects the host to be logged in to Pi.
+
+For Docker and Podman, generated templates mount the host Pi agent directory into the sandbox:
+
+```text
+~/.pi/agent -> /home/agent/.pi/agent
+```
+
+This is convenient, but it is sensitive. The sandbox receives access to your Pi OAuth tokens. Use this only with local sandbox providers and repos you trust. Do not reuse this local OAuth mount strategy for arbitrary cloud sandboxes.
+
+## Windows Notes
+
+Large agent runs create worktrees, dependency trees, logs, and sandbox artifacts. On Windows, deep paths can cause cleanup failures, especially under OneDrive.
+
+Recommended mitigations:
+
+- keep active repos under short paths such as `C:\src\repo`
+- configure a short `worktreeRoot` for large AFK runs
+- treat preserved worktrees as recovery state, not trash
+- inspect branches and diffs before deleting failed-run artifacts
+
+Example:
+
+```ts
+await run({
+  agent: pi("openai-codex/gpt-5.5"),
+  sandbox: docker(),
+  promptFile: ".sandcastle/prompt.md",
+  worktreeRoot: "C:\\sandcastle-worktrees",
+});
+```
+
+## Core API Options For This Workflow
+
+```ts
+await run({
+  agent: pi("openai-codex/gpt-5.5"),
+  sandbox: docker(),
+  promptFile: ".sandcastle/prompt.md",
+
+  // Keep working across multiple agent turns.
   maxIterations: 5,
 
-  // Display name for this run, shown as a prefix in log output.
-  name: "fix-issue-42",
-
-  // Lifecycle hooks grouped by where they run: host or sandbox.
-  hooks: {
-    host: {
-      onWorktreeReady: [{ command: "cp .env.example .env" }],
-      onSandboxReady: [{ command: "echo setup done" }],
-    },
-    sandbox: {
-      onSandboxReady: [{ command: "npm install" }],
-    },
+  // Put work on a named review branch.
+  branchStrategy: {
+    type: "branch",
+    branch: "codex/my-afk-task",
   },
 
-  // Host-relative file paths to copy into the sandbox before the container starts.
-  // Not supported with branchStrategy: { type: "head" }.
-  copyToWorktree: [".env"],
+  // Useful on Windows or any repo with deep paths.
+  worktreeRoot: "C:\\sandcastle-worktrees",
 
-  // Override default timeouts for built-in lifecycle steps.
-  // Unset keys keep their defaults.
-  timeouts: {
-    copyToWorktreeMs: 120_000, // default: 60_000
-  },
-
-  // How to record progress. Default: write to a file under .sandcastle/logs/
+  // Write logs to a predictable file.
   logging: {
     type: "file",
-    path: ".sandcastle/logs/my-run.log",
-    // Optional: forward the agent's output stream to your own observability system.
-    // Fires for each text chunk and tool call the agent produces. Errors thrown
-    // by the callback are swallowed so a broken forwarder cannot kill the run.
-    onAgentStreamEvent: (event) => {
-      // event is { type: "text" | "toolCall", iteration, timestamp, ... }
-      myLogger.info(event);
-    },
+    path: ".sandcastle/logs/my-afk-task.log",
   },
-  // logging: { type: "stdout" }, // OR render an interactive UI in the terminal
-
-  // String (or array of strings) the agent emits to end the iteration loop early.
-  // Default: "<promise>COMPLETE</promise>"
-  completionSignal: "<promise>COMPLETE</promise>",
-
-  // Idle timeout in seconds — resets whenever the agent produces output. Default: 600 (10 minutes)
-  idleTimeoutSeconds: 600,
-});
-
-console.log(result.iterations.length); // number of iterations executed
-console.log(result.completionSignal); // matched signal string, or undefined if none fired
-console.log(result.commits); // array of { sha } for commits created
-console.log(result.branch); // target branch name
-```
-
-### `createSandbox()` — reusable sandbox
-
-Use `createSandbox()` when you need to run multiple agents (or multiple rounds of the same agent) inside a single sandbox. It creates the sandbox once, and you call `sandbox.run()` as many times as you need. This avoids repeated container startup costs and keeps all runs on the same branch.
-
-Use `run()` instead when you only need a single one-shot invocation — it handles sandbox lifecycle automatically.
-
-#### Basic single-run usage
-
-```typescript
-import { createSandbox, claudeCode } from "@ai-hero/sandcastle";
-import { docker } from "@ai-hero/sandcastle/sandboxes/docker";
-
-await using sandbox = await createSandbox({
-  branch: "agent/fix-42",
-  sandbox: docker(),
-});
-
-const result = await sandbox.run({
-  agent: claudeCode("claude-opus-4-6"),
-  prompt: "Fix issue #42 in this repo.",
-});
-
-console.log(result.commits); // [{ sha: "abc123" }]
-```
-
-#### Multi-run implement-then-review
-
-```typescript
-import { createSandbox, claudeCode } from "@ai-hero/sandcastle";
-import { docker } from "@ai-hero/sandcastle/sandboxes/docker";
-
-await using sandbox = await createSandbox({
-  branch: "agent/fix-42",
-  sandbox: docker(),
-  hooks: { sandbox: { onSandboxReady: [{ command: "npm install" }] } },
-});
-
-// Step 1: implement
-const implResult = await sandbox.run({
-  agent: claudeCode("claude-opus-4-6"),
-  promptFile: ".sandcastle/implement.md",
-  maxIterations: 5,
-});
-
-// Step 2: review on the same branch, same container
-const reviewResult = await sandbox.run({
-  agent: claudeCode("claude-sonnet-4-6"),
-  prompt: "Review the changes and fix any issues.",
 });
 ```
 
-Commits from all `run()` calls accumulate on the same branch. The sandbox container stays alive between runs, so installed dependencies and build artifacts persist.
+Important result fields:
 
-#### Automatic cleanup with `await using`
+- `iterations`: per-iteration agent results
+- `commits`: commits created by the run
+- `branch`: branch where the work landed
+- `preservedWorktreePath`: path to inspect if cleanup could not remove the worktree
 
-`await using` calls `sandbox.close()` automatically when the block exits. If the sandbox has uncommitted changes, the worktree is preserved on disk; if clean, both container and worktree are removed.
+## Troubleshooting
 
-#### Manual `close()` with `CloseResult`
+`pi` is not authenticated:
 
-```typescript
-const sandbox = await createSandbox({
-  branch: "agent/fix-42",
-  sandbox: docker(),
-});
-// ... run agents ...
-const closeResult = await sandbox.close();
-if (closeResult.preservedWorktreePath) {
-  console.log(`Worktree preserved at ${closeResult.preservedWorktreePath}`);
-}
+```bash
+pi /login
 ```
 
-#### `CreateSandboxOptions`
+Model is unavailable:
 
-| Option           | Type            | Default         | Description                                                          |
-| ---------------- | --------------- | --------------- | -------------------------------------------------------------------- |
-| `branch`         | string          | —               | **Required.** Explicit branch for the sandbox                        |
-| `sandbox`        | SandboxProvider | —               | **Required.** Sandbox provider (e.g. `docker()`, `podman()`)         |
-| `cwd`            | string          | `process.cwd()` | Host repo directory — relative paths resolve against `process.cwd()` |
-| `hooks`          | SandboxHooks    | —               | Lifecycle hooks (`host.*`, `sandbox.*`) — run once at creation time  |
-| `copyToWorktree` | string[]        | —               | Host-relative file paths to copy into the sandbox at creation time   |
-| `timeouts`       | Timeouts        | —               | Override default timeouts (e.g. `{ copyToWorktreeMs: 120_000 }`)     |
-
-#### `Sandbox`
-
-| Property / Method       | Type                                                               | Description                                  |
-| ----------------------- | ------------------------------------------------------------------ | -------------------------------------------- |
-| `branch`                | string                                                             | The branch the sandbox is on                 |
-| `worktreePath`          | string                                                             | Host path to the worktree                    |
-| `run(options)`          | `(SandboxRunOptions) => Promise<SandboxRunResult>`                 | Invoke an agent inside the existing sandbox  |
-| `interactive(options)`  | `(SandboxInteractiveOptions) => Promise<SandboxInteractiveResult>` | Launch an interactive session in the sandbox |
-| `close()`               | `() => Promise<CloseResult>`                                       | Tear down the container and sandbox          |
-| `[Symbol.asyncDispose]` | `() => Promise<void>`                                              | Auto teardown via `await using`              |
-
-#### `SandboxRunOptions`
-
-| Option               | Type               | Default                       | Description                                                         |
-| -------------------- | ------------------ | ----------------------------- | ------------------------------------------------------------------- |
-| `agent`              | AgentProvider      | —                             | **Required.** Agent provider (e.g. `claudeCode("claude-opus-4-6")`) |
-| `prompt`             | string             | —                             | Inline prompt (mutually exclusive with `promptFile`)                |
-| `promptFile`         | string             | —                             | Path to prompt file (mutually exclusive with `prompt`)              |
-| `promptArgs`         | PromptArgs         | —                             | Key-value map for `{{KEY}}` placeholder substitution                |
-| `maxIterations`      | number             | `1`                           | Maximum iterations to run                                           |
-| `completionSignal`   | string \| string[] | `<promise>COMPLETE</promise>` | String(s) the agent emits to stop the iteration loop early          |
-| `idleTimeoutSeconds` | number             | `600`                         | Idle timeout in seconds — resets on each agent output event         |
-| `name`               | string             | —                             | Display name for the run                                            |
-| `logging`            | object             | file (auto-generated)         | `{ type: 'file', path }` or `{ type: 'stdout' }`                    |
-| `signal`             | AbortSignal        | —                             | Cancels the run when aborted; handle stays usable afterward         |
-
-#### `SandboxRunResult`
-
-| Field              | Type                | Description                                                        |
-| ------------------ | ------------------- | ------------------------------------------------------------------ |
-| `iterations`       | `IterationResult[]` | Per-iteration results (use `.length` for the count)                |
-| `completionSignal` | string?             | The matched completion signal string, or `undefined` if none fired |
-| `stdout`           | string              | Combined agent output from all iterations                          |
-| `commits`          | `{ sha }[]`         | Commits created during the run                                     |
-| `logFilePath`      | string?             | Path to the log file (only when logging to a file)                 |
-
-#### `CloseResult`
-
-| Field                   | Type    | Description                                                              |
-| ----------------------- | ------- | ------------------------------------------------------------------------ |
-| `preservedWorktreePath` | string? | Host path to the preserved worktree, set when it had uncommitted changes |
-
-### `createWorktree()` — independent worktree lifecycle
-
-Use `createWorktree()` when you need a worktree (git worktree) as an independent, first-class concept — separate from any sandbox. This is useful when you want to run an interactive session first and then hand the same worktree to a sandboxed AFK agent.
-
-Only `branch` and `merge-to-head` strategies are accepted; `head` is a compile-time type error since it means no worktree.
-
-Pass `cwd` to target a repo other than `process.cwd()`. Relative paths resolve against `process.cwd()`; absolute paths pass through. A `CwdError` is thrown if the path does not exist or is not a directory.
-
-```typescript
-import { createWorktree } from "@ai-hero/sandcastle";
-
-await using wt = await createWorktree({
-  branchStrategy: { type: "branch", branch: "agent/fix-42" },
-  copyToWorktree: ["node_modules"],
-  cwd: "/path/to/other-repo", // optional — defaults to process.cwd()
-});
-
-console.log(wt.worktreePath); // host path to the worktree
-console.log(wt.branch); // "agent/fix-42"
-
-// Run an interactive session in the worktree (defaults to noSandbox)
-await wt.interactive({
-  agent: claudeCode("claude-opus-4-6"),
-  prompt: "Explore the codebase and understand the bug.",
-});
-
-// Run an AFK agent in the worktree (sandbox is required)
-const result = await wt.run({
-  agent: claudeCode("claude-opus-4-6"),
-  sandbox: docker({ imageName: "sandcastle:myrepo" }),
-  prompt: "Fix issue #42.",
-  maxIterations: 3,
-});
-console.log(result.commits); // commits made during the run
-
-// Create a long-lived sandbox from the worktree
-import { docker } from "@ai-hero/sandcastle/sandboxes/docker";
-
-await using sandbox = await wt.createSandbox({
-  sandbox: docker(),
-  hooks: { sandbox: { onSandboxReady: [{ command: "npm install" }] } },
-});
-
-// sandbox.close() tears down the container only — the worktree stays
-await sandbox.close();
-
-// wt.close() cleans up the worktree
+```bash
+pi --list-models openai
 ```
 
-`wt.close()` checks for uncommitted changes: if the worktree is dirty, it's preserved on disk; if clean, it's removed. `await using` calls `close()` automatically. The worktree persists after `run()`, `interactive()`, and `createSandbox()` complete, so you can hand it to another agent or inspect it.
+Docker image is missing:
 
-**Split ownership**: When a sandbox is created via `wt.createSandbox()`, `sandbox.close()` tears down the container only — the worktree remains. `wt.close()` is responsible for worktree cleanup. This differs from the top-level `createSandbox()`, where `sandbox.close()` owns both container and worktree.
-
-#### `CreateWorktreeOptions`
-
-| Option           | Type                   | Default | Description                                                               |
-| ---------------- | ---------------------- | ------- | ------------------------------------------------------------------------- |
-| `branchStrategy` | WorktreeBranchStrategy | —       | **Required.** `{ type: "branch", branch }` or `{ type: "merge-to-head" }` |
-| `copyToWorktree` | string[]               | —       | Host-relative file paths to copy into the worktree at creation time       |
-| `timeouts`       | Timeouts               | —       | Override default timeouts (e.g. `{ copyToWorktreeMs: 120_000 }`)          |
-
-#### `Worktree`
-
-| Property / Method        | Type                                                                  | Description                                         |
-| ------------------------ | --------------------------------------------------------------------- | --------------------------------------------------- |
-| `branch`                 | string                                                                | The branch the worktree is on                       |
-| `worktreePath`           | string                                                                | Host path to the worktree                           |
-| `run(options)`           | `(options: WorktreeRunOptions) => Promise<WorktreeRunResult>`         | Run an AFK agent in the worktree (sandbox required) |
-| `interactive(options)`   | `(options: WorktreeInteractiveOptions) => Promise<InteractiveResult>` | Run an interactive agent session in the worktree    |
-| `createSandbox(options)` | `(options: WorktreeCreateSandboxOptions) => Promise<Sandbox>`         | Create a long-lived sandbox backed by this worktree |
-| `close()`                | `() => Promise<CloseResult>`                                          | Clean up the worktree (preserves if dirty)          |
-| `[Symbol.asyncDispose]`  | `() => Promise<void>`                                                 | Auto cleanup via `await using`                      |
-
-#### `WorktreeInteractiveOptions`
-
-| Option       | Type                   | Default       | Description                                                                                       |
-| ------------ | ---------------------- | ------------- | ------------------------------------------------------------------------------------------------- |
-| `agent`      | AgentProvider          | —             | **Required.** Agent provider                                                                      |
-| `sandbox`    | AnySandboxProvider     | `noSandbox()` | Sandbox provider (defaults to no sandbox)                                                         |
-| `prompt`     | string                 | —             | Inline prompt (mutually exclusive with `promptFile`)                                              |
-| `promptFile` | string                 | —             | Path to prompt file                                                                               |
-| `name`       | string                 | —             | Optional session name                                                                             |
-| `hooks`      | SandboxHooks           | —             | Lifecycle hooks (`host.*`, `sandbox.*`)                                                           |
-| `promptArgs` | PromptArgs             | —             | Key-value map for `{{KEY}}` placeholder substitution                                              |
-| `env`        | Record<string, string> | —             | Environment variables to inject into the sandbox                                                  |
-| `signal`     | AbortSignal            | —             | Cancel the session when aborted. The worktree is preserved on disk. Rejects with `signal.reason`. |
-
-#### `WorktreeRunOptions`
-
-| Option               | Type                   | Default | Description                                                                                                                         |
-| -------------------- | ---------------------- | ------- | ----------------------------------------------------------------------------------------------------------------------------------- |
-| `agent`              | AgentProvider          | —       | **Required.** Agent provider                                                                                                        |
-| `sandbox`            | SandboxProvider        | —       | **Required.** Sandbox provider (AFK agents must be sandboxed)                                                                       |
-| `prompt`             | string                 | —       | Inline prompt (mutually exclusive with `promptFile`)                                                                                |
-| `promptFile`         | string                 | —       | Path to prompt file                                                                                                                 |
-| `maxIterations`      | number                 | 1       | Maximum iterations to run                                                                                                           |
-| `completionSignal`   | string \| string[]     | —       | Substring(s) to stop the iteration loop early                                                                                       |
-| `idleTimeoutSeconds` | number                 | 600     | Idle timeout in seconds                                                                                                             |
-| `name`               | string                 | —       | Optional run name                                                                                                                   |
-| `logging`            | LoggingOption          | file    | Logging mode                                                                                                                        |
-| `hooks`              | SandboxHooks           | —       | Lifecycle hooks (`host.*`, `sandbox.*`)                                                                                             |
-| `promptArgs`         | PromptArgs             | —       | Key-value map for `{{KEY}}` placeholder substitution                                                                                |
-| `env`                | Record<string, string> | —       | Environment variables to inject into the sandbox                                                                                    |
-| `resumeSession`      | string                 | —       | Resume a prior Claude Code session by ID. Incompatible with `maxIterations > 1`. Session file must exist on host.                   |
-| `signal`             | AbortSignal            | —       | Cancel the run when aborted. Kills the in-flight agent subprocess; the worktree is preserved on disk. Rejects with `signal.reason`. |
-
-#### `WorktreeRunResult`
-
-| Property           | Type                | Description                                            |
-| ------------------ | ------------------- | ------------------------------------------------------ |
-| `iterations`       | `IterationResult[]` | Per-iteration results (use `.length` for the count)    |
-| `completionSignal` | string              | The matched completion signal, or undefined            |
-| `stdout`           | string              | Combined stdout output from all agent iterations       |
-| `commits`          | { sha: string }[]   | List of commits made by the agent during the run       |
-| `branch`           | string              | The branch name the agent worked on                    |
-| `logFilePath`      | string              | Path to the log file, if logging was drained to a file |
-
-#### `WorktreeCreateSandboxOptions`
-
-| Option           | Type            | Default | Description                                                         |
-| ---------------- | --------------- | ------- | ------------------------------------------------------------------- |
-| `sandbox`        | SandboxProvider | —       | **Required.** Sandbox provider (e.g. `docker()`)                    |
-| `hooks`          | SandboxHooks    | —       | Lifecycle hooks (`host.*`, `sandbox.*`)                             |
-| `copyToWorktree` | string[]        | —       | Host-relative file paths to copy into the worktree at creation time |
-| `timeouts`       | Timeouts        | —       | Override default timeouts (e.g. `{ copyToWorktreeMs: 120_000 }`)    |
-
-## How it works
-
-Sandcastle uses a **branch strategy** configured on the sandbox provider to control how the agent's changes relate to branches. There are three strategies:
-
-- **Head** (`{ type: "head" }`) — The agent writes directly to the host working directory. No worktree, no branch indirection. This is the default for bind-mount providers like `docker()`.
-- **Merge-to-head** (`{ type: "merge-to-head" }`) — Sandcastle creates a temporary branch in a git worktree. The agent works on the temp branch, and changes are merged back to HEAD when done. The temp branch is cleaned up after merge.
-- **Branch** (`{ type: "branch", branch: "foo" }`) — Commits land on an explicitly named branch in a git worktree.
-
-For bind-mount providers (like Docker), the worktree directory is bind-mounted into the container — the agent writes directly to the host filesystem through the mount, so no sync is needed.
-
-From your point of view, you just configure `branchStrategy: { type: 'branch', branch: 'foo' }` on `run()`, and get a commit on branch `foo` once it's complete. All 100% local.
-
-## Prompts
-
-Sandcastle uses a flexible prompt system. You write the prompt, and the engine executes it — no opinions about workflow, task management, or context sources are imposed.
-
-### Prompt resolution
-
-You must provide exactly one of:
-
-1. `prompt: "inline string"` — pass an inline prompt directly via `RunOptions`
-2. `promptFile: "./path/to/prompt.md"` — point to a specific file via `RunOptions`
-
-`prompt` and `promptFile` are mutually exclusive — providing both is an error. If neither is provided, `run()` throws an error asking you to supply one.
-
-**Inline prompts (`prompt: "..."`) are passed to the agent literally.** No `{{KEY}}` substitution, no `` !`command` `` expansion, no built-in `{{SOURCE_BRANCH}}` / `{{TARGET_BRANCH}}` injection. If you need values interpolated into an inline prompt, build the string in JavaScript (`` `Work on ${branch}…` ``). Passing `promptArgs` alongside an inline prompt is an error — switch to `promptFile` to use substitution.
-
-The substitution and expansion features below apply **only** to prompts sourced from `promptFile`.
-
-> **Convention**: `sandcastle init` scaffolds `.sandcastle/prompt.md` and all templates explicitly reference it via `promptFile: ".sandcastle/prompt.md"`. This is a convention, not an automatic fallback — Sandcastle does not read `.sandcastle/prompt.md` unless you pass it as `promptFile`.
-
-### Dynamic context with `` !`command` ``
-
-Use `` !`command` `` expressions in your prompt to pull in dynamic context. Each expression is replaced with the command's stdout before the prompt is sent to the agent. All expressions in a prompt run **in parallel** for faster expansion.
-
-Commands run **inside the sandbox** after `sandbox.onSandboxReady` hooks complete, so they see the same repo state the agent sees (including installed dependencies).
-
-```markdown
-# Open issues
-
-!`gh issue list --state open --label Sandcastle --json number,title,body,comments,labels --limit 20`
-
-# Recent commits
-
-!`git log --oneline -10`
+```bash
+npx sandcastle docker build-image
 ```
 
-If any command exits with a non-zero code, the run fails immediately with an error.
+Find logs:
 
-### Prompt arguments with `{{KEY}}`
-
-Use `{{KEY}}` placeholders in your prompt to inject values from the `promptArgs` option. This is useful for reusing the same prompt file across multiple runs with different parameters.
-
-```typescript
-import { run } from "@ai-hero/sandcastle";
-
-await run({
-  promptFile: "./my-prompt.md",
-  promptArgs: { ISSUE_NUMBER: 42, PRIORITY: "high" },
-});
+```bash
+ls .sandcastle/logs
 ```
 
-In the prompt file:
+Find generated work:
 
-```markdown
-Work on issue #{{ISSUE_NUMBER}} (priority: {{PRIORITY}}).
+```bash
+git branch --list "codex/*"
+git worktree list
 ```
 
-Prompt argument substitution runs on the host before shell expression expansion, so `{{KEY}}` placeholders inside `` !`command` `` expressions are replaced first:
+Recover from a failed run by inspecting logs, branches, and preserved worktrees before rerunning. If the run failed during cleanup, the implementation work may still have completed and committed.
 
-```markdown
-!`gh issue view {{ISSUE_NUMBER}} --json body -q .body`
-```
+## Relationship To Upstream
 
-A `{{KEY}}` placeholder with no matching prompt argument is an error. Unused prompt arguments produce a warning.
+Upstream Sandcastle is a general TypeScript library for orchestrating AI agents in isolated sandboxes. This fork keeps that foundation, but optimizes the default story around Codex/Pi subscription-backed AFK delivery:
 
-`` !`command` `` expansion only runs on shell blocks written in the prompt file itself. Any `` !`…` `` pattern that appears inside an argument value is treated as inert text — it won't be executed against the host shell. This makes it safe to pass user-authored content (issue titles, PR descriptions, docs excerpts) through `promptArgs`.
-
-### Built-in prompt arguments
-
-Sandcastle automatically injects two built-in prompt arguments into every prompt:
-
-| Placeholder         | Value                                                             |
-| ------------------- | ----------------------------------------------------------------- |
-| `{{SOURCE_BRANCH}}` | The branch the agent works on (determined by the branch strategy) |
-| `{{TARGET_BRANCH}}` | The host's active branch at `run()` time                          |
-
-Use them in your prompt without passing them via `promptArgs`:
-
-```markdown
-You are working on {{SOURCE_BRANCH}}. When diffing, compare against {{TARGET_BRANCH}}.
-```
-
-Passing `SOURCE_BRANCH` or `TARGET_BRANCH` in `promptArgs` is an error — built-in prompt arguments cannot be overridden.
-
-### Early termination with `<promise>COMPLETE</promise>`
-
-When the agent outputs `<promise>COMPLETE</promise>`, the orchestrator stops the iteration loop early. This is a convention you document in your prompt for the agent to follow — the engine never injects it.
-
-This is useful for task-based workflows where the agent should stop once it has finished, rather than running all remaining iterations.
-
-You can override the default signal by passing `completionSignal` to `run()`. It accepts a single string or an array of strings:
-
-```ts
-await run({
-  // ...
-  completionSignal: "DONE",
-});
-
-// Or pass multiple signals — the loop stops on the first match:
-await run({
-  // ...
-  completionSignal: ["TASK_COMPLETE", "TASK_ABORTED"],
-});
-```
-
-Tell the agent to output your chosen string(s) in the prompt, and the orchestrator will stop when it detects any of them. The matched signal is returned as `result.completionSignal`.
-
-### Templates
-
-`sandcastle init` prompts you to choose a sandbox provider (Docker or Podman), a backlog manager (GitHub Issues or Beads), and a template, which scaffolds a ready-to-use prompt and `main.mts` suited to a specific workflow. If your project's `package.json` has `"type": "module"`, the file will be named `main.ts` instead. Five templates are available:
-
-| Template                       | Description                                                               |
-| ------------------------------ | ------------------------------------------------------------------------- |
-| `blank`                        | Bare scaffold — write your own prompt and orchestration                   |
-| `simple-loop`                  | Picks GitHub issues one by one and closes them                            |
-| `sequential-reviewer`          | Implements issues one by one, with a code review step after each          |
-| `parallel-planner`             | Plans parallelizable issues, executes on separate branches, then merges   |
-| `parallel-planner-with-review` | Plans parallelizable issues, executes with per-branch review, then merges |
-
-Select a template during `sandcastle init` when prompted, or re-run init in a fresh repo to try a different one.
-
-## CLI commands
-
-### `sandcastle init`
-
-Scaffolds the `.sandcastle/` config directory and builds the container image. This is the first command you run in a new repo. You choose a sandbox provider (Docker or Podman) during init — selecting Podman writes a `Containerfile` instead of `Dockerfile` and uses `sandcastle podman build-image` for the build step.
-
-| Option         | Required | Default                      | Description                                                          |
-| -------------- | -------- | ---------------------------- | -------------------------------------------------------------------- |
-| `--image-name` | No       | `sandcastle:<repo-dir-name>` | Docker image name                                                    |
-| `--agent`      | No       | Interactive prompt           | Agent to use (`claude-code`, `pi`, `codex`, `opencode`)              |
-| `--model`      | No       | Agent's default model        | Model to use (e.g. `claude-sonnet-4-6`). Defaults to agent's default |
-| `--template`   | No       | Interactive prompt           | Template to scaffold (e.g. `blank`, `simple-loop`)                   |
-
-Creates the following files:
-
-```
-.sandcastle/
-├── Dockerfile      # Sandbox environment (customize as needed)
-├── prompt.md       # Agent instructions
-├── .env.example    # Token placeholders
-└── .gitignore      # Ignores .env, logs/
-```
-
-Errors if `.sandcastle/` already exists to prevent overwriting customizations.
-
-### `sandcastle docker build-image`
-
-Rebuilds the Docker image from an existing `.sandcastle/` directory. Use this after modifying the Dockerfile.
-
-| Option         | Required | Default                      | Description                                                                       |
-| -------------- | -------- | ---------------------------- | --------------------------------------------------------------------------------- |
-| `--image-name` | No       | `sandcastle:<repo-dir-name>` | Docker image name                                                                 |
-| `--dockerfile` | No       | —                            | Path to a custom Dockerfile (build context will be the current working directory) |
-
-### `sandcastle docker remove-image`
-
-Removes the Docker image.
-
-| Option         | Required | Default                      | Description       |
-| -------------- | -------- | ---------------------------- | ----------------- |
-| `--image-name` | No       | `sandcastle:<repo-dir-name>` | Docker image name |
-
-### `sandcastle podman build-image`
-
-Builds the Podman image from an existing `.sandcastle/` directory. Use this after modifying the Containerfile.
-
-| Option            | Required | Default                      | Description                                                                          |
-| ----------------- | -------- | ---------------------------- | ------------------------------------------------------------------------------------ |
-| `--image-name`    | No       | `sandcastle:<repo-dir-name>` | Podman image name                                                                    |
-| `--containerfile` | No       | —                            | Path to a custom Containerfile (build context will be the current working directory) |
-
-### `sandcastle podman remove-image`
-
-Removes the Podman image.
-
-| Option         | Required | Default                      | Description       |
-| -------------- | -------- | ---------------------------- | ----------------- |
-| `--image-name` | No       | `sandcastle:<repo-dir-name>` | Podman image name |
-
-### `RunOptions`
-
-| Option               | Type               | Default                       | Description                                                                                                                                                     |
-| -------------------- | ------------------ | ----------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `agent`              | AgentProvider      | —                             | **Required.** Agent provider (e.g. `claudeCode("claude-opus-4-6")`, `pi("claude-sonnet-4-6")`, `codex("gpt-5.4-mini")`, `opencode("opencode/big-pickle")`)      |
-| `sandbox`            | SandboxProvider    | —                             | **Required.** Sandbox provider (e.g. `docker()`, `podman()`, `docker({ imageName: "sandcastle:local" })`)                                                       |
-| `cwd`                | string             | `process.cwd()`               | Host repo directory — anchor for `.sandcastle/` artifacts and git operations. Relative paths resolve against `process.cwd()`.                                   |
-| `prompt`             | string             | —                             | Inline prompt (mutually exclusive with `promptFile`)                                                                                                            |
-| `promptFile`         | string             | —                             | Path to prompt file (mutually exclusive with `prompt`). Resolves against `process.cwd()`, **not** `cwd`.                                                        |
-| `maxIterations`      | number             | `1`                           | Maximum iterations to run                                                                                                                                       |
-| `hooks`              | SandboxHooks       | —                             | Lifecycle hooks (`host.*`, `sandbox.*`)                                                                                                                         |
-| `name`               | string             | —                             | Display name for the run, shown as a prefix in log output                                                                                                       |
-| `promptArgs`         | PromptArgs         | —                             | Key-value map for `{{KEY}}` placeholder substitution                                                                                                            |
-| `branchStrategy`     | BranchStrategy     | per-provider default          | Branch strategy: `{ type: 'head' }`, `{ type: 'merge-to-head' }`, or `{ type: 'branch', branch: '…' }`                                                          |
-| `copyToWorktree`     | string[]           | —                             | Host-relative file paths to copy into the sandbox before start (not supported with `branchStrategy: { type: 'head' }`)                                          |
-| `logging`            | object             | file (auto-generated)         | `{ type: 'file', path }` or `{ type: 'stdout' }`                                                                                                                |
-| `completionSignal`   | string \| string[] | `<promise>COMPLETE</promise>` | String or array of strings the agent emits to stop the iteration loop early                                                                                     |
-| `idleTimeoutSeconds` | number             | `600`                         | Idle timeout in seconds — resets on each agent output event                                                                                                     |
-| `resumeSession`      | string             | —                             | Resume a prior Claude Code session by ID. Incompatible with `maxIterations > 1`. Session file must exist on host.                                               |
-| `signal`             | AbortSignal        | —                             | Cancel the run when aborted. Kills the in-flight agent subprocess and cancels lifecycle hooks; the worktree is preserved on disk. Rejects with `signal.reason`. |
-| `timeouts`           | Timeouts           | —                             | Override default timeouts for built-in lifecycle steps. Currently supports `{ copyToWorktreeMs?: number }` (default: 60 000).                                   |
-
-### `RunResult`
-
-| Field              | Type                | Description                                                        |
-| ------------------ | ------------------- | ------------------------------------------------------------------ |
-| `iterations`       | `IterationResult[]` | Per-iteration results (use `.length` for the count)                |
-| `completionSignal` | string?             | The matched completion signal string, or `undefined` if none fired |
-| `stdout`           | string              | Agent output                                                       |
-| `commits`          | `{ sha }[]`         | Commits created during the run                                     |
-| `branch`           | string              | Target branch name                                                 |
-| `logFilePath`      | string?             | Path to the log file (only when logging to a file)                 |
-
-### `IterationResult`
-
-| Field             | Type              | Description                                                                                                                         |
-| ----------------- | ----------------- | ----------------------------------------------------------------------------------------------------------------------------------- |
-| `sessionId`       | string?           | Claude Code session ID from the init line, or `undefined` for non-Claude agents                                                     |
-| `sessionFilePath` | string?           | Absolute host path to the captured session JSONL, or `undefined` when capture is off                                                |
-| `usage`           | `IterationUsage`? | Token usage snapshot from the last assistant message, or `undefined` when capture is off or provider does not support usage parsing |
-
-### `IterationUsage`
-
-| Field                      | Type   | Description                                |
-| -------------------------- | ------ | ------------------------------------------ |
-| `inputTokens`              | number | Input tokens consumed                      |
-| `cacheCreationInputTokens` | number | Tokens used to create prompt cache entries |
-| `cacheReadInputTokens`     | number | Tokens read from prompt cache              |
-| `outputTokens`             | number | Output tokens generated                    |
-
-### Session capture
-
-After each Claude Code iteration, Sandcastle automatically captures the agent's session JSONL from the sandbox to the host at `~/.claude/projects/<encoded-path>/sessions/<session-id>.jsonl`. The `cwd` fields inside each JSONL entry are rewritten to match the host repo root, so `claude --resume` works natively.
-
-Session capture is enabled by default for `claudeCode()` and can be opted out via `captureSessions: false`. Non-Claude agent providers never attempt capture. Capture failure fails the run.
-
-### Session resume
-
-Pass `resumeSession` to `run()` to continue a prior Claude Code conversation inside a new sandbox:
-
-```typescript
-const result = await run({
-  agent: claudeCode("claude-opus-4-6"),
-  sandbox: docker(),
-  prompt: "Continue where you left off",
-  resumeSession: "abc-123-def",
-});
-```
-
-Before the sandbox starts, Sandcastle validates that the session file exists on the host and transfers it into the sandbox with `cwd` fields rewritten to match the sandbox-side path. The Claude Code agent receives `--resume <id>` on its print command for iteration 1.
-
-Constraints:
-
-- `resumeSession` is incompatible with `maxIterations > 1` (throws before sandbox creation).
-- The session file must exist at `~/.claude/projects/<encoded-path>/sessions/<id>.jsonl` (throws before sandbox creation).
-- Only iteration 1 receives the resume flag; subsequent iterations (if any) start fresh.
-- Non-Claude agent providers ignore `resumeSession`.
-
-### `ClaudeCodeOptions`
-
-The `claudeCode()` factory accepts an optional second argument for provider-specific options:
-
-```typescript
-agent: claudeCode("claude-opus-4-6", { effort: "high" });
-```
-
-| Option            | Type                                         | Default | Description                                               |
-| ----------------- | -------------------------------------------- | ------- | --------------------------------------------------------- |
-| `effort`          | `"low"` \| `"medium"` \| `"high"` \| `"max"` | —       | Claude Code reasoning effort level (`max` is Opus only)   |
-| `env`             | `Record<string, string>`                     | `{}`    | Environment variables injected by this agent provider     |
-| `captureSessions` | `boolean`                                    | `true`  | Capture agent session JSONL to host for `claude --resume` |
-
-### `CodexOptions`
-
-The `codex()` factory accepts an optional second argument for provider-specific options:
-
-```typescript
-agent: codex("gpt-5.4", { effort: "high" });
-```
-
-| Option   | Type                                           | Default | Description                                               |
-| -------- | ---------------------------------------------- | ------- | --------------------------------------------------------- |
-| `effort` | `"low"` \| `"medium"` \| `"high"` \| `"xhigh"` | —       | Codex reasoning effort level via `model_reasoning_effort` |
-| `env`    | `Record<string, string>`                       | `{}`    | Environment variables injected by this agent provider     |
-
-### Provider `env`
-
-Both **agent providers** and **sandbox providers** accept an optional `env: Record<string, string>` in their options. These environment variables are merged with the `.sandcastle/.env` resolver output at launch time:
-
-```typescript
-await run({
-  agent: claudeCode("claude-opus-4-6", {
-    env: { ANTHROPIC_API_KEY: "sk-ant-..." },
-  }),
-  sandbox: docker({
-    env: { DOCKER_SPECIFIC_VAR: "value" },
-  }),
-  prompt: "Fix issue #42",
-});
-```
-
-**Merge rules:**
-
-- Provider env (agent + sandbox) overrides `.sandcastle/.env` resolver output for shared keys
-- Agent provider env and sandbox provider env **must not overlap** — if they share any key, `run()` throws an error
-- When `env` is not provided, it defaults to `{}`
-
-Environment variables are also resolved automatically from `.sandcastle/.env` and `process.env` — no need to pass them to the API. The required variables depend on the **agent provider** (see `sandcastle init` output for details).
-
-## Custom Sandbox Providers
-
-Sandcastle ships with built-in providers for Docker, Podman, and Vercel, but you can create your own. A sandbox provider tells Sandcastle how to execute commands in an isolated environment. There are two kinds:
-
-- **Bind-mount** — the sandbox can mount a host directory. Sandcastle creates a worktree on the host and the provider mounts it in. No file sync needed. Use this for Docker, Podman, or any local container runtime.
-- **Isolated** — the sandbox has its own filesystem (e.g. a cloud VM). The provider handles syncing code in and out via `copyIn` and `copyFileOut`. Use this when the sandbox cannot access the host filesystem.
-
-### The sandbox handle contract
-
-Both provider types return a **sandbox handle** from their `create()` function. The handle exposes:
-
-| Method         | Required   | Description                                                                  |
-| -------------- | ---------- | ---------------------------------------------------------------------------- |
-| `exec`         | Both       | Run a command, optionally streaming stdout line-by-line via `options.onLine` |
-| `close`        | Both       | Tear down the sandbox                                                        |
-| `copyFileIn`   | Bind-mount | Copy a single file from the host into the sandbox                            |
-| `copyFileOut`  | Both       | Copy a single file from the sandbox to the host                              |
-| `copyIn`       | Isolated   | Copy a file or directory from the host into the sandbox                      |
-| `worktreePath` | Both       | Absolute path to the repo directory inside the sandbox                       |
-
-### `ExecResult`
-
-Every `exec` call returns an `ExecResult`:
-
-```typescript
-interface ExecResult {
-  readonly stdout: string;
-  readonly stderr: string;
-  readonly exitCode: number;
-}
-```
-
-### Bind-mount provider example
-
-A minimal bind-mount provider that shells out to local processes (no container):
-
-```typescript
-import {
-  createBindMountSandboxProvider,
-  type BindMountCreateOptions,
-  type BindMountSandboxHandle,
-  type ExecResult,
-} from "@ai-hero/sandcastle";
-import { execFile, spawn } from "node:child_process";
-import { copyFile as fsCopyFile, mkdir as fsMkdir } from "node:fs/promises";
-import { dirname } from "node:path";
-import { createInterface } from "node:readline";
-
-const localProcess = () =>
-  createBindMountSandboxProvider({
-    name: "local-process",
-    create: async (
-      options: BindMountCreateOptions,
-    ): Promise<BindMountSandboxHandle> => {
-      const worktreePath = options.worktreePath;
-
-      return {
-        worktreePath,
-
-        exec: (
-          command: string,
-          opts?: { onLine?: (line: string) => void; cwd?: string },
-        ): Promise<ExecResult> => {
-          if (opts?.onLine) {
-            const onLine = opts.onLine;
-            return new Promise((resolve, reject) => {
-              const proc = spawn("sh", ["-c", command], {
-                cwd: opts?.cwd ?? worktreePath,
-                stdio: ["ignore", "pipe", "pipe"],
-              });
-
-              const stdoutChunks: string[] = [];
-              const stderrChunks: string[] = [];
-
-              const rl = createInterface({ input: proc.stdout! });
-              rl.on("line", (line) => {
-                stdoutChunks.push(line);
-                onLine(line); // forward each line to Sandcastle
-              });
-
-              proc.stderr!.on("data", (chunk: Buffer) => {
-                stderrChunks.push(chunk.toString());
-              });
-
-              proc.on("error", (err) => reject(err));
-              proc.on("close", (code) => {
-                resolve({
-                  stdout: stdoutChunks.join("\n"),
-                  stderr: stderrChunks.join(""),
-                  exitCode: code ?? 0,
-                });
-              });
-            });
-          }
-
-          return new Promise((resolve, reject) => {
-            execFile(
-              "sh",
-              ["-c", command],
-              { cwd: opts?.cwd ?? worktreePath, maxBuffer: 10 * 1024 * 1024 },
-              (error, stdout, stderr) => {
-                if (error && error.code === undefined) {
-                  reject(new Error(`exec failed: ${error.message}`));
-                } else {
-                  resolve({
-                    stdout: stdout.toString(),
-                    stderr: stderr.toString(),
-                    exitCode: typeof error?.code === "number" ? error.code : 0,
-                  });
-                }
-              },
-            );
-          });
-        },
-
-        copyFileIn: async (hostPath: string, sandboxPath: string) => {
-          await fsMkdir(dirname(sandboxPath), { recursive: true });
-          await fsCopyFile(hostPath, sandboxPath);
-        },
-
-        copyFileOut: async (sandboxPath: string, hostPath: string) => {
-          await fsMkdir(dirname(hostPath), { recursive: true });
-          await fsCopyFile(sandboxPath, hostPath);
-        },
-
-        close: async () => {
-          // nothing to tear down for a local process
-        },
-      };
-    },
-  });
-```
-
-### Isolated provider example
-
-A minimal isolated provider using a temp directory:
-
-```typescript
-import {
-  createIsolatedSandboxProvider,
-  type IsolatedSandboxHandle,
-  type ExecResult,
-} from "@ai-hero/sandcastle";
-import { execFile, spawn } from "node:child_process";
-import { copyFile, mkdir, mkdtemp, rm } from "node:fs/promises";
-import { tmpdir } from "node:os";
-import { dirname, join } from "node:path";
-import { createInterface } from "node:readline";
-
-const tempDir = () =>
-  createIsolatedSandboxProvider({
-    name: "temp-dir",
-    create: async (): Promise<IsolatedSandboxHandle> => {
-      const root = await mkdtemp(join(tmpdir(), "sandbox-"));
-      const worktreePath = join(root, "workspace");
-      await mkdir(worktreePath, { recursive: true });
-
-      return {
-        worktreePath,
-
-        exec: (
-          command: string,
-          opts?: { onLine?: (line: string) => void; cwd?: string },
-        ): Promise<ExecResult> => {
-          if (opts?.onLine) {
-            const onLine = opts.onLine;
-            return new Promise((resolve, reject) => {
-              const proc = spawn("sh", ["-c", command], {
-                cwd: opts?.cwd ?? worktreePath,
-                stdio: ["ignore", "pipe", "pipe"],
-              });
-
-              const stdoutChunks: string[] = [];
-              const stderrChunks: string[] = [];
-
-              const rl = createInterface({ input: proc.stdout! });
-              rl.on("line", (line) => {
-                stdoutChunks.push(line);
-                onLine(line);
-              });
-
-              proc.stderr!.on("data", (chunk: Buffer) => {
-                stderrChunks.push(chunk.toString());
-              });
-
-              proc.on("error", (err) => reject(err));
-              proc.on("close", (code) => {
-                resolve({
-                  stdout: stdoutChunks.join("\n"),
-                  stderr: stderrChunks.join(""),
-                  exitCode: code ?? 0,
-                });
-              });
-            });
-          }
-
-          return new Promise((resolve, reject) => {
-            execFile(
-              "sh",
-              ["-c", command],
-              { cwd: opts?.cwd ?? worktreePath, maxBuffer: 10 * 1024 * 1024 },
-              (error, stdout, stderr) => {
-                if (error && error.code === undefined) {
-                  reject(new Error(`exec failed: ${error.message}`));
-                } else {
-                  resolve({
-                    stdout: stdout.toString(),
-                    stderr: stderr.toString(),
-                    exitCode: typeof error?.code === "number" ? error.code : 0,
-                  });
-                }
-              },
-            );
-          });
-        },
-
-        copyIn: async (hostPath: string, sandboxPath: string) => {
-          const info = await stat(hostPath);
-          if (info.isDirectory()) {
-            await cp(hostPath, sandboxPath, { recursive: true });
-          } else {
-            await mkdir(dirname(sandboxPath), { recursive: true });
-            await copyFile(hostPath, sandboxPath);
-          }
-        },
-
-        copyFileOut: async (sandboxPath: string, hostPath: string) => {
-          await mkdir(dirname(hostPath), { recursive: true });
-          await copyFile(sandboxPath, hostPath);
-        },
-
-        close: async () => {
-          await rm(root, { recursive: true, force: true });
-        },
-      };
-    },
-  });
-```
-
-### Branch strategies
-
-A branch strategy controls where the agent's commits land. Configure it when constructing the provider:
-
-| Strategy        | Behavior                                                                 | Bind-mount | Isolated  |
-| --------------- | ------------------------------------------------------------------------ | ---------- | --------- |
-| `head`          | Agent writes directly to the host working directory. No worktree created | Default    | N/A       |
-| `merge-to-head` | Sandcastle creates a temp branch, merges back to HEAD when done          | Supported  | Default   |
-| `branch`        | Commits land on an explicit named branch you provide                     | Supported  | Supported |
-
-**When to use each:**
-
-- **`head`** — fast iteration during development. No branch indirection, no merge step. Only works with bind-mount providers since the agent needs direct host filesystem access.
-- **`merge-to-head`** — safe default for automation. The agent works on a throwaway branch; if something goes wrong, HEAD is untouched. Use this for CI or unattended runs.
-- **`branch`** — when you want commits on a specific branch (e.g. for a PR). Pass `{ type: "branch", branch: "agent/fix-42" }`.
-
-Branch strategy is now configured on `run()`, not on the provider:
-
-```typescript
-import { run, claudeCode } from "@ai-hero/sandcastle";
-import { docker } from "@ai-hero/sandcastle/sandboxes/docker";
-
-// head — direct write, bind-mount only (default for bind-mount providers)
-await run({
-  agent: claudeCode("claude-opus-4-6"),
-  sandbox: docker(),
-  prompt: "…",
-});
-// merge-to-head — temp branch, merge back (default for isolated providers)
-await run({
-  agent: claudeCode("claude-opus-4-6"),
-  sandbox: tempDir(),
-  prompt: "…",
-});
-// branch — explicit named branch
-await run({
-  agent: claudeCode("claude-opus-4-6"),
-  sandbox: docker(),
-  branchStrategy: { type: "branch", branch: "agent/fix-42" },
-  prompt: "…",
-});
-```
-
-### Passing to `run()`
-
-Pass your custom provider via the `sandbox` option — it works the same as the built-in `docker()` provider:
-
-```typescript
-import { run, claudeCode } from "@ai-hero/sandcastle";
-
-const result = await run({
-  agent: claudeCode("claude-opus-4-6"),
-  sandbox: localProcess(), // your custom provider
-  prompt: "Fix issue #42 in this repo.",
-});
-```
-
-### Reference implementations
-
-For real-world examples, see:
-
-- [`src/sandboxes/docker.ts`](src/sandboxes/docker.ts) — bind-mount provider using Docker containers
-- [`src/sandboxes/vercel.ts`](src/sandboxes/vercel.ts) — isolated provider using Vercel Firecracker microVMs via `@vercel/sandbox`
-- [`src/sandboxes/podman.ts`](src/sandboxes/podman.ts) — bind-mount provider using Podman containers (with SELinux label support)
-- [`src/sandboxes/test-isolated.ts`](src/sandboxes/test-isolated.ts) — isolated provider using temp directories (used in tests)
-
-## Configuration
-
-### Config directory (`.sandcastle/`)
-
-All per-repo sandbox configuration lives in `.sandcastle/`. Run `sandcastle init` to create it.
-
-### Custom Dockerfile
-
-The `.sandcastle/Dockerfile` or `.sandcastle/Containerfile` controls the sandbox environment. The default template installs:
-
-- **Node.js 22** (base image)
-- **git**, **curl**, **jq** (system dependencies)
-- **GitHub CLI** (`gh`)
-- The selected agent CLI, such as **Claude Code**, **Pi**, **Codex**, or **OpenCode**
-- A non-root `agent` user
-
-When customizing the Dockerfile, ensure you keep:
-
-- A non-root user (the default `agent` user) for the agent to run as
-- `git` (required for commits and branch operations)
-- Your backlog tool (`gh` or `bd`) if your prompts use one
-- The selected agent CLI installed and on PATH
-
-Add your project-specific dependencies (e.g., language runtimes, build tools) to the Dockerfile as needed.
-
-### Hooks
-
-Hooks are grouped by **where** they run — `host` (on the developer's machine) or `sandbox` (inside the container):
-
-```ts
-hooks: {
-  host: {
-    onWorktreeReady: [{ command: "cp .env.example .env" }],
-    onSandboxReady:  [{ command: "echo sandbox is up" }],
-  },
-  sandbox: {
-    onSandboxReady: [
-      { command: "npm install", timeoutMs: 300_000 },
-      { command: "apt-get install -y ffmpeg", sudo: true },
-    ],
-  },
-}
-```
-
-| Hook                     | Runs on | When                                         | Working directory                           |
-| ------------------------ | ------- | -------------------------------------------- | ------------------------------------------- |
-| `host.onWorktreeReady`   | Host    | After `copyToWorktree`, before sandbox start | Worktree path (host repo root under `head`) |
-| `host.onSandboxReady`    | Host    | After sandbox is up                          | Worktree path (host repo root under `head`) |
-| `sandbox.onSandboxReady` | Sandbox | After sandbox is up                          | Sandbox repo directory                      |
-
-**Ordering:** `copyToWorktree` -> `host.onWorktreeReady` (sequential) -> sandbox created -> `host.onSandboxReady` + `sandbox.onSandboxReady` (parallel).
-
-- **Host hooks** accept `{ command: string; timeoutMs?: number }` — no `sudo`, no `cwd`. Use `cd` or inline env in the command string.
-- **Sandbox hooks** accept `{ command: string; sudo?: boolean; timeoutMs?: number }` — set `sudo: true` for elevated privileges.
-- **`timeoutMs`** overrides the default 60 s per-hook timeout. Useful for long-running setup commands like dependency installs (e.g. `timeoutMs: 300_000` for 5 minutes).
-- Within each hook point, sandbox hooks run in parallel; host hooks within `onSandboxReady` also run in parallel with sandbox hooks. `host.onWorktreeReady` hooks run sequentially in declared order.
-- If any hook exits non-zero, setup fails fast.
-- When a `signal` is passed to `run()`, it is threaded to all hooks — aborting the signal cancels any in-flight hook commands.
+- `pi-codex` init path
+- Pi auth mount for Docker/Podman
+- durable multi-iteration branch lifecycle
+- optional custom worktree roots
+- Codex dispatch skill packaged in `skills/`
+- workflow-first docs for vertical-slice AFK delivery
 
 ## Development
 
 ```bash
 npm install
-npm run build    # Build with tsgo
-npm test         # Run tests with vitest
-npm run typecheck # Type-check
+npm run typecheck
+npm test
+npm run build
+```
+
+The package currently exports Sandcastle's programmatic API and sandbox providers:
+
+```ts
+import { run, pi, claudeCode, codex, opencode } from "@ai-hero/sandcastle";
+import { docker } from "@ai-hero/sandcastle/sandboxes/docker";
+import { podman } from "@ai-hero/sandcastle/sandboxes/podman";
+import { vercel } from "@ai-hero/sandcastle/sandboxes/vercel";
 ```
 
 ## License
 
-MIT
+MIT. This fork builds on upstream Sandcastle by Matt Pocock and contributors.
